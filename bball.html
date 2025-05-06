@@ -2,19 +2,20 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Game History by Opponent</title>
+  <title>Girls Basketball vs Opponent</title>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    table { border-collapse: collapse; margin-top: 10px; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
-    select { font-size: 1em; padding: 4px; }
+    h1, label { margin-bottom: 0.5em; display: block; }
+    select { font-size: 1em; padding: 4px; margin-bottom: 1em; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
   </style>
 </head>
 <body>
-  <h1>Game History by Opponent</h1>
+  <h1>Girls Basketball: Select Opponent</h1>
 
-  <label for="opp">Select Opponent ➝ </label>
+  <label for="opp">Opponent:</label>
   <select id="opp">
     <option value="">– All –</option>
   </select>
@@ -22,56 +23,53 @@
   <div id="table_div"></div>
 
   <script>
-    // **1) Configure these two constants:**
+    // 1) YOUR SHEET CONFIGURATION
     const SPREADSHEET_ID = '1I_MFMOm1Cr78FPk_2Vd5HY8J0WaxOyVYtDUbEJwku0U';
-    const DATA_GID       = '2064027631';  // your “Vs Opponent” tab
+    const DATA_GID       = '2064027631';  // Girls W/L Data Sheet
 
-    // Load the Google Charts library
+    // 2) Load Google Charts
     google.charts.load('current', { packages: ['table'] });
     google.charts.setOnLoadCallback(init);
 
     function init() {
-      populateDropdown();
+      buildDropdown();
       document.getElementById('opp').addEventListener('change', drawTable);
     }
 
-    // **2) Build the opponent list** by querying column C
-    function populateDropdown() {
-      const q = "select C";
+    // 3) Populate dropdown with DISTINCT opponents from column C
+    function buildDropdown() {
+      const query = "select distinct C order by C";
       const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}` +
-                  `/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
+                  `/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(query)}`;
 
       new google.visualization.Query(url).send(res => {
         const dt = res.getDataTable();
-        const seen = {};
-        const sel  = document.getElementById('opp');
+        const sel = document.getElementById('opp');
 
         for (let i = 0; i < dt.getNumberOfRows(); i++) {
           const opp = dt.getValue(i, 0);
-          if (opp && !seen[opp]) {
-            seen[opp] = true;
+          if (opp) {
             const opt = document.createElement('option');
             opt.value = opp;
             opt.text  = opp;
             sel.appendChild(opt);
           }
         }
-        // draw unfiltered on first load
+        // Draw full table initially
         drawTable();
       });
     }
 
-    // **3) Query & render the table** (filtering on C “contains” the selection)
+    // 4) Draw (or re‑draw) table filtered by the selected opponent
     function drawTable() {
       const sel = document.getElementById('opp').value;
-      let q    = "select A,B,C,D,E,F,G,H"; 
-
+      let query = "select A,B,C,D,E,F,G,H";
       if (sel) {
-        q += " where C contains '" + sel.replace(/'/g,"\\'") + "'";
+        query += ` where C contains '${sel.replace(/'/g,"\\'")}'`;
       }
 
       const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}` +
-                  `/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
+                  `/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(query)}`;
 
       new google.visualization.Query(url).send(res => {
         const data  = res.getDataTable();
@@ -87,5 +85,6 @@
   </script>
 </body>
 </html>
+
 
 
