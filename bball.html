@@ -5,16 +5,16 @@
   <title>Girls Basketball vs Opponent</title>
   <script src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; }
-    h1 { margin-bottom: 0.5em; }
-    label { display: block; margin-top: 1em; margin-bottom: 0.5em; }
-    select { font-size: 1em; padding: 6px; width: 100%; max-width: 300px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
-    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    body   { font-family:sans-serif; max-width:900px; margin:auto; padding:20px; }
+    h1     { margin-bottom:.6em; }
+    label  { display:block; margin-top:1em; margin-bottom:.4em; }
+    select { font-size:1em; padding:6px; max-width:300px; width:100%; }
+    table  { border-collapse:collapse; width:100%; margin-top:1em; }
+    th,td  { border:1px solid #ccc; padding:6px 8px; text-align:left; }
   </style>
 </head>
 <body>
-  <h1>Girls Basketball: Game History by Opponent</h1>
+  <h1>Girls Basketball – Game History by Opponent</h1>
 
   <label for="opp">Select Opponent</label>
   <select id="opp"><option value="">– All –</option></select>
@@ -22,18 +22,14 @@
   <div id="table_div"></div>
 
   <script>
-    // —— CONFIGURATION ——  
-    // 1) Your "published to web" ID (the 2PACX‑… string from your pubhtml URL)
-    const PUB_ID  = '2PACX-1vQeVS7dtv0R670NwltZaXPo9LWU6LNZJTrru_rKEBxZKXUdpYwHrwLXV-3hh9VTeEXE3jVcb0fxQCKa';
-    // 2) The GID of your raw "Girls W/L Data Sheet" tab
-    //    Open that tab in Sheets and copy the number after "gid=" in the URL:
-    const DATA_GID = '2064027631';
+    // ------------- CONFIGURATION -------------
+    // File‑ID of your public sheet  (no /d/e/, just /d/)
+    const BASE_URL = 'https://docs.google.com/spreadsheets/d/12Y-LEmnveO1VwAYFcnmoJxJK_jrkTjFzOMxpzgCVG3E';
+    // gid of “Girls W/L Data Sheet” tab
+    const DATA_GID = '1666580712';
+    // ------------- END CONFIG ---------------
 
-    // Base URL for JSON queries via the Google Visualization API
-    const BASE_URL = `https://docs.google.com/spreadsheets/d/e/${PUB_ID}`;
-
-    // Load the Google Charts "table" package
-    google.charts.load('current', { packages:['table'] });
+    google.charts.load('current', {packages:['table']});
     google.charts.setOnLoadCallback(init);
 
     function init() {
@@ -41,59 +37,47 @@
       document.getElementById('opp').addEventListener('change', drawTable);
     }
 
-    // 1) Populate the dropdown with every distinct opponent from column C
+    // Build dropdown – query only column C, then de‑duplicate in JS
     function buildDropdown() {
-      const q   = 'select distinct C order by C';
+      const q   = 'select C where C is not null order by C';
       const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
 
       new google.visualization.Query(url).send(res => {
-        if (res.isError()) {
-          console.error('Dropdown query error:', res.getMessage());
-          return;
-        }
-        const dt  = res.getDataTable();
-        const sel = document.getElementById('opp');
+        if (res.isError()) { console.error(res.getMessage()); return; }
+
+        const dt   = res.getDataTable();
+        const sel  = document.getElementById('opp');
+        const seen = new Set();
 
         for (let i = 0; i < dt.getNumberOfRows(); i++) {
           const opp = dt.getValue(i, 0);
-          if (opp) {
+          if (opp && !seen.has(opp)) {
+            seen.add(opp);
             const opt = document.createElement('option');
-            opt.value = opp;
-            opt.text  = opp;
+            opt.value = opt.text = opp;
             sel.appendChild(opt);
           }
         }
-        // Draw everything (unfiltered) on first load
+        // paint initial (unfiltered) table
         drawTable();
       });
     }
 
-    // 2) Query & render the table, filtering where column C contains the selected opponent
+    // Draw / redraw table filtered on column C
     function drawTable() {
-      const sel = document.getElementById('opp').value;
-      let q     = 'select A,B,C,D,E,F,G,H';
-      if (sel) {
-        // Escape single‑quotes in the selection
-        const safe = sel.replace(/'/g, "\\'");
+      const selVal = document.getElementById('opp').value;
+      let   q      = 'select A,B,C,D,E,F,G,H';
+      if (selVal) {
+        const safe = selVal.replace(/'/g, "\\'");
         q += ` where C contains '${safe}'`;
       }
-
       const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
 
       new google.visualization.Query(url).send(res => {
-        if (res.isError()) {
-          console.error('Table query error:', res.getMessage());
-          return;
-        }
-        const data  = res.getDataTable();
+        if (res.isError()) { console.error(res.getMessage()); return; }
         const table = new google.visualization.Table(
-          document.getElementById('table_div')
-        );
-        table.draw(data, {
-          showRowNumber: false,
-          width: '100%',
-          height: 'auto'
-        });
+                        document.getElementById('table_div'));
+        table.draw(res.getDataTable(), {showRowNumber:false, width:'100%', height:'auto'});
       });
     }
   </script>
