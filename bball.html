@@ -1,51 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Girls Basketball vs Opponent</title>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    h1, label { margin-bottom: 0.5em; display: block; }
-    select { font-size: 1em; padding: 4px; margin-bottom: 1em; }
-    table { border-collapse: collapse; width: 100%; }
+    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    h1 { margin-bottom: 0.5em; }
+    label { display: block; margin-top: 1em; margin-bottom: 0.5em; }
+    select { font-size: 1em; padding: 6px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
   </style>
 </head>
 <body>
-  <h1>Girls Basketball: Select Opponent</h1>
-
-  <label for="opp">Opponent:</label>
+  <h1>Girls Basketball: Game History by Opponent</h1>
+  
+  <label for="opp">Select Opponent:</label>
   <select id="opp">
     <option value="">– All –</option>
   </select>
-
+  
   <div id="table_div"></div>
-
+  
   <script>
-    // 1) YOUR SHEET CONFIGURATION
-    const SPREADSHEET_ID = '1I_MFMOm1Cr78FPk_2Vd5HY8J0WaxOyVYtDUbEJwku0U';
-    const DATA_GID       = '2064027631';  // Girls W/L Data Sheet
-
-    // 2) Load Google Charts
+    //
+    // 1) CONFIGURATION – replace nothing below if your published URL matches:
+    //
+    //    This is the "published to web" ID from your Publish dialog,
+    //    e.g. from a URL like
+    //    https://docs.google.com/spreadsheets/d/e/2PACX-1vTqEGHE6D3L5nh.../pubhtml?gid=2064027631…
+    //
+    const BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTqEGHE6D3L5nhLHkb06xMPygzsEOI9fJBOctiXXhuV8j53xSsTN1qe7g8N0m6PDV7Q_kmjdoeX0j';
+    const DATA_GID = '2064027631';  // Girls W/L Data Sheet tab
+    
+    //
+    // 2) LOAD GOOGLE CHARTS TABLE PACKAGE
+    //
     google.charts.load('current', { packages: ['table'] });
     google.charts.setOnLoadCallback(init);
-
+    
     function init() {
       buildDropdown();
       document.getElementById('opp').addEventListener('change', drawTable);
     }
-
-    // 3) Populate dropdown with DISTINCT opponents from column C
+    
+    //
+    // 3) POPULATE THE DROPDOWN with every DISTINCT opponent from column C
+    //
     function buildDropdown() {
-      const query = "select distinct C order by C";
-      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}` +
-                  `/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(query)}`;
-
-      new google.visualization.Query(url).send(res => {
-        const dt = res.getDataTable();
+      const query = 'select distinct C order by C';
+      const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(query)}`;
+      
+      new google.visualization.Query(url).send(response => {
+        if (response.isError()) {
+          console.error('Error fetching dropdown data:', response.getMessage());
+          return;
+        }
+        const dt = response.getDataTable();
         const sel = document.getElementById('opp');
-
+        
         for (let i = 0; i < dt.getNumberOfRows(); i++) {
           const opp = dt.getValue(i, 0);
           if (opp) {
@@ -55,27 +69,35 @@
             sel.appendChild(opt);
           }
         }
-        // Draw full table initially
+        
+        // draw the full table on first load
         drawTable();
       });
     }
-
-    // 4) Draw (or re‑draw) table filtered by the selected opponent
+    
+    //
+    // 4) DRAW OR REDRAW THE FILTERED TABLE
+    //
     function drawTable() {
       const sel = document.getElementById('opp').value;
-      let query = "select A,B,C,D,E,F,G,H";
+      let query = 'select A,B,C,D,E,F,G,H';
       if (sel) {
-        query += ` where C contains '${sel.replace(/'/g,"\\'")}'`;
+        // FILTER: any row where column C contains the selection
+        query += " where C contains '" + sel.replace(/'/g, "\\'") + "'";
       }
-
-      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}` +
-                  `/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(query)}`;
-
-      new google.visualization.Query(url).send(res => {
-        const data  = res.getDataTable();
+      
+      const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(query)}`;
+      
+      new google.visualization.Query(url).send(response => {
+        if (response.isError()) {
+          console.error('Error fetching table data:', response.getMessage());
+          return;
+        }
+        const dataTable = response.getDataTable();
         const table = new google.visualization.Table(
-                        document.getElementById('table_div'));
-        table.draw(data, {
+          document.getElementById('table_div')
+        );
+        table.draw(dataTable, {
           showRowNumber: false,
           width: '100%',
           height: 'auto'
