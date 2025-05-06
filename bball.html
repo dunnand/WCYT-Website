@@ -22,27 +22,28 @@
   <div id="table_div"></div>
 
   <script>
-    // —— CONFIGURE THESE TWO VALUES —— 
-    // 1) Your published‑copy ID (the long 2PACX‑… string)
-    const PUB_ID = '2PACX-1vTqEGHE6D3L5nhLHkb06xMPygzsEOI9fJBOctiXXhuV8j53xSsTN1qe7g8N0m6PDV7Q_kmjdoeX0j';
+    // —— CONFIGURATION ——  
+    // 1) Your "published to web" ID (the 2PACX‑… string from your pubhtml URL)
+    const PUB_ID  = '2PACX-1vQeVS7dtv0R670NwltZaXPo9LWU6LNZJTrru_rKEBxZKXUdpYwHrwLXV-3hh9VTeEXE3jVcb0fxQCKa';
     // 2) The GID of your raw "Girls W/L Data Sheet" tab
+    //    Open that tab in Sheets and copy the number after "gid=" in the URL:
     const DATA_GID = '2064027631';
 
-    // Build the base URL for gviz queries
+    // Base URL for JSON queries via the Google Visualization API
     const BASE_URL = `https://docs.google.com/spreadsheets/d/e/${PUB_ID}`;
 
-    // Load Google Charts (Table package)
+    // Load the Google Charts "table" package
     google.charts.load('current', { packages:['table'] });
     google.charts.setOnLoadCallback(init);
 
     function init() {
-      populateDropdown();
+      buildDropdown();
       document.getElementById('opp').addEventListener('change', drawTable);
     }
 
-    // Query column C for all distinct opponents
-    function populateDropdown() {
-      const q = 'select distinct C order by C';
+    // 1) Populate the dropdown with every distinct opponent from column C
+    function buildDropdown() {
+      const q   = 'select distinct C order by C';
       const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
 
       new google.visualization.Query(url).send(res => {
@@ -50,7 +51,7 @@
           console.error('Dropdown query error:', res.getMessage());
           return;
         }
-        const dt = res.getDataTable();
+        const dt  = res.getDataTable();
         const sel = document.getElementById('opp');
 
         for (let i = 0; i < dt.getNumberOfRows(); i++) {
@@ -62,20 +63,21 @@
             sel.appendChild(opt);
           }
         }
-        // Draw full table on first load
+        // Draw everything (unfiltered) on first load
         drawTable();
       });
     }
 
-    // Re‑query the sheet, filtering where column C contains the selected opponent
+    // 2) Query & render the table, filtering where column C contains the selected opponent
     function drawTable() {
       const sel = document.getElementById('opp').value;
-      let q = 'select A,B,C,D,E,F,G,H';
+      let q     = 'select A,B,C,D,E,F,G,H';
       if (sel) {
-        // escape any single quotes in sel
-        const safe = sel.replace(/'/g,"\\'");
+        // Escape single‑quotes in the selection
+        const safe = sel.replace(/'/g, "\\'");
         q += ` where C contains '${safe}'`;
       }
+
       const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
 
       new google.visualization.Query(url).send(res => {
@@ -87,7 +89,11 @@
         const table = new google.visualization.Table(
           document.getElementById('table_div')
         );
-        table.draw(data, { showRowNumber:false, width:'100%', height:'auto' });
+        table.draw(data, {
+          showRowNumber: false,
+          width: '100%',
+          height: 'auto'
+        });
       });
     }
   </script>
