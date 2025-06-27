@@ -2898,30 +2898,32 @@ student-run: student DJs, student shows, and student broadcasters." />
     }
   }
 
-<!-- =========  LISTEN-LIVE BLOCK  ========= -->
+<!-- =========================================
+     LISTEN-LIVE  (buttons + myTuner player)
+     ========================================= -->
 <section id="listen-live">
 
-  <!-- ======  LOCAL STYLES  ====== -->
+  <!-- ----------  LOCAL STYLES  ---------- -->
   <style>
-  /* ――― Layout ――― */
-  #listen-live .listen-live-row{
+  /* —— Layout —— */
+  #listen-live .row{
     display:flex;
-    flex-wrap:wrap;          /* stack on small screens */
+    flex-wrap:wrap;            /* stacks on small screens */
     gap:40px;
     align-items:flex-start;
     margin-top:40px;
   }
-  #listen-live .listen-left{
-    flex:1 1 320px;          /* grow | shrink | basis */
+  #listen-live .left{          /* buttons column */
+    flex:1 1 320px;
     max-width:460px;
   }
-  #listen-live .listen-right{
+  #listen-live .right{         /* player column */
     flex:2 1 500px;
-    min-width:320px;         /* keep player readable */
+    min-width:320px;
   }
 
-  /* ――― Buttons ――― */
-  #listen-live .listen-button{
+  /* —— Pill buttons —— */
+  #listen-live .btn{
     display:block;
     background:linear-gradient(180deg,#cecece 0%,#b4b4b4 100%);
     color:#fff;
@@ -2929,29 +2931,26 @@ student-run: student DJs, student shows, and student broadcasters." />
     text-align:center;
     text-decoration:none;
     padding:14px 42px;
-    margin:0 0 20px 0;       /* stack the two buttons */
+    margin-bottom:20px;
     border-radius:9999px;
     box-shadow:inset 0 2px 4px rgba(0,0,0,.25);
     transition:box-shadow .3s,transform .3s;
   }
-  #listen-live .listen-button:hover{
+  #listen-live .btn:hover{
     box-shadow:0 4px 12px rgba(0,0,0,.25);
     transform:translateY(-2px);
   }
   @media(max-width:480px){
-    #listen-live .listen-button{
-      font-size:14px;
-      padding:12px 32px;
-    }
+    #listen-live .btn{font-size:14px;padding:12px 32px;}
   }
 
-  /* ――― Collapse to one column on phones ――― */
+  /* —— Collapse to one column on phones —— */
   @media(max-width:600px){
-    #listen-live .listen-live-row{flex-direction:column;}
+    #listen-live .row{flex-direction:column;}
   }
 
-  /* ――― Keep the myTuner watermark inside the bar ――― */
-  #listen-live .mytuner-widget{position:relative;}
+  /* —— Keep watermark inside header —— */
+  #listen-live .mytuner-widget{position:relative !important;}
   #listen-live .mytuner-widget .player-mytuner-logo{
     position:absolute !important;
     top:19px !important;
@@ -2960,29 +2959,26 @@ student-run: student DJs, student shows, and student broadcasters." />
   }
   </style>
 
-  <!-- ======  CONTENT  ====== -->
-  <div class="listen-live-row">
+  <!-- ----------  CONTENT  ---------- -->
+  <div class="row">
 
-    <!-- ░░ LEFT SIDE ░░ -->
-    <div class="listen-left">
+    <!-- ░░ LEFT (buttons) ░░ -->
+    <div class="left">
       <h1>Listen <strong>Live</strong></h1>
       <p>Listen in a new tab by clicking below</p>
 
-      <a href="https://securestreams6.autopo.st:2553/WCYT.mp3"
-         class="listen-button">
+      <a href="https://securestreams6.autopo.st:2553/WCYT.mp3" class="btn">
         WCYT – The Point&nbsp;91&nbsp;FM<br>Where Music is the Point
       </a>
 
-      <a href="https://securestreams6.autopo.st:2553/WCYT.mp3"
-         class="listen-button">
+      <a href="https://securestreams6.autopo.st:2553/WCYT.mp3" class="btn">
         2.0&nbsp;The&nbsp;Next&nbsp;Level&nbsp;of&nbsp;Radio
       </a>
     </div>
 
-    <!-- ░░ RIGHT SIDE ░░  (full, unedited myTuner widget) -->
-    <div class="listen-right">
-
-      <!-- ▼▼  everything inside this div is the exact widget code Squarespace gave you  ▼▼ -->
+    <!-- ░░ RIGHT (myTuner embed) ░░ -->
+    <div class="right">
+      <!-- ▼▼ exact myTuner widget code (unchanged) ▼▼ -->
       <div id="wqbDmCJkwqsjOVRfP27CscO6NcK0wrFXI8OPPMOg"
            class="mytuner-widget"
            data-target="431438"
@@ -2992,7 +2988,7 @@ student-run: student DJs, student shows, and student broadcasters." />
            style="width:100%;max-width:100%;overflow:hidden;max-height:500px;
                   border:1px solid #817f80;border-radius:6px;">
 
-        <!-- (myTuner inline <style>) -->
+        <!--  their inline <style>  -->
         <style type="text/css">
           .mytuner-widget{all:initial;display:block;color:#3D3D3D}
           .mytuner-widget,*{box-sizing:border-box;font-family:sans-serif}
@@ -3016,7 +3012,7 @@ student-run: student DJs, student shows, and student broadcasters." />
           .volume-controls .volume-indicator{cursor:pointer;display:block}
           .player-radio-link{width:calc(100% - 65px - 84px - 37px - 12px)}
           .player-radio-name{width:calc(100% - 74px - 10px)}
-          .player-mytuner-logo{margin-left:47px} /* overridden by our external CSS */
+          .player-mytuner-logo{margin-left:47px}
           @media(max-width:480px){
             .player-radio-link{width:calc(100% - 65px - 84px - 12px)}
             .player-mytuner-logo{margin-left:10px}
@@ -3024,7 +3020,7 @@ student-run: student DJs, student shows, and student broadcasters." />
           }
         </style>
 
-        <!-- top bar -->
+        <!--  top bar  -->
         <div id="wqbDmCJkwqsjOVRfP27CscO6NcK0wrFXI8OPPMOgtop-bar"
              style="background:#000;height:75px;width:100%;padding:5px;line-height:65px;">
           <div id="wqbDmCJkwqsjOVRfP27CscO6NcK0wrFXI8OPPMOgplay-button"
@@ -3068,12 +3064,12 @@ student-run: student DJs, student shows, and student broadcasters." />
           </a>
         </div>
 
-        <!-- song history -->
+        <!--  song list  -->
         <ul id="wqbDmCJkwqsjOVRfP27CscO6NcK0wrFXI8OPPMOgsong-history"
             data-border="1" data-bordercolor="#817f80"
             style="width:100%;background:#eee;max-height:415px;padding:0;margin:0;overflow-y:scroll;"></ul>
 
-        <!-- myTuner JS -->
+        <!--  widget scripts  -->
         <script>
           var widget_id="wqbDmCJkwqsjOVRfP27CscO6NcK0wrFXI8OPPMOg";
           var mytuner_scripts=mytuner_scripts||{};
@@ -3106,24 +3102,14 @@ student-run: student DJs, student shows, and student broadcasters." />
             document.head.appendChild(s);
           }
         </script>
-
       </div><!-- /mytuner-widget -->
-      <!-- ▲▲  end of myTuner embed  ▲▲ -->
+      <!-- ▲▲  end myTuner embed  ▲▲ -->
+    </div><!-- /right -->
 
-    </div><!-- /listen-right -->
-
-  </div><!-- /listen-live-row -->
+  </div><!-- /row -->
 </section>
-<!-- =========  / LISTEN-LIVE BLOCK  ========= -->
-
-
-  
-    
-    
-
-
-  
-  
+<!-- ========================================= -->
+ 
 
 
 <section
