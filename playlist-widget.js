@@ -18,6 +18,16 @@
   const MAX_HISTORY   = 50;
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
 
+  // Titles/artists that should never appear in the playlist display.
+  // Matched case-insensitively against both the full raw string and
+  // the parsed title field. Add more entries here as needed.
+  const BLOCKED_TERMS = [
+    'liner',
+    'legal id',
+    'btyb',
+    'sponsor',
+  ];
+
   // ── State ─────────────────────────────────────────────────────────────────
   let currentSong  = null;   // { artist, title, startedAt, artUrl }
   let songHistory  = [];     // [{ artist, title, startedAt, endedAt, artUrl }]
@@ -123,6 +133,15 @@
     return (artist + '|' + title).toLowerCase();
   }
 
+  function isBlocked(raw, parsed) {
+    const haystack = [
+      (raw   ?? '').toLowerCase(),
+      (parsed.artist ?? '').toLowerCase(),
+      (parsed.title  ?? '').toLowerCase(),
+    ].join(' ');
+    return BLOCKED_TERMS.some(term => haystack.includes(term));
+  }
+
   // ── Album art (iTunes Search API) ─────────────────────────────────────────
 
   async function fetchArt(artist, title) {
@@ -182,6 +201,9 @@
 
   async function handleNewTitle(raw) {
     const parsed = parseTitle(raw);
+
+    // Silently ignore liners, legal IDs, sponsors, etc.
+    if (isBlocked(raw, parsed)) return;
 
     if (!currentSong) {
       const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
