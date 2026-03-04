@@ -13,10 +13,27 @@
   // ── Config ────────────────────────────────────────────────────────────────
   const METADATA_URL  = 'https://securestreams2.autopo.st:1069/status-json.xsl';
   const MOUNT_POINT   = 'WCYT';
-  const STREAM_URL    = 'https://securestreams2.autopo.st:1069/WCYT.mp3';
   const POLL_MS       = 10_000;
   const MAX_HISTORY   = 50;
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+
+  const STATIONS = [
+    {
+      id:       'wcyt',
+      label:    'WCYT 91 FM',
+      name:     'The Point 91 FM',
+      tagline:  'Where Music is the Point',
+      stream:   'https://securestreams2.autopo.st:1069/WCYT.mp3',
+    },
+    {
+      id:       '2pt0',
+      label:    '2.0 Next Level',
+      name:     '2.0 – The Next Level',
+      tagline:  'The Next Level of Radio',
+      // http:// stream — may need to open in new tab on https:// pages
+      stream:   'http://13.bteradio.com:9090/wcythd2.mp3',
+    },
+  ];
 
   // Titles/artists that should never appear in the playlist display.
   const BLOCKED_TERMS = [
@@ -27,19 +44,20 @@
   ];
 
   // ── State ─────────────────────────────────────────────────────────────────
-  let currentSong  = null;
-  let songHistory  = [];
-  let artCache     = {};
-  let heroEl       = null;
-  let compactEl    = null;
-  let fullEl       = null;
-  let corsWarned   = false;
-  let pollTimer    = null;
-  let tickTimer    = null;
+  let currentSong    = null;
+  let songHistory    = [];
+  let artCache       = {};
+  let heroEl         = null;
+  let compactEl      = null;
+  let fullEl         = null;
+  let corsWarned     = false;
+  let pollTimer      = null;
+  let tickTimer      = null;
+  let activeStation  = 0;   // index into STATIONS
 
   // ── Audio player state ────────────────────────────────────────────────────
-  let audio        = null;
-  let audioState   = 'stopped';
+  let audio          = null;
+  let audioState     = 'stopped';
 
   function getAudio() {
     if (!audio) {
@@ -66,10 +84,26 @@
       a.pause();
       a.src = '';
     } else {
-      a.src = STREAM_URL;
+      a.src = STATIONS[activeStation].stream;
       a.play().catch(() => setAudioState('stopped'));
       setAudioState('buffering');
     }
+  }
+
+  function switchStation(idx) {
+    if (idx === activeStation) return;
+    activeStation = idx;
+    const a = getAudio();
+    const wasPlaying = audioState === 'playing' || audioState === 'buffering';
+    a.pause();
+    a.src = '';
+    setAudioState('stopped');
+    if (wasPlaying) {
+      a.src = STATIONS[activeStation].stream;
+      a.play().catch(() => setAudioState('stopped'));
+      setAudioState('buffering');
+    }
+    render();
   }
 
   function updatePlayerButtons() {
@@ -260,55 +294,85 @@
 
   // ── Render: Hero ──────────────────────────────────────────────────────────
 
+  function stationSwitcher() {
+    return `
+      <div class="wcyt-station-switcher" role="group" aria-label="Select station">
+        ${STATIONS.map((s, i) => `
+          <button
+            class="wcyt-station-btn${i === activeStation ? ' wcyt-station-btn--active' : ''}"
+            onclick="WCYTPlaylist.switchStation(${i})"
+            aria-pressed="${i === activeStation}"
+          >${esc(s.label)}</button>
+        `).join('')}
+      </div>
+    `;
+  }
+
   function renderHero() {
     if (!heroEl) return;
 
     const song    = currentSong;
     const history = songHistory.slice(0, 3);
+    const station = STATIONS[activeStation];
+    const isWCYT  = activeStation === 0;
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
-        ${song ? backdropDiv(song.artUrl) : ''}
+        ${isWCYT && song ? backdropDiv(song.artUrl) : ''}
         <div class="wcyt-hero-inner">
 
           <div class="wcyt-hero-eyebrow">
             <span class="wcyt-bars" aria-hidden="true">
               <span></span><span></span><span></span><span></span><span></span>
             </span>
-            <span>THE POINT 91 FM &middot; WCYT</span>
+            <span>${esc(isWCYT ? 'THE POINT 91 FM \u00b7 WCYT' : '2.0 \u00b7 THE NEXT LEVEL')}</span>
           </div>
 
-          ${song ? `
-            ${artImg(song.artUrl, 220, 'wcyt-hero-art')}
-            <div class="wcyt-hero-artist">${esc(song.artist || 'WCYT')}</div>
-            <div class="wcyt-hero-title">${esc(song.title)}</div>
-            <div class="wcyt-hero-controls">
-              <span class="wcyt-age wcyt-hero-age" data-started="${song.startedAt.toISOString()}">
-                ${relativeTime(song.startedAt)}
-              </span>
-              ${playBtnHTML('lg')}
-              <a href="/playlist" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
-            </div>
-          ` : `<div class="wcyt-hero-loading">Loading&hellip;</div>`}
+          ${stationSwitcher()}
 
-          ${history.length ? `
-            <div class="wcyt-hero-recent">
-              <div class="wcyt-hero-recent-label">RECENT PLAYS</div>
-              <ul class="wcyt-hero-recent-list">
-                ${history.map(s => `
-                  <li>
-                    ${artImg(s.artUrl, 32, 'wcyt-hero-recent-art')}
-                    <span class="wcyt-hero-recent-track">
-                      <span class="wcyt-hero-recent-artist">${esc(s.artist || 'WCYT')}</span>
-                      <span class="wcyt-hero-recent-sep">&middot;</span>
-                      <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
-                    </span>
-                    <span class="wcyt-hero-recent-time">${formatTime(s.startedAt)}</span>
-                  </li>
-                `).join('')}
-              </ul>
+          ${isWCYT ? `
+            ${song ? `
+              ${artImg(song.artUrl, 220, 'wcyt-hero-art')}
+              <div class="wcyt-hero-artist">${esc(song.artist || 'WCYT')}</div>
+              <div class="wcyt-hero-title">${esc(song.title)}</div>
+              <div class="wcyt-hero-controls">
+                <span class="wcyt-age wcyt-hero-age" data-started="${song.startedAt.toISOString()}">
+                  ${relativeTime(song.startedAt)}
+                </span>
+                ${playBtnHTML('lg')}
+                <a href="/playlist" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
+              </div>
+            ` : `<div class="wcyt-hero-loading">Loading&hellip;</div>`}
+
+            ${history.length ? `
+              <div class="wcyt-hero-recent">
+                <div class="wcyt-hero-recent-label">RECENT PLAYS</div>
+                <ul class="wcyt-hero-recent-list">
+                  ${history.map(s => `
+                    <li>
+                      ${artImg(s.artUrl, 32, 'wcyt-hero-recent-art')}
+                      <span class="wcyt-hero-recent-track">
+                        <span class="wcyt-hero-recent-artist">${esc(s.artist || 'WCYT')}</span>
+                        <span class="wcyt-hero-recent-sep">&middot;</span>
+                        <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
+                      </span>
+                      <span class="wcyt-hero-recent-time">${formatTime(s.startedAt)}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          ` : `
+            <div class="wcyt-hero-s2">
+              <div class="wcyt-hero-s2-num">2.0</div>
+              <div class="wcyt-hero-s2-tagline">The Next Level of Radio</div>
+              <div class="wcyt-hero-controls">
+                ${playBtnHTML('lg')}
+                <a href="${station.stream}" target="_blank" rel="noopener"
+                   class="wcyt-hero-playlist-link">Open in player &rarr;</a>
+              </div>
             </div>
-          ` : ''}
+          `}
 
         </div>
 
@@ -507,8 +571,9 @@
       pollTimer = setInterval(fetchNowPlaying, POLL_MS);
       tickTimer = setInterval(tickAges, 30_000);
     },
-    togglePlay() { togglePlay(); },
-    _getState()  { return { currentSong, songHistory, artCache, audioState }; },
+    togglePlay()       { togglePlay(); },
+    switchStation(idx) { switchStation(idx); },
+    _getState()        { return { currentSong, songHistory, artCache, audioState, activeStation }; },
     _mockSong(artist, title) { handleNewTitle(`${artist} - ${title}`); },
   };
 })();

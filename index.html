@@ -1735,6 +1735,40 @@ student-run: student DJs, student shows, and student broadcasters." />
   0%,100%{transform:translateX(-50%) translateY(0)}
   50%{transform:translateX(-50%) translateY(8px)}
 }
+/* Station switcher */
+.wcyt-station-switcher{
+  display:flex;gap:4px;
+  background:rgba(255,255,255,.08);
+  border-radius:999px;
+  padding:4px;
+  margin-bottom:28px;
+}
+.wcyt-station-btn{
+  padding:8px 20px;
+  border-radius:999px;
+  border:none;
+  background:transparent;
+  color:#888;
+  font-size:13px;font-weight:600;
+  cursor:pointer;
+  font-family:inherit;
+  transition:background .2s,color .2s;
+}
+.wcyt-station-btn--active,
+.wcyt-station-btn:hover{background:#c8102e;color:#fff}
+/* Station 2 hero content */
+.wcyt-hero-s2{
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 0 40px;
+}
+.wcyt-hero-s2-num{
+  font-size:clamp(64px,16vw,120px);font-weight:700;line-height:1;
+  color:#fff;letter-spacing:-.02em;
+}
+.wcyt-hero-s2-tagline{
+  font-size:clamp(14px,2.5vw,20px);color:#aaa;
+  margin-bottom:32px;letter-spacing:.04em;
+}
 /* Larger play button */
 .wcyt-play-btn--lg{width:64px!important;height:64px!important;font-size:26px!important}
 @media(max-width:600px){
