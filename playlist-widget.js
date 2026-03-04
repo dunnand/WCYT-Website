@@ -240,27 +240,35 @@
 
   async function fetchCurrentShow() {
     try {
-      const res  = await fetch(SHOW_URL, { cache: 'no-store' });
+      // Append timestamp to bust Google's server-side CSV cache
+      const res  = await fetch(SHOW_URL + '&_t=' + Date.now(), { cache: 'no-store' });
       const text = await res.text();
       const lines = text.trim().split('\n').filter(Boolean);
 
-      // lines[0] is the header row; last line is the most recent submission
       if (lines.length < 2) { currentShow = null; render(); return; }
 
-      // Find show name column from header row (skips Timestamp, Email Address, etc.)
-      const headers   = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
-      const showCol   = headers.findIndex(h => h !== 'timestamp' && !h.includes('email'));
+      // Find the show name column — skip Timestamp and Email columns
+      const headers = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
+      let showCol   = headers.findIndex(h => h !== 'timestamp' && !h.includes('email'));
+      if (showCol === -1) showCol = headers.length - 1; // fallback: last column
 
-      const cols      = parseCSVRow(lines[lines.length - 1]);
-      const tsRaw     = (cols[0] ?? '').trim();
-      const showName  = (cols[showCol] ?? '').trim();
+      const cols     = parseCSVRow(lines[lines.length - 1]);
+      const tsRaw    = (cols[0] ?? '').trim();
+      const showName = (cols[showCol] ?? '').trim();
 
-      if (!showName) { currentShow = null; render(); return; }
+      const prev = currentShow?.name ?? null;
+
+      // Typing "clear", "end", "done", or "off" clears the show immediately
+      const CLEAR_WORDS = ['clear', 'end', 'done', 'off'];
+      if (!showName || CLEAR_WORDS.includes(showName.toLowerCase())) {
+        currentShow = null;
+        if (prev !== null) render();
+        return;
+      }
 
       const submittedAt = new Date(tsRaw);
       const expiresAt   = new Date(submittedAt.getTime() + SHOW_TTL_MS);
 
-      const prev = currentShow?.name ?? null;
       currentShow = Date.now() < expiresAt.getTime()
         ? { name: showName, expiresAt }
         : null;
