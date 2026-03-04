@@ -162,14 +162,14 @@
     const na   = normArtist(artist);
 
     const match = (data.results ?? []).find(r => {
-      if (r.trackExplicitness === 'explicit')      return false;
-      if (r.collectionExplicitness === 'explicit') return false;
       // Artist name must contain the searched artist (blocks lullaby covers, tributes)
       if (!normArtist(r.artistName).includes(na))  return false;
       // Reject cover/tribute/lullaby collection names
       const col = (r.collectionName ?? '').toLowerCase();
       if (ITUNES_REJECT.some(t => col.includes(t)))  return false;
       return true;
+      // Note: we intentionally skip the explicit flag — it refers to lyrics,
+      // not the album artwork, so filtering on it blocks real releases.
     });
 
     return match?.artworkUrl100
