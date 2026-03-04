@@ -29,8 +29,8 @@
     },
     {
       id:       '2pt0',
-      label:    '2.0 Next Level',
-      name:     '2.0 – The Next Level',
+      label:    '2.0 Next Level of Radio',
+      name:     '2.0 – The Next Level of Radio',
       tagline:  'The Next Level of Radio',
       stream:   'https://securestreams2.autopo.st:1069/wcythd2.mp3',
       mount:    'wcythd2.mp3',
@@ -402,7 +402,7 @@
             <span class="wcyt-bars" aria-hidden="true">
               <span></span><span></span><span></span><span></span><span></span>
             </span>
-            <span>${esc(isWCYT ? 'THE POINT 91 FM \u00b7 WCYT' : '2.0 \u00b7 THE NEXT LEVEL')}</span>
+            <span>${esc(isWCYT ? 'THE POINT 91 FM \u00b7 WCYT' : '2.0 \u00b7 THE NEXT LEVEL OF RADIO')}</span>
           </div>
 
           ${stationSwitcher()}
