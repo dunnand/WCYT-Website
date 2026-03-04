@@ -266,7 +266,7 @@
           </div>
           ${song ? `
             <div class="wcyt-compact-song">
-              ${artImg(song.artUrl, 64, 'wcyt-compact-art')}
+              ${artImg(song.artUrl, 110, 'wcyt-compact-art')}
               <div class="wcyt-compact-song-text">
                 <div class="wcyt-artist">${esc(song.artist || 'WCYT')}</div>
                 <div class="wcyt-title">${esc(song.title)}</div>
@@ -325,7 +325,7 @@
           </div>
           ${song ? `
             <div class="wcyt-full-song">
-              ${artImg(song.artUrl, 120, 'wcyt-full-art')}
+              ${artImg(song.artUrl, 200, 'wcyt-full-art')}
               <div class="wcyt-full-song-text">
                 <div class="wcyt-full-artist">${esc(song.artist || 'WCYT')}</div>
                 <div class="wcyt-full-title">${esc(song.title)}</div>
