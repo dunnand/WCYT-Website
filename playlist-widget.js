@@ -49,6 +49,7 @@
   let currentSong    = null;
   let songHistory    = [];
   let currentSong2   = null;   // now-playing for station 2
+  let songHistory2   = [];     // recent plays for station 2
   let artCache       = {};
   let currentShow    = null;   // { name: string, expiresAt: Date } | null
   let heroEl         = null;
@@ -293,12 +294,17 @@
       // Station 1 — WCYT (drives history + full playlist page)
       handleNewTitle(findSource(STATIONS[0].mount)?.title ?? null);
 
-      // Station 2 — fetch current song for hero display only
+      // Station 2 — track current song + history
       const raw2    = findSource(STATIONS[1].mount)?.title ?? null;
       const parsed2 = parseTitle(raw2);
       if (!isBlocked(raw2, parsed2) && (parsed2.artist || parsed2.title !== 'On Air')) {
         const key2 = artCacheKey(parsed2.artist, parsed2.title);
-        if (!currentSong2 || artCacheKey(currentSong2.artist, currentSong2.title) !== key2) {
+        const cur2  = currentSong2 ? artCacheKey(currentSong2.artist, currentSong2.title) : null;
+        if (key2 !== cur2) {
+          if (currentSong2) {
+            songHistory2.unshift({ ...currentSong2, endedAt: new Date() });
+            if (songHistory2.length > MAX_HISTORY) songHistory2.pop();
+          }
           const artUrl = parsed2.artist ? await fetchArt(parsed2.artist, parsed2.title) : null;
           currentSong2 = { ...parsed2, startedAt: new Date(), artUrl };
           if (activeStation === 1) render();
@@ -450,7 +456,7 @@
                 <div class="wcyt-hero-artist">${esc(currentSong2.artist || '2.0')}</div>
                 <div class="wcyt-hero-title">${esc(currentSong2.title)}</div>
               ` : ''}
-              <div class="wcyt-hero-controls">
+                <div class="wcyt-hero-controls">
                 <span class="wcyt-age wcyt-hero-age"
                   ${currentSong2 ? `data-started="${currentSong2.startedAt.toISOString()}"` : ''}>
                   ${currentSong2 ? relativeTime(currentSong2.startedAt) : 'Live now'}
@@ -458,6 +464,25 @@
                 ${playBtnHTML('lg')}
               </div>
             </div>
+
+            ${songHistory2.length ? `
+              <div class="wcyt-hero-recent">
+                <div class="wcyt-hero-recent-label">RECENT PLAYS</div>
+                <ul class="wcyt-hero-recent-list">
+                  ${songHistory2.slice(0, 3).map(s => `
+                    <li>
+                      ${artImg(s.artUrl, 32, 'wcyt-hero-recent-art')}
+                      <span class="wcyt-hero-recent-track">
+                        <span class="wcyt-hero-recent-artist">${esc(s.artist || '2.0')}</span>
+                        <span class="wcyt-hero-recent-sep">&middot;</span>
+                        <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
+                      </span>
+                      <span class="wcyt-hero-recent-time">${formatTime(s.startedAt)}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+            ` : ''}
           `}
 
         </div>
