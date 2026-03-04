@@ -19,8 +19,6 @@
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
 
   // Titles/artists that should never appear in the playlist display.
-  // Matched case-insensitively against both the full raw string and
-  // the parsed title field. Add more entries here as needed.
   const BLOCKED_TERMS = [
     'liner',
     'legal id',
@@ -29,9 +27,10 @@
   ];
 
   // ── State ─────────────────────────────────────────────────────────────────
-  let currentSong  = null;   // { artist, title, startedAt, artUrl }
-  let songHistory  = [];     // [{ artist, title, startedAt, endedAt, artUrl }]
-  let artCache     = {};     // "artist|title" → artUrl (or null)
+  let currentSong  = null;
+  let songHistory  = [];
+  let artCache     = {};
+  let heroEl       = null;
   let compactEl    = null;
   let fullEl       = null;
   let corsWarned   = false;
@@ -39,14 +38,13 @@
   let tickTimer    = null;
 
   // ── Audio player state ────────────────────────────────────────────────────
-  let audio        = null;   // single HTMLAudioElement shared across widgets
-  let audioState   = 'stopped';  // 'stopped' | 'buffering' | 'playing'
+  let audio        = null;
+  let audioState   = 'stopped';
 
   function getAudio() {
     if (!audio) {
       audio = new Audio();
       audio.preload = 'none';
-
       audio.addEventListener('waiting',  () => setAudioState('buffering'));
       audio.addEventListener('playing',  () => setAudioState('playing'));
       audio.addEventListener('pause',    () => setAudioState('stopped'));
@@ -66,7 +64,7 @@
     const a = getAudio();
     if (audioState === 'playing' || audioState === 'buffering') {
       a.pause();
-      a.src = '';           // release stream connection
+      a.src = '';
     } else {
       a.src = STREAM_URL;
       a.play().catch(() => setAudioState('stopped'));
@@ -74,7 +72,6 @@
     }
   }
 
-  // Update all play buttons without a full re-render
   function updatePlayerButtons() {
     document.querySelectorAll('[data-wcyt-playbtn]').forEach(btn => {
       btn.setAttribute('data-wcyt-playbtn', audioState);
@@ -83,7 +80,6 @@
     });
   }
 
-  // Pause/resume the equalizer bar animation based on play state
   function updateBarsAnimation() {
     const playing = audioState === 'playing';
     document.querySelectorAll('.wcyt-bars span').forEach(bar => {
@@ -97,9 +93,10 @@
     return '<span class="wcyt-btn-icon">&#9654;</span>';
   }
 
-  function playBtnHTML() {
+  function playBtnHTML(size) {
+    const cls = size === 'lg' ? 'wcyt-play-btn wcyt-play-btn--lg' : 'wcyt-play-btn';
     return `<button
-      class="wcyt-play-btn"
+      class="${cls}"
       data-wcyt-playbtn="${audioState}"
       aria-label="${audioState === 'playing' ? 'Pause' : 'Play'}"
       onclick="WCYTPlaylist.togglePlay()"
@@ -202,7 +199,6 @@
   async function handleNewTitle(raw) {
     const parsed = parseTitle(raw);
 
-    // Silently ignore liners, legal IDs, sponsors, etc.
     if (isBlocked(raw, parsed)) return;
 
     if (!currentSong) {
@@ -224,14 +220,12 @@
     render();
   }
 
-  // ── Backdrop element ──────────────────────────────────────────────────────
+  // ── Shared elements ───────────────────────────────────────────────────────
 
   function backdropDiv(artUrl) {
     if (!artUrl) return '';
     return `<div class="wcyt-backdrop" style="background-image:url('${esc(artUrl)}')"></div>`;
   }
-
-  // ── Art image element ─────────────────────────────────────────────────────
 
   function artImg(artUrl, size, cssClass) {
     const src        = artUrl || FALLBACK_ART;
@@ -244,6 +238,72 @@
       loading="lazy"
       onerror="this.src='${FALLBACK_ART}';this.classList.add('wcyt-art-fallback')"
     >`;
+  }
+
+  // ── Render: Hero ──────────────────────────────────────────────────────────
+
+  function renderHero() {
+    if (!heroEl) return;
+
+    const song    = currentSong;
+    const history = songHistory.slice(0, 3);
+
+    heroEl.innerHTML = `
+      <div class="wcyt-hero">
+        ${song ? backdropDiv(song.artUrl) : ''}
+        <div class="wcyt-hero-inner">
+
+          <div class="wcyt-hero-eyebrow">
+            <span class="wcyt-bars" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </span>
+            <span>THE POINT 91 FM &middot; WCYT</span>
+          </div>
+
+          ${song ? `
+            ${artImg(song.artUrl, 220, 'wcyt-hero-art')}
+            <div class="wcyt-hero-artist">${esc(song.artist || 'WCYT')}</div>
+            <div class="wcyt-hero-title">${esc(song.title)}</div>
+            <div class="wcyt-hero-controls">
+              <span class="wcyt-age wcyt-hero-age" data-started="${song.startedAt.toISOString()}">
+                ${relativeTime(song.startedAt)}
+              </span>
+              ${playBtnHTML('lg')}
+              <a href="/playlist" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
+            </div>
+          ` : `<div class="wcyt-hero-loading">Loading&hellip;</div>`}
+
+          ${history.length ? `
+            <div class="wcyt-hero-recent">
+              <div class="wcyt-hero-recent-label">RECENT PLAYS</div>
+              <ul class="wcyt-hero-recent-list">
+                ${history.map(s => `
+                  <li>
+                    ${artImg(s.artUrl, 32, 'wcyt-hero-recent-art')}
+                    <span class="wcyt-hero-recent-track">
+                      <span class="wcyt-hero-recent-artist">${esc(s.artist || 'WCYT')}</span>
+                      <span class="wcyt-hero-recent-sep">&middot;</span>
+                      <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
+                    </span>
+                    <span class="wcyt-hero-recent-time">${formatTime(s.startedAt)}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          ` : ''}
+
+        </div>
+
+        <a class="wcyt-hero-scroll" href="#wcyt-page-content" aria-label="Scroll down">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </a>
+      </div>
+    `;
+
+    updateBarsAnimation();
   }
 
   // ── Render: Compact ───────────────────────────────────────────────────────
@@ -377,6 +437,7 @@
         <a href="${STREAM_URL}" target="_blank" rel="noopener">listen live</a>
       </div>
     `;
+    if (heroEl    && !currentSong) heroEl.innerHTML    = msg;
     if (compactEl && !currentSong) compactEl.innerHTML = msg;
     if (fullEl    && !currentSong) fullEl.innerHTML    = msg;
   }
@@ -386,7 +447,9 @@
   function tickAges() {
     document.querySelectorAll('.wcyt-age[data-started]').forEach(el => {
       const d = new Date(el.dataset.started);
-      el.textContent = el.closest('.wcyt-full-song')
+      const isHero = el.classList.contains('wcyt-hero-age');
+      const isFull = el.closest('.wcyt-full-song');
+      el.textContent = (isHero || isFull)
         ? 'Started ' + relativeTime(d)
         : relativeTime(d);
     });
@@ -395,6 +458,7 @@
   // ── Combined render ───────────────────────────────────────────────────────
 
   function render() {
+    renderHero();
     renderCompact();
     renderFull();
   }
@@ -412,7 +476,13 @@
   // ── Public API ────────────────────────────────────────────────────────────
 
   window.WCYTPlaylist = {
-    init(compact, full) {
+    /**
+     * @param {HTMLElement|null} hero    - full-screen hero container (homepage)
+     * @param {HTMLElement|null} compact - compact widget container
+     * @param {HTMLElement|null} full    - full playlist page container
+     */
+    init(hero, compact, full) {
+      heroEl    = hero;
       compactEl = compact;
       fullEl    = full;
       fetchNowPlaying();
