@@ -151,20 +151,24 @@
       width: 3px;
       background: var(--accent);
       border-radius: 2px;
-      animation: eq-bar 1.1s ease-in-out infinite alternate;
+      transform-origin: bottom;
+      animation-duration: 2.2s;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
     }
-    .wcyt-bars span:nth-child(1) { animation-delay: 0s;    height: 8px;  }
-    .wcyt-bars span:nth-child(2) { animation-delay: .15s;  height: 14px; }
-    .wcyt-bars span:nth-child(3) { animation-delay: .05s;  height: 10px; }
-    .wcyt-bars span:nth-child(4) { animation-delay: .25s;  height: 16px; }
-    .wcyt-bars span:nth-child(5) { animation-delay: .1s;   height: 6px;  }
+    .wcyt-bars span:nth-child(1) { animation-name: eq-bar-1; animation-delay: 0s;    height: 8px;  }
+    .wcyt-bars span:nth-child(2) { animation-name: eq-bar-2; animation-delay: .15s;  height: 14px; }
+    .wcyt-bars span:nth-child(3) { animation-name: eq-bar-3; animation-delay: .05s;  height: 10px; }
+    .wcyt-bars span:nth-child(4) { animation-name: eq-bar-4; animation-delay: .25s;  height: 16px; }
+    .wcyt-bars span:nth-child(5) { animation-name: eq-bar-5; animation-delay: .1s;   height: 6px;  }
     .wcyt-bars--lg span { width: 4px; }
     .wcyt-bars--lg { height: 22px; }
 
-    @keyframes eq-bar {
-      from { transform: scaleY(0.3); }
-      to   { transform: scaleY(1);   }
-    }
+    @keyframes eq-bar-1 { 0%,100% { transform: scaleY(.35); } 50% { transform: scaleY(.8);  } }
+    @keyframes eq-bar-2 { 0%,100% { transform: scaleY(.2);  } 50% { transform: scaleY(1);   } }
+    @keyframes eq-bar-3 { 0%,100% { transform: scaleY(.3);  } 50% { transform: scaleY(.95); } }
+    @keyframes eq-bar-4 { 0%,100% { transform: scaleY(.15); } 50% { transform: scaleY(1);   } }
+    @keyframes eq-bar-5 { 0%,100% { transform: scaleY(.45); } 50% { transform: scaleY(.75); } }
 
     .wcyt-full-song {
       display: flex;
