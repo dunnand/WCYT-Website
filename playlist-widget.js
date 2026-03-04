@@ -32,8 +32,7 @@
       label:    '2.0 Next Level',
       name:     '2.0 – The Next Level',
       tagline:  'The Next Level of Radio',
-      // http:// stream — blocked by browsers on https:// pages (mixed content)
-      stream:   'http://13.bteradio.com:9090/wcythd2.mp3',
+      stream:   'https://securestreams2.autopo.st:1069/wcythd2.mp3',
     },
   ];
 
