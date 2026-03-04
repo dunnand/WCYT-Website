@@ -12,7 +12,6 @@
 
   // ── Config ────────────────────────────────────────────────────────────────
   const METADATA_URL  = 'https://securestreams2.autopo.st:1069/status-json.xsl';
-  const MOUNT_POINT   = 'WCYT';
   const POLL_MS       = 10_000;
   const MAX_HISTORY   = 50;
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
@@ -26,6 +25,7 @@
       name:     'The Point 91 FM',
       tagline:  'Where Music is the Point',
       stream:   'https://securestreams2.autopo.st:1069/WCYT.mp3',
+      mount:    'WCYT.mp3',
     },
     {
       id:       '2pt0',
@@ -33,6 +33,7 @@
       name:     '2.0 – The Next Level',
       tagline:  'The Next Level of Radio',
       stream:   'https://securestreams2.autopo.st:1069/wcythd2.mp3',
+      mount:    'wcythd2.mp3',
     },
   ];
 
@@ -47,6 +48,7 @@
   // ── State ─────────────────────────────────────────────────────────────────
   let currentSong    = null;
   let songHistory    = [];
+  let currentSong2   = null;   // now-playing for station 2
   let artCache       = {};
   let currentShow    = null;   // { name: string, expiresAt: Date } | null
   let heroEl         = null;
@@ -277,11 +279,25 @@
       let sources = data?.icestats?.source ?? [];
       if (!Array.isArray(sources)) sources = [sources];
 
-      const station = sources.find(s =>
-        (s.listenurl ?? '').toUpperCase().includes(MOUNT_POINT.toUpperCase())
-      );
+      const findSource = mount =>
+        sources.find(s => (s.listenurl ?? '').toLowerCase().includes(mount.toLowerCase()));
 
-      handleNewTitle(station?.title ?? null);
+      // Station 1 — WCYT (drives history + full playlist page)
+      handleNewTitle(findSource(STATIONS[0].mount)?.title ?? null);
+
+      // Station 2 — fetch current song for hero display only
+      const raw2    = findSource(STATIONS[1].mount)?.title ?? null;
+      const parsed2 = parseTitle(raw2);
+      if (!isBlocked(raw2, parsed2) && (parsed2.artist || parsed2.title !== 'On Air')) {
+        const key2 = artCacheKey(parsed2.artist, parsed2.title);
+        if (!currentSong2 || artCacheKey(currentSong2.artist, currentSong2.title) !== key2) {
+          const artUrl = parsed2.artist ? await fetchArt(parsed2.artist, parsed2.title) : null;
+          currentSong2 = { ...parsed2, startedAt: new Date(), artUrl };
+          if (activeStation === 1) render();
+        }
+      } else {
+        currentSong2 = null;
+      }
     } catch (err) {
       if (!corsWarned) {
         corsWarned = true;
@@ -421,10 +437,17 @@
             <div class="wcyt-hero-s2">
               <div class="wcyt-hero-s2-num">2.0</div>
               <div class="wcyt-hero-s2-tagline">The Next Level of Radio</div>
+              ${currentSong2 ? `
+                ${artImg(currentSong2.artUrl, 180, 'wcyt-hero-art')}
+                <div class="wcyt-hero-artist">${esc(currentSong2.artist || '2.0')}</div>
+                <div class="wcyt-hero-title">${esc(currentSong2.title)}</div>
+              ` : ''}
               <div class="wcyt-hero-controls">
+                <span class="wcyt-age wcyt-hero-age"
+                  ${currentSong2 ? `data-started="${currentSong2.startedAt.toISOString()}"` : ''}>
+                  ${currentSong2 ? relativeTime(currentSong2.startedAt) : 'Live now'}
+                </span>
                 ${playBtnHTML('lg')}
-                <a href="${station.stream}" target="_blank" rel="noopener"
-                   class="wcyt-hero-playlist-link">Open in player &rarr;</a>
               </div>
             </div>
           `}
