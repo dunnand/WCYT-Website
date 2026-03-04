@@ -245,9 +245,13 @@
       // lines[0] is the header row; last line is the most recent submission
       if (lines.length < 2) { currentShow = null; render(); return; }
 
+      // Find show name column from header row (skips Timestamp, Email Address, etc.)
+      const headers   = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
+      const showCol   = headers.findIndex(h => h !== 'timestamp' && !h.includes('email'));
+
       const cols      = parseCSVRow(lines[lines.length - 1]);
       const tsRaw     = (cols[0] ?? '').trim();
-      const showName  = (cols[1] ?? '').trim();
+      const showName  = (cols[showCol] ?? '').trim();
 
       if (!showName) { currentShow = null; render(); return; }
 
