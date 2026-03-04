@@ -139,30 +139,61 @@
     return BLOCKED_TERMS.some(term => haystack.includes(term));
   }
 
-  // ── Album art (iTunes Search API) ─────────────────────────────────────────
+  // ── Album art ─────────────────────────────────────────────────────────────
+  // 1. iTunes Search API  — fast, good for mainstream
+  // 2. MusicBrainz + Cover Art Archive — better for indie / obscure artists
+
+  async function fetchArtFromiTunes(artist, title) {
+    const term = encodeURIComponent(`${artist} ${title}`);
+    const res  = await fetch(
+      `https://itunes.apple.com/search?term=${term}&entity=song&limit=5&country=US`
+    );
+    const data = await res.json();
+    const match = (data.results ?? []).find(r =>
+      r.trackExplicitness !== 'explicit' &&
+      r.collectionExplicitness !== 'explicit'
+    );
+    return match?.artworkUrl100
+      ? match.artworkUrl100.replace('100x100bb', '500x500bb')
+      : null;
+  }
+
+  async function fetchArtFromMusicBrainz(artist, title) {
+    // Search MusicBrainz for the recording
+    const q   = encodeURIComponent(`artist:"${artist}" recording:"${title}"`);
+    const res = await fetch(
+      `https://musicbrainz.org/ws/2/recording?query=${q}&fmt=json&limit=5`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    // Collect up to 3 unique release IDs from the top results
+    const seen = new Set();
+    const ids  = [];
+    for (const rec of (data.recordings ?? []).slice(0, 3)) {
+      const rel = (rec.releases ?? [])[0];
+      if (rel?.id && !seen.has(rel.id)) { seen.add(rel.id); ids.push(rel.id); }
+    }
+
+    // Try each release against Cover Art Archive, return first hit
+    for (const id of ids) {
+      try {
+        const r = await fetch(`https://coverartarchive.org/release/${id}/front`);
+        if (r.ok) return r.url; // final URL after redirect
+      } catch { /* try next */ }
+    }
+    return null;
+  }
 
   async function fetchArt(artist, title) {
     const key = artCacheKey(artist, title);
     if (key in artCache) return artCache[key];
-
     artCache[key] = null;
 
-    try {
-      const term = encodeURIComponent(`${artist} ${title}`);
-      const url  = `https://itunes.apple.com/search?term=${term}&entity=song&limit=5&country=US`;
-      const res  = await fetch(url);
-      const data = await res.json();
+    try { artCache[key] = await fetchArtFromiTunes(artist, title); } catch {}
 
-      const match = (data.results ?? []).find(r =>
-        r.trackExplicitness !== 'explicit' &&
-        r.collectionExplicitness !== 'explicit'
-      );
-
-      if (match?.artworkUrl100) {
-        artCache[key] = match.artworkUrl100.replace('100x100bb', '500x500bb');
-      }
-    } catch {
-      // leave as null
+    if (!artCache[key]) {
+      try { artCache[key] = await fetchArtFromMusicBrainz(artist, title); } catch {}
     }
 
     return artCache[key];
