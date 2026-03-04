@@ -139,9 +139,10 @@
     return BLOCKED_TERMS.some(term => haystack.includes(term));
   }
 
-  // ── Album art ─────────────────────────────────────────────────────────────
-  // 1. iTunes Search API  — fast, good for mainstream
-  // 2. MusicBrainz + Cover Art Archive — better for indie / obscure artists
+  // ── Album art (iTunes Search API only) ───────────────────────────────────
+  // iTunes only — Apple enforces content guidelines on all artwork so covers
+  // are always safe. MusicBrainz/Cover Art Archive stores unedited original
+  // artwork which can include explicit imagery (e.g. Pixies – Surfer Rosa).
 
   // Album types that are not the original release
   const ITUNES_REJECT = [
@@ -177,44 +178,11 @@
       : null;
   }
 
-  async function fetchArtFromMusicBrainz(artist, title) {
-    // Search MusicBrainz for the recording
-    const q   = encodeURIComponent(`artist:"${artist}" recording:"${title}"`);
-    const res = await fetch(
-      `https://musicbrainz.org/ws/2/recording?query=${q}&fmt=json&limit=5`
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-
-    // Collect up to 3 unique release IDs from the top results
-    const seen = new Set();
-    const ids  = [];
-    for (const rec of (data.recordings ?? []).slice(0, 3)) {
-      const rel = (rec.releases ?? [])[0];
-      if (rel?.id && !seen.has(rel.id)) { seen.add(rel.id); ids.push(rel.id); }
-    }
-
-    // Try each release against Cover Art Archive, return first hit
-    for (const id of ids) {
-      try {
-        const r = await fetch(`https://coverartarchive.org/release/${id}/front`);
-        if (r.ok) return r.url; // final URL after redirect
-      } catch { /* try next */ }
-    }
-    return null;
-  }
-
   async function fetchArt(artist, title) {
     const key = artCacheKey(artist, title);
     if (key in artCache) return artCache[key];
     artCache[key] = null;
-
     try { artCache[key] = await fetchArtFromiTunes(artist, title); } catch {}
-
-    if (!artCache[key]) {
-      try { artCache[key] = await fetchArtFromMusicBrainz(artist, title); } catch {}
-    }
-
     return artCache[key];
   }
 
