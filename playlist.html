@@ -114,6 +114,12 @@
       z-index: 0;
       transition: opacity .4s;
     }
+    .wcyt-backdrop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+    }
     /* keep all card content above backdrop */
     .wcyt-full-card-header,
     .wcyt-full-song { position: relative; z-index: 1; }
@@ -167,8 +173,8 @@
     }
     .wcyt-full-art {
       flex-shrink: 0;
-      width: 200px;
-      height: 200px;
+      width: 260px;
+      height: 260px;
       border-radius: 8px;
       object-fit: cover;
       background: #333;
