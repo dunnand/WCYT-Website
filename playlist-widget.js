@@ -51,7 +51,8 @@
   let currentSong2   = null;   // now-playing for station 2
   let songHistory2   = [];     // recent plays for station 2
   let artCache       = {};
-  let currentShow    = null;   // { name: string, expiresAt: Date } | null
+  let currentShowWCYT = null;  // { name: string, expiresAt: Date } | null  (The Point)
+  let currentShow2    = null;  // { name: string, expiresAt: Date } | null  (2.0)
   let heroEl         = null;
   let compactEl      = null;
   let fullEl         = null;
@@ -239,6 +240,27 @@
     return out;
   }
 
+  function isStation2(stationVal) {
+    const v = (stationVal ?? '').trim().toLowerCase();
+    return v === '2' || v === '2.0' || v.includes('next level') || v.includes('2.0');
+  }
+
+  function applyShowEntry(tsRaw, stationVal, showName) {
+    const CLEAR_WORDS = ['clear', 'end', 'done', 'off'];
+    const isClear     = !showName || CLEAR_WORDS.includes(showName.toLowerCase());
+    const submittedAt = new Date(tsRaw);
+    const expiresAt   = new Date(submittedAt.getTime() + SHOW_TTL_MS);
+    const entry       = (!isClear && Date.now() < expiresAt.getTime())
+      ? { name: showName, expiresAt }
+      : null;
+
+    if (isStation2(stationVal)) {
+      currentShow2 = entry;
+    } else {
+      currentShowWCYT = entry;
+    }
+  }
+
   async function fetchCurrentShow() {
     try {
       // Append timestamp to bust Google's server-side CSV cache
@@ -246,36 +268,38 @@
       const text = await res.text();
       const lines = text.trim().split('\n').filter(Boolean);
 
-      if (lines.length < 2) { currentShow = null; render(); return; }
+      if (lines.length < 2) { currentShowWCYT = null; currentShow2 = null; render(); return; }
 
-      // Find the show name column — skip Timestamp and Email columns
-      const headers = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
-      let showCol   = headers.findIndex(h => h !== 'timestamp' && !h.includes('email'));
-      if (showCol === -1) showCol = headers.length - 1; // fallback: last column
+      // Columns: timestamp(0), email(1), station(2), show/dj name(3)
+      const headers     = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
+      const stationCol  = headers.findIndex(h => h.includes('station'));
+      const resolvedStn = stationCol !== -1 ? stationCol : 2;
 
-      const cols     = parseCSVRow(lines[lines.length - 1]);
-      const tsRaw    = (cols[0] ?? '').trim();
-      const showName = (cols[showCol] ?? '').trim();
+      // Find show column — prefer 'show' or 'dj' keyword first to avoid
+      // colliding with 'station name' or other columns that contain 'name'
+      const byShowDj = headers.findIndex((h, i) => i !== resolvedStn && (h.includes('show') || h.includes('dj')));
+      const byName   = headers.findIndex((h, i) => i !== resolvedStn && h.includes('name'));
+      const resolvedShw = byShowDj !== -1 ? byShowDj
+                        : byName   !== -1 ? byName
+                        : resolvedStn + 1;
 
-      const prev = currentShow?.name ?? null;
+      console.log('[WCYTPlaylist] Show sheet headers:', headers);
+      console.log('[WCYTPlaylist] stationCol:', resolvedStn, '| showCol:', resolvedShw);
 
-      // Typing "clear", "end", "done", or "off" clears the show immediately
-      const CLEAR_WORDS = ['clear', 'end', 'done', 'off'];
-      if (!showName || CLEAR_WORDS.includes(showName.toLowerCase())) {
-        currentShow = null;
-        if (prev !== null) render();
-        return;
+      // Reset both stations, then replay all non-expired entries (last entry per station wins)
+      currentShowWCYT = null;
+      currentShow2    = null;
+
+      for (let i = 1; i < lines.length; i++) {
+        const cols      = parseCSVRow(lines[i]);
+        const tsRaw     = (cols[0]              ?? '').trim();
+        const stationV  = (cols[resolvedStn]    ?? '').trim();
+        const showName  = (cols[resolvedShw]    ?? '').trim();
+        applyShowEntry(tsRaw, stationV, showName);
       }
 
-      const submittedAt = new Date(tsRaw);
-      const expiresAt   = new Date(submittedAt.getTime() + SHOW_TTL_MS);
-
-      currentShow = Date.now() < expiresAt.getTime()
-        ? { name: showName, expiresAt }
-        : null;
-
-      if ((currentShow?.name ?? null) !== prev) render();
-    } catch { /* leave unchanged */ }
+      render();
+    } catch (err) { console.warn('[WCYTPlaylist] fetchCurrentShow error:', err); }
   }
 
   // ── Fetch stream metadata ─────────────────────────────────────────────────
@@ -388,10 +412,11 @@
   function renderHero() {
     if (!heroEl) return;
 
-    const song    = currentSong;
-    const history = songHistory.slice(0, 3);
-    const station = STATIONS[activeStation];
-    const isWCYT  = activeStation === 0;
+    const song       = currentSong;
+    const history    = songHistory.slice(0, 3);
+    const station    = STATIONS[activeStation];
+    const isWCYT     = activeStation === 0;
+    const currentShow = isWCYT ? currentShowWCYT : currentShow2;
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
@@ -685,7 +710,7 @@
     },
     togglePlay()       { togglePlay(); },
     switchStation(idx) { switchStation(idx); },
-    _getState()        { return { currentSong, songHistory, artCache, audioState, activeStation }; },
+    _getState()        { return { currentSong, songHistory, artCache, audioState, activeStation, currentShowWCYT, currentShow2 }; },
     _mockSong(artist, title) { handleNewTitle(`${artist} - ${title}`); },
   };
 })();
