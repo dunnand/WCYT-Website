@@ -143,16 +143,35 @@
   // 1. iTunes Search API  — fast, good for mainstream
   // 2. MusicBrainz + Cover Art Archive — better for indie / obscure artists
 
+  // Album types that are not the original release
+  const ITUNES_REJECT = [
+    'lullaby', 'karaoke', 'tribute', 'cover version',
+    'instrumental version', 'made famous', 'originally performed',
+  ];
+
+  function normArtist(s) {
+    return (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
   async function fetchArtFromiTunes(artist, title) {
     const term = encodeURIComponent(`${artist} ${title}`);
     const res  = await fetch(
-      `https://itunes.apple.com/search?term=${term}&entity=song&limit=5&country=US`
+      `https://itunes.apple.com/search?term=${term}&entity=song&limit=10&country=US`
     );
     const data = await res.json();
-    const match = (data.results ?? []).find(r =>
-      r.trackExplicitness !== 'explicit' &&
-      r.collectionExplicitness !== 'explicit'
-    );
+    const na   = normArtist(artist);
+
+    const match = (data.results ?? []).find(r => {
+      if (r.trackExplicitness === 'explicit')      return false;
+      if (r.collectionExplicitness === 'explicit') return false;
+      // Artist name must contain the searched artist (blocks lullaby covers, tributes)
+      if (!normArtist(r.artistName).includes(na))  return false;
+      // Reject cover/tribute/lullaby collection names
+      const col = (r.collectionName ?? '').toLowerCase();
+      if (ITUNES_REJECT.some(t => col.includes(t)))  return false;
+      return true;
+    });
+
     return match?.artworkUrl100
       ? match.artworkUrl100.replace('100x100bb', '500x500bb')
       : null;
