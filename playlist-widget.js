@@ -474,8 +474,6 @@
             ` : ''}
           ` : `
             <div class="wcyt-hero-s2">
-              <div class="wcyt-hero-s2-num">2.0</div>
-              <div class="wcyt-hero-s2-tagline">The Next Level of Radio</div>
               ${currentSong2 ? `
                 ${artImg(currentSong2.artUrl, 180, 'wcyt-hero-art')}
                 <div class="wcyt-hero-artist">${esc(currentSong2.artist || '2.0')}</div>
