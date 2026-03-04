@@ -3054,6 +3054,33 @@ student-run: student DJs, student shows, and student broadcasters." />
   text-decoration:none;
 }
 .wcyt-full-link:hover{text-decoration:underline}
+.wcyt-play-btn{
+  flex-shrink:0;
+  width:44px;height:44px;
+  border-radius:50%;
+  border:none;
+  background:var(--wcyt-accent);
+  color:#fff;
+  cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:16px;
+  transition:background .2s,transform .2s;
+  margin-left:auto;
+}
+.wcyt-play-btn:hover{background:#a50d26;transform:scale(1.08)}
+.wcyt-play-btn[data-wcyt-playbtn="buffering"]{background:#555;cursor:wait}
+.wcyt-play-btn[data-wcyt-playbtn="playing"]{background:#333}
+.wcyt-play-btn[data-wcyt-playbtn="playing"]:hover{background:#444}
+.wcyt-btn-icon{line-height:1;display:block}
+.wcyt-btn-spinner{
+  width:16px;height:16px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  display:block;
+  animation:wcyt-spin .7s linear infinite;
+}
+@keyframes wcyt-spin{to{transform:rotate(360deg)}}
 .wcyt-loading,.wcyt-error{padding:20px;color:var(--wcyt-muted);font-size:14px}
 .wcyt-error a{color:var(--wcyt-accent)}
 </style>

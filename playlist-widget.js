@@ -1,7 +1,7 @@
 /**
  * WCYT Playlist Widget
  * Polls the Icecast status endpoint and renders a KEXP-style
- * now-playing + recent-plays display.
+ * now-playing + recent-plays display with integrated audio player.
  *
  * To swap in a proxy if CORS fails, change METADATA_URL to your
  * proxy endpoint (e.g. "https://wcyt.org/nowplaying.php").
@@ -19,14 +19,82 @@
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
 
   // ── State ─────────────────────────────────────────────────────────────────
-  let currentSong = null;  // { artist, title, startedAt, artUrl }
-  let songHistory = [];    // [{ artist, title, startedAt, endedAt, artUrl }]
-  let artCache    = {};    // "artist|title" → artUrl (or null if not found)
-  let compactEl   = null;
-  let fullEl      = null;
-  let corsWarned  = false;
-  let pollTimer   = null;
-  let tickTimer   = null;
+  let currentSong  = null;   // { artist, title, startedAt, artUrl }
+  let songHistory  = [];     // [{ artist, title, startedAt, endedAt, artUrl }]
+  let artCache     = {};     // "artist|title" → artUrl (or null)
+  let compactEl    = null;
+  let fullEl       = null;
+  let corsWarned   = false;
+  let pollTimer    = null;
+  let tickTimer    = null;
+
+  // ── Audio player state ────────────────────────────────────────────────────
+  let audio        = null;   // single HTMLAudioElement shared across widgets
+  let audioState   = 'stopped';  // 'stopped' | 'buffering' | 'playing'
+
+  function getAudio() {
+    if (!audio) {
+      audio = new Audio();
+      audio.preload = 'none';
+
+      audio.addEventListener('waiting',  () => setAudioState('buffering'));
+      audio.addEventListener('playing',  () => setAudioState('playing'));
+      audio.addEventListener('pause',    () => setAudioState('stopped'));
+      audio.addEventListener('ended',    () => setAudioState('stopped'));
+      audio.addEventListener('error',    () => setAudioState('stopped'));
+    }
+    return audio;
+  }
+
+  function setAudioState(state) {
+    audioState = state;
+    updatePlayerButtons();
+    updateBarsAnimation();
+  }
+
+  function togglePlay() {
+    const a = getAudio();
+    if (audioState === 'playing' || audioState === 'buffering') {
+      a.pause();
+      a.src = '';           // release stream connection
+    } else {
+      a.src = STREAM_URL;
+      a.play().catch(() => setAudioState('stopped'));
+      setAudioState('buffering');
+    }
+  }
+
+  // Update all play buttons without a full re-render
+  function updatePlayerButtons() {
+    document.querySelectorAll('[data-wcyt-playbtn]').forEach(btn => {
+      btn.setAttribute('data-wcyt-playbtn', audioState);
+      btn.setAttribute('aria-label', audioState === 'playing' ? 'Pause' : 'Play');
+      btn.innerHTML = btnIcon(audioState);
+    });
+  }
+
+  // Pause/resume the equalizer bar animation based on play state
+  function updateBarsAnimation() {
+    const playing = audioState === 'playing';
+    document.querySelectorAll('.wcyt-bars span').forEach(bar => {
+      bar.style.animationPlayState = playing ? 'running' : 'paused';
+    });
+  }
+
+  function btnIcon(state) {
+    if (state === 'buffering') return '<span class="wcyt-btn-spinner"></span>';
+    if (state === 'playing')   return '<span class="wcyt-btn-icon">&#9646;&#9646;</span>';
+    return '<span class="wcyt-btn-icon">&#9654;</span>';
+  }
+
+  function playBtnHTML() {
+    return `<button
+      class="wcyt-play-btn"
+      data-wcyt-playbtn="${audioState}"
+      aria-label="${audioState === 'playing' ? 'Pause' : 'Play'}"
+      onclick="WCYTPlaylist.togglePlay()"
+    >${btnIcon(audioState)}</button>`;
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -59,9 +127,8 @@
 
   async function fetchArt(artist, title) {
     const key = artCacheKey(artist, title);
-    if (key in artCache) return artCache[key];  // already fetched (may be null)
+    if (key in artCache) return artCache[key];
 
-    // Mark as pending so parallel calls don't double-fetch
     artCache[key] = null;
 
     try {
@@ -70,24 +137,22 @@
       const res  = await fetch(url);
       const data = await res.json();
 
-      // Find first non-explicit result
       const match = (data.results ?? []).find(r =>
         r.trackExplicitness !== 'explicit' &&
         r.collectionExplicitness !== 'explicit'
       );
 
       if (match?.artworkUrl100) {
-        // Scale up from 100x100 to 500x500
         artCache[key] = match.artworkUrl100.replace('100x100bb', '500x500bb');
       }
     } catch {
-      // Network error or parse failure — leave as null, use fallback
+      // leave as null
     }
 
     return artCache[key];
   }
 
-  // ── Fetch stream metadata ──────────────────────────────────────────────────
+  // ── Fetch stream metadata ─────────────────────────────────────────────────
 
   async function fetchNowPlaying() {
     try {
@@ -97,7 +162,7 @@
       let sources = data?.icestats?.source ?? [];
       if (!Array.isArray(sources)) sources = [sources];
 
-      const station  = sources.find(s =>
+      const station = sources.find(s =>
         (s.listenurl ?? '').toUpperCase().includes(MOUNT_POINT.toUpperCase())
       );
 
@@ -117,10 +182,8 @@
 
   async function handleNewTitle(raw) {
     const parsed = parseTitle(raw);
-    const key    = artCacheKey(parsed.artist, parsed.title);
 
     if (!currentSong) {
-      // First load — fetch art then render
       const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
       currentSong = { ...parsed, startedAt: new Date(), artUrl };
       render();
@@ -128,9 +191,9 @@
     }
 
     const currentKey = artCacheKey(currentSong.artist, currentSong.title);
-    if (key === currentKey) return;  // same song
+    const newKey     = artCacheKey(parsed.artist, parsed.title);
+    if (newKey === currentKey) return;
 
-    // Song changed — push old to history, fetch art for new song
     songHistory.unshift({ ...currentSong, endedAt: new Date() });
     if (songHistory.length > MAX_HISTORY) songHistory.pop();
 
@@ -139,10 +202,10 @@
     render();
   }
 
-  // ── Art image element ──────────────────────────────────────────────────────
+  // ── Art image element ─────────────────────────────────────────────────────
 
   function artImg(artUrl, size, cssClass) {
-    const src = artUrl || FALLBACK_ART;
+    const src        = artUrl || FALLBACK_ART;
     const isFallback = !artUrl;
     return `<img
       class="${cssClass}${isFallback ? ' wcyt-art-fallback' : ''}"
@@ -181,6 +244,7 @@
                   ${relativeTime(song.startedAt)}
                 </div>
               </div>
+              ${playBtnHTML()}
             </div>
           ` : `<div class="wcyt-loading">Loading&hellip;</div>`}
         </div>
@@ -207,6 +271,8 @@
         </div>
       </div>
     `;
+
+    updateBarsAnimation();
   }
 
   // ── Render: Full ──────────────────────────────────────────────────────────
@@ -236,10 +302,7 @@
                   <span class="wcyt-age" data-started="${song.startedAt.toISOString()}">
                     Started ${relativeTime(song.startedAt)}
                   </span>
-                  <a class="wcyt-play-btn" href="${STREAM_URL}" target="_blank" rel="noopener"
-                     title="Listen live">
-                    &#9654; Listen
-                  </a>
+                  ${playBtnHTML()}
                 </div>
               </div>
             </div>
@@ -270,6 +333,8 @@
         </div>
       </div>
     `;
+
+    updateBarsAnimation();
   }
 
   // ── Error state ───────────────────────────────────────────────────────────
@@ -323,7 +388,8 @@
       pollTimer = setInterval(fetchNowPlaying, POLL_MS);
       tickTimer = setInterval(tickAges, 30_000);
     },
-    _getState()           { return { currentSong, songHistory, artCache }; },
+    togglePlay() { togglePlay(); },
+    _getState()  { return { currentSong, songHistory, artCache, audioState }; },
     _mockSong(artist, title) { handleNewTitle(`${artist} - ${title}`); },
   };
 })();
