@@ -16,6 +16,8 @@
   const POLL_MS       = 10_000;
   const MAX_HISTORY   = 50;
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+  const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
+  const SHOW_TTL_MS   = 60 * 60 * 1000; // auto-clear after 1 hour
 
   const STATIONS = [
     {
@@ -30,7 +32,7 @@
       label:    '2.0 Next Level',
       name:     '2.0 – The Next Level',
       tagline:  'The Next Level of Radio',
-      // http:// stream — may need to open in new tab on https:// pages
+      // http:// stream — blocked by browsers on https:// pages (mixed content)
       stream:   'http://13.bteradio.com:9090/wcythd2.mp3',
     },
   ];
@@ -47,6 +49,7 @@
   let currentSong    = null;
   let songHistory    = [];
   let artCache       = {};
+  let currentShow    = null;   // { name: string, expiresAt: Date } | null
   let heroEl         = null;
   let compactEl      = null;
   let fullEl         = null;
@@ -220,6 +223,47 @@
     return artCache[key];
   }
 
+  // ── Current show (Google Sheet) ───────────────────────────────────────────
+
+  function parseCSVRow(row) {
+    const out = [];
+    let cur = '', inQ = false;
+    for (const ch of row) {
+      if (ch === '"')       { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { out.push(cur); cur = ''; }
+      else                  { cur += ch; }
+    }
+    out.push(cur);
+    return out;
+  }
+
+  async function fetchCurrentShow() {
+    try {
+      const res  = await fetch(SHOW_URL, { cache: 'no-store' });
+      const text = await res.text();
+      const lines = text.trim().split('\n').filter(Boolean);
+
+      // lines[0] is the header row; last line is the most recent submission
+      if (lines.length < 2) { currentShow = null; render(); return; }
+
+      const cols      = parseCSVRow(lines[lines.length - 1]);
+      const tsRaw     = (cols[0] ?? '').trim();
+      const showName  = (cols[1] ?? '').trim();
+
+      if (!showName) { currentShow = null; render(); return; }
+
+      const submittedAt = new Date(tsRaw);
+      const expiresAt   = new Date(submittedAt.getTime() + SHOW_TTL_MS);
+
+      const prev = currentShow?.name ?? null;
+      currentShow = Date.now() < expiresAt.getTime()
+        ? { name: showName, expiresAt }
+        : null;
+
+      if ((currentShow?.name ?? null) !== prev) render();
+    } catch { /* leave unchanged */ }
+  }
+
   // ── Fetch stream metadata ─────────────────────────────────────────────────
 
   async function fetchNowPlaying() {
@@ -329,6 +373,14 @@
           </div>
 
           ${stationSwitcher()}
+
+          ${currentShow ? `
+            <div class="wcyt-hero-show">
+              <span class="wcyt-hero-show-dot"></span>
+              <span class="wcyt-hero-show-label">NOW ON AIR</span>
+              <span class="wcyt-hero-show-name">${esc(currentShow.name)}</span>
+            </div>
+          ` : ''}
 
           ${isWCYT ? `
             ${song ? `
@@ -568,7 +620,8 @@
       compactEl = compact;
       fullEl    = full;
       fetchNowPlaying();
-      pollTimer = setInterval(fetchNowPlaying, POLL_MS);
+      fetchCurrentShow();
+      pollTimer = setInterval(() => { fetchNowPlaying(); fetchCurrentShow(); }, POLL_MS);
       tickTimer = setInterval(tickAges, 30_000);
     },
     togglePlay()       { togglePlay(); },
