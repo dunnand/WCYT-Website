@@ -389,7 +389,7 @@
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
-        ${isWCYT && song ? backdropDiv(song.artUrl) : ''}
+        ${isWCYT ? (song ? backdropDiv(song.artUrl) : '') : (currentSong2 ? backdropDiv(currentSong2.artUrl) : '')}
         <div class="wcyt-hero-inner">
 
           <div class="wcyt-hero-eyebrow">
