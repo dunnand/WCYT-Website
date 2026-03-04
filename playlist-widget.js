@@ -202,6 +202,13 @@
     render();
   }
 
+  // ── Backdrop element ──────────────────────────────────────────────────────
+
+  function backdropDiv(artUrl) {
+    if (!artUrl) return '';
+    return `<div class="wcyt-backdrop" style="background-image:url('${esc(artUrl)}')"></div>`;
+  }
+
   // ── Art image element ─────────────────────────────────────────────────────
 
   function artImg(artUrl, size, cssClass) {
@@ -228,6 +235,7 @@
     compactEl.innerHTML = `
       <div class="wcyt-compact">
         <div class="wcyt-compact-now">
+          ${song ? backdropDiv(song.artUrl) : ''}
           <div class="wcyt-compact-header">
             <span class="wcyt-label">NOW PLAYING</span>
             <span class="wcyt-bars" aria-hidden="true">
@@ -286,6 +294,7 @@
     fullEl.innerHTML = `
       <div class="wcyt-full">
         <div class="wcyt-full-now-card">
+          ${song ? backdropDiv(song.artUrl) : ''}
           <div class="wcyt-full-card-header">
             <span class="wcyt-label">NOW PLAYING</span>
             <span class="wcyt-bars wcyt-bars--lg" aria-hidden="true">

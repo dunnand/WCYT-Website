@@ -2957,8 +2957,22 @@ student-run: student DJs, student shows, and student broadcasters." />
   color:#fff;
 }
 .wcyt-compact-now{
+  position:relative;
+  overflow:hidden;
   padding:18px 20px;
 }
+.wcyt-backdrop{
+  position:absolute;
+  inset:-20px;
+  background-size:cover;
+  background-position:center;
+  filter:blur(40px);
+  opacity:0.35;
+  z-index:0;
+  transition:opacity .4s;
+}
+.wcyt-compact-header,
+.wcyt-compact-song{position:relative;z-index:1;}
 .wcyt-compact-header{
   display:flex;
   align-items:center;

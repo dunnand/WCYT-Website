@@ -95,6 +95,8 @@
 
     /* ── Now-playing card ── */
     .wcyt-full-now-card {
+      position: relative;
+      overflow: hidden;
       background: var(--dark);
       color: var(--white);
       border-radius: 12px;
@@ -102,6 +104,19 @@
       margin-bottom: 48px;
       box-shadow: 0 4px 24px rgba(0,0,0,.18);
     }
+    .wcyt-backdrop {
+      position: absolute;
+      inset: -30px;
+      background-size: cover;
+      background-position: center;
+      filter: blur(48px);
+      opacity: 0.45;
+      z-index: 0;
+      transition: opacity .4s;
+    }
+    /* keep all card content above backdrop */
+    .wcyt-full-card-header,
+    .wcyt-full-song { position: relative; z-index: 1; }
     .wcyt-full-card-header {
       display: flex;
       align-items: center;
