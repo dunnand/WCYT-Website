@@ -1,0 +1,329 @@
+/**
+ * WCYT Playlist Widget
+ * Polls the Icecast status endpoint and renders a KEXP-style
+ * now-playing + recent-plays display.
+ *
+ * To swap in a proxy if CORS fails, change METADATA_URL to your
+ * proxy endpoint (e.g. "https://wcyt.org/nowplaying.php").
+ */
+
+(function () {
+  'use strict';
+
+  // ── Config ────────────────────────────────────────────────────────────────
+  const METADATA_URL  = 'https://securestreams2.autopo.st:1069/status-json.xsl';
+  const MOUNT_POINT   = 'WCYT';
+  const STREAM_URL    = 'https://securestreams2.autopo.st:1069/WCYT.mp3';
+  const POLL_MS       = 10_000;
+  const MAX_HISTORY   = 50;
+  const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let currentSong = null;  // { artist, title, startedAt, artUrl }
+  let songHistory = [];    // [{ artist, title, startedAt, endedAt, artUrl }]
+  let artCache    = {};    // "artist|title" → artUrl (or null if not found)
+  let compactEl   = null;
+  let fullEl      = null;
+  let corsWarned  = false;
+  let pollTimer   = null;
+  let tickTimer   = null;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function parseTitle(raw) {
+    if (!raw || !raw.trim()) return { artist: '', title: 'On Air' };
+    const idx = raw.indexOf(' - ');
+    if (idx === -1) return { artist: '', title: raw.trim() };
+    return {
+      artist: raw.slice(0, idx).trim(),
+      title:  raw.slice(idx + 3).trim(),
+    };
+  }
+
+  function formatTime(date) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function relativeTime(date) {
+    const secs = Math.floor((Date.now() - date) / 1000);
+    if (secs < 60)  return 'just started';
+    if (secs < 120) return '1 min ago';
+    return Math.floor(secs / 60) + ' min ago';
+  }
+
+  function artCacheKey(artist, title) {
+    return (artist + '|' + title).toLowerCase();
+  }
+
+  // ── Album art (iTunes Search API) ─────────────────────────────────────────
+
+  async function fetchArt(artist, title) {
+    const key = artCacheKey(artist, title);
+    if (key in artCache) return artCache[key];  // already fetched (may be null)
+
+    // Mark as pending so parallel calls don't double-fetch
+    artCache[key] = null;
+
+    try {
+      const term = encodeURIComponent(`${artist} ${title}`);
+      const url  = `https://itunes.apple.com/search?term=${term}&entity=song&limit=5&country=US`;
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      // Find first non-explicit result
+      const match = (data.results ?? []).find(r =>
+        r.trackExplicitness !== 'explicit' &&
+        r.collectionExplicitness !== 'explicit'
+      );
+
+      if (match?.artworkUrl100) {
+        // Scale up from 100x100 to 500x500
+        artCache[key] = match.artworkUrl100.replace('100x100bb', '500x500bb');
+      }
+    } catch {
+      // Network error or parse failure — leave as null, use fallback
+    }
+
+    return artCache[key];
+  }
+
+  // ── Fetch stream metadata ──────────────────────────────────────────────────
+
+  async function fetchNowPlaying() {
+    try {
+      const res  = await fetch(METADATA_URL, { cache: 'no-store' });
+      const data = await res.json();
+
+      let sources = data?.icestats?.source ?? [];
+      if (!Array.isArray(sources)) sources = [sources];
+
+      const station  = sources.find(s =>
+        (s.listenurl ?? '').toUpperCase().includes(MOUNT_POINT.toUpperCase())
+      );
+
+      handleNewTitle(station?.title ?? null);
+    } catch (err) {
+      if (!corsWarned) {
+        corsWarned = true;
+        console.warn(
+          '[WCYTPlaylist] Could not fetch metadata.\n' +
+          'If this is a CORS error, set up a proxy and update METADATA_URL in playlist-widget.js.\n' +
+          'Error:', err.message
+        );
+      }
+      setErrorState();
+    }
+  }
+
+  async function handleNewTitle(raw) {
+    const parsed = parseTitle(raw);
+    const key    = artCacheKey(parsed.artist, parsed.title);
+
+    if (!currentSong) {
+      // First load — fetch art then render
+      const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
+      currentSong = { ...parsed, startedAt: new Date(), artUrl };
+      render();
+      return;
+    }
+
+    const currentKey = artCacheKey(currentSong.artist, currentSong.title);
+    if (key === currentKey) return;  // same song
+
+    // Song changed — push old to history, fetch art for new song
+    songHistory.unshift({ ...currentSong, endedAt: new Date() });
+    if (songHistory.length > MAX_HISTORY) songHistory.pop();
+
+    const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
+    currentSong = { ...parsed, startedAt: new Date(), artUrl };
+    render();
+  }
+
+  // ── Art image element ──────────────────────────────────────────────────────
+
+  function artImg(artUrl, size, cssClass) {
+    const src = artUrl || FALLBACK_ART;
+    const isFallback = !artUrl;
+    return `<img
+      class="${cssClass}${isFallback ? ' wcyt-art-fallback' : ''}"
+      src="${esc(src)}"
+      width="${size}" height="${size}"
+      alt="Album art"
+      loading="lazy"
+      onerror="this.src='${FALLBACK_ART}';this.classList.add('wcyt-art-fallback')"
+    >`;
+  }
+
+  // ── Render: Compact ───────────────────────────────────────────────────────
+
+  function renderCompact() {
+    if (!compactEl) return;
+
+    const song    = currentSong;
+    const history = songHistory.slice(0, 5);
+
+    compactEl.innerHTML = `
+      <div class="wcyt-compact">
+        <div class="wcyt-compact-now">
+          <div class="wcyt-compact-header">
+            <span class="wcyt-label">NOW PLAYING</span>
+            <span class="wcyt-bars" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </span>
+          </div>
+          ${song ? `
+            <div class="wcyt-compact-song">
+              ${artImg(song.artUrl, 64, 'wcyt-compact-art')}
+              <div class="wcyt-compact-song-text">
+                <div class="wcyt-artist">${esc(song.artist || 'WCYT')}</div>
+                <div class="wcyt-title">${esc(song.title)}</div>
+                <div class="wcyt-age" data-started="${song.startedAt.toISOString()}">
+                  ${relativeTime(song.startedAt)}
+                </div>
+              </div>
+            </div>
+          ` : `<div class="wcyt-loading">Loading&hellip;</div>`}
+        </div>
+        ${history.length ? `
+          <div class="wcyt-compact-history">
+            <div class="wcyt-section-label">RECENT PLAYS</div>
+            <ul class="wcyt-history-list">
+              ${history.map(s => `
+                <li>
+                  ${artImg(s.artUrl, 36, 'wcyt-history-art')}
+                  <span class="wcyt-history-time">${formatTime(s.startedAt)}</span>
+                  <span class="wcyt-history-track">
+                    <span class="wcyt-history-artist">${esc(s.artist || 'WCYT')}</span>
+                    ${s.artist ? ' &middot; ' : ''}
+                    <span class="wcyt-history-title">${esc(s.title)}</span>
+                  </span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        ` : ''}
+        <div class="wcyt-compact-footer">
+          <a href="/playlist" class="wcyt-full-link">Full playlist &rarr;</a>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Render: Full ──────────────────────────────────────────────────────────
+
+  function renderFull() {
+    if (!fullEl) return;
+
+    const song    = currentSong;
+    const history = songHistory;
+
+    fullEl.innerHTML = `
+      <div class="wcyt-full">
+        <div class="wcyt-full-now-card">
+          <div class="wcyt-full-card-header">
+            <span class="wcyt-label">NOW PLAYING</span>
+            <span class="wcyt-bars wcyt-bars--lg" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </span>
+          </div>
+          ${song ? `
+            <div class="wcyt-full-song">
+              ${artImg(song.artUrl, 120, 'wcyt-full-art')}
+              <div class="wcyt-full-song-text">
+                <div class="wcyt-full-artist">${esc(song.artist || 'WCYT')}</div>
+                <div class="wcyt-full-title">${esc(song.title)}</div>
+                <div class="wcyt-full-meta">
+                  <span class="wcyt-age" data-started="${song.startedAt.toISOString()}">
+                    Started ${relativeTime(song.startedAt)}
+                  </span>
+                  <a class="wcyt-play-btn" href="${STREAM_URL}" target="_blank" rel="noopener"
+                     title="Listen live">
+                    &#9654; Listen
+                  </a>
+                </div>
+              </div>
+            </div>
+          ` : `<div class="wcyt-loading">Loading&hellip;</div>`}
+        </div>
+
+        <div class="wcyt-full-history-section">
+          <div class="wcyt-full-history-header">RECENT PLAYS</div>
+          ${history.length ? `
+            <ul class="wcyt-full-history-list">
+              ${history.map(s => `
+                <li class="wcyt-full-history-item">
+                  ${artImg(s.artUrl, 48, 'wcyt-history-art wcyt-history-art--full')}
+                  <span class="wcyt-history-time">${formatTime(s.startedAt)}</span>
+                  <span class="wcyt-full-history-track">
+                    <span class="wcyt-full-history-artist">${esc(s.artist || 'WCYT')}</span>
+                    <span class="wcyt-full-history-title">${esc(s.title)}</span>
+                  </span>
+                </li>
+              `).join('')}
+            </ul>
+          ` : `
+            <p class="wcyt-history-empty">
+              Song history will appear here as tracks change.<br>
+              Leave this page open to build up the playlist.
+            </p>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Error state ───────────────────────────────────────────────────────────
+
+  function setErrorState() {
+    const msg = `
+      <div class="wcyt-error">
+        <span>&#9888;</span> Metadata unavailable &mdash;
+        <a href="${STREAM_URL}" target="_blank" rel="noopener">listen live</a>
+      </div>
+    `;
+    if (compactEl && !currentSong) compactEl.innerHTML = msg;
+    if (fullEl    && !currentSong) fullEl.innerHTML    = msg;
+  }
+
+  // ── Relative time ticker ──────────────────────────────────────────────────
+
+  function tickAges() {
+    document.querySelectorAll('.wcyt-age[data-started]').forEach(el => {
+      const d = new Date(el.dataset.started);
+      el.textContent = el.closest('.wcyt-full-song')
+        ? 'Started ' + relativeTime(d)
+        : relativeTime(d);
+    });
+  }
+
+  // ── Combined render ───────────────────────────────────────────────────────
+
+  function render() {
+    renderCompact();
+    renderFull();
+  }
+
+  // ── Escape HTML ───────────────────────────────────────────────────────────
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  window.WCYTPlaylist = {
+    init(compact, full) {
+      compactEl = compact;
+      fullEl    = full;
+      fetchNowPlaying();
+      pollTimer = setInterval(fetchNowPlaying, POLL_MS);
+      tickTimer = setInterval(tickAges, 30_000);
+    },
+    _getState()           { return { currentSong, songHistory, artCache }; },
+    _mockSong(artist, title) { handleNewTitle(`${artist} - ${title}`); },
+  };
+})();
