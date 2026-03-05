@@ -733,6 +733,7 @@
                   ${currentSong2 ? relativeTime(currentSong2.startedAt) : 'Live now'}
                 </span>
                 ${playBtnHTML('lg')}
+                <a href="/playlist?s=2" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
               </div>
             </div>
 
