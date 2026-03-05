@@ -374,12 +374,17 @@
     'greatest hits', 'best of', 'collection', 'anthology',
   ];
 
+  // Strip accents/diacritics so "Björk" → "Bjork" for search/matching
+  function stripDiacritics(s) {
+    return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
   function normArtist(s) {
-    return (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return stripDiacritics(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 
   async function fetchArtFromiTunes(artist, title) {
-    const term = encodeURIComponent(`${artist} ${title}`);
+    const term = encodeURIComponent(`${stripDiacritics(artist)} ${stripDiacritics(title)}`);
     const res  = await fetch(
       `https://itunes.apple.com/search?term=${term}&entity=song&limit=10&country=US`
     );
