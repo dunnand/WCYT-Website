@@ -15,6 +15,7 @@
   const POLL_MS       = 10_000;
   const MAX_HISTORY   = 50;
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+  const FALLBACK_ART_2 = '/images/2.0 Logo 500x500.jpg';
   const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
   const SHOW_TTL_MS   = 60 * 60 * 1000; // auto-clear after 1 hour
 
@@ -723,10 +724,10 @@
           ` : `
             <div class="wcyt-hero-s2">
               ${currentSong2 ? `
-                ${artImg(currentSong2.artUrl, 180, 'wcyt-hero-art')}
+                ${artImg(currentSong2.artUrl || FALLBACK_ART_2, 180, 'wcyt-hero-art')}
                 <div class="wcyt-hero-artist">${esc(currentSong2.artist || '2.0')}</div>
                 <div class="wcyt-hero-title">${esc(currentSong2.title)}</div>
-              ` : ''}
+              ` : `<img src="${FALLBACK_ART_2}" class="wcyt-hero-art" width="180" height="180" alt="2.0 Next Level of Radio">`}
                 <div class="wcyt-hero-controls">
                 <span class="wcyt-age wcyt-hero-age"
                   ${currentSong2 ? `data-started="${currentSong2.startedAt.toISOString()}"` : ''}>
