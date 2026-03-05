@@ -1686,6 +1686,30 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* SOTY category chips */
+.aw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+}
+.aw-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  color: #fff;
+}
+.aw-chip--radio    { background: #c8102e; }
+.aw-chip--video    { background: #1a6eb5; }
+.aw-chip--news     { background: #0e8a77; }
+.aw-chip--emerging { background: #7b2fbe; }
+.aw-chip--sports   { background: #c96200; }
 .aw-chevron {
   color: #666;
   font-size: 1.3rem;
@@ -1881,8 +1905,12 @@
     <div class="aw-year" data-year="2025">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2025</span>
-        <span class="aw-title">IASB Video, News, Media, and Sports Media School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--video">Video</span>
+          <span class="aw-chip aw-chip--news">News</span>
+          <span class="aw-chip aw-chip--emerging">Emerging Media</span>
+          <span class="aw-chip aw-chip--sports">Sports Media</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -1986,8 +2014,13 @@
     <div class="aw-year" data-year="2024">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2024</span>
-        <span class="aw-title">IASB Radio, Video, News, Media, and Sports Media School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--radio">Radio</span>
+          <span class="aw-chip aw-chip--video">Video</span>
+          <span class="aw-chip aw-chip--news">News</span>
+          <span class="aw-chip aw-chip--emerging">Emerging Media</span>
+          <span class="aw-chip aw-chip--sports">Sports Media</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -2108,8 +2141,10 @@
     <div class="aw-year" data-year="2023">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2023</span>
-        <span class="aw-title">IASB Radio &amp; Sports Media School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--radio">Radio</span>
+          <span class="aw-chip aw-chip--sports">Sports Media</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -2219,8 +2254,9 @@
     <div class="aw-year" data-year="2022">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2022</span>
-        <span class="aw-title">IASB TV School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--video">Video</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -2296,8 +2332,10 @@
     <div class="aw-year" data-year="2021">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2021</span>
-        <span class="aw-title">IASB Radio &amp; TV School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--radio">Radio</span>
+          <span class="aw-chip aw-chip--video">Video</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -2378,8 +2416,9 @@
     <div class="aw-year" data-year="2020">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2020</span>
-        <span class="aw-title">IASB TV School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--video">Video</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -2449,8 +2488,9 @@
     <div class="aw-year" data-year="2019">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2019</span>
-        <span class="aw-title">IASB Radio School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--radio">Radio</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -2498,8 +2538,9 @@
     <div class="aw-year" data-year="2018">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2018</span>
-        <span class="aw-title">IASB Radio School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--radio">Radio</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
@@ -2550,8 +2591,9 @@
     <div class="aw-year" data-year="2017">
       <div class="aw-header" onclick="awToggle(this)">
         <span class="aw-year-num">2017</span>
-        <span class="aw-title">IASB Radio School of the Year</span>
-        <span class="aw-badge">School of the Year</span>
+        <div class="aw-chips">
+          <span class="aw-chip aw-chip--radio">Radio</span>
+        </div>
         <span class="aw-chevron">&#9660;</span>
       </div>
       <div class="aw-body">
