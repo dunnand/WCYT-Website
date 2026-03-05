@@ -20,20 +20,22 @@
 
   const STATIONS = [
     {
-      id:       'wcyt',
-      label:    'WCYT 91 FM',
-      name:     'The Point 91 FM',
-      tagline:  'Where Music is the Point',
-      stream:   'https://securestreams2.autopo.st:1069/WCYT.mp3',
-      mount:    'WCYT.mp3',
+      id:         'wcyt',
+      label:      'WCYT 91 FM',
+      short:      'The Point',
+      name:       'The Point 91 FM',
+      tagline:    'Where Music is the Point',
+      stream:     'https://securestreams2.autopo.st:1069/WCYT.mp3',
+      mount:      'WCYT.mp3',
     },
     {
-      id:       '2pt0',
-      label:    '2.0 Next Level of Radio',
-      name:     '2.0 – The Next Level of Radio',
-      tagline:  'The Next Level of Radio',
-      stream:   'https://securestreams2.autopo.st:1069/wcythd2.mp3',
-      mount:    'wcythd2.mp3',
+      id:         '2pt0',
+      label:      '2.0 Next Level of Radio',
+      short:      '2.0',
+      name:       '2.0 – The Next Level of Radio',
+      tagline:    'The Next Level of Radio',
+      stream:     'https://securestreams2.autopo.st:1069/wcythd2.mp3',
+      mount:      'wcythd2.mp3',
     },
   ];
 
@@ -53,13 +55,16 @@
   let artCache       = {};
   let currentShowWCYT = null;  // { name: string, expiresAt: Date } | null  (The Point)
   let currentShow2    = null;  // { name: string, expiresAt: Date } | null  (2.0)
-  let heroEl         = null;
-  let compactEl      = null;
-  let fullEl         = null;
-  let corsWarned     = false;
-  let pollTimer      = null;
-  let tickTimer      = null;
-  let activeStation  = 0;   // index into STATIONS
+  let heroEl            = null;
+  let compactEl         = null;
+  let fullEl            = null;
+  let stickyEl          = null;
+  let stickyVisible     = false;
+  let pendingAutoResume = false;
+  let corsWarned        = false;
+  let pollTimer         = null;
+  let tickTimer         = null;
+  let activeStation     = 0;   // index into STATIONS
 
   // ── Audio player state ────────────────────────────────────────────────────
   let audio          = null;
@@ -82,6 +87,16 @@
     audioState = state;
     updatePlayerButtons();
     updateBarsAnimation();
+    renderSticky();
+  }
+
+  function savePlayerState() {
+    try {
+      sessionStorage.setItem('wcyt-player', JSON.stringify({
+        station: activeStation,
+        playing: audioState === 'playing' || audioState === 'buffering',
+      }));
+    } catch {}
   }
 
   function togglePlay() {
@@ -94,6 +109,7 @@
       a.play().catch(() => setAudioState('stopped'));
       setAudioState('buffering');
     }
+    savePlayerState();
   }
 
   function switchStation(idx) {
@@ -109,6 +125,7 @@
       a.play().catch(() => setAudioState('stopped'));
       setAudioState('buffering');
     }
+    savePlayerState();
     render();
   }
 
@@ -671,12 +688,106 @@
     });
   }
 
+  // ── Sticky player ─────────────────────────────────────────────────────────
+
+  const STICKY_CSS = `
+    #wcyt-sticky{position:fixed;bottom:0;left:0;right:0;z-index:9999;
+      background:#111;border-top:1px solid rgba(255,255,255,.12);
+      display:flex;align-items:center;padding:0 12px 0 10px;height:68px;gap:10px;
+      transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+      box-shadow:0 -4px 32px rgba(0,0,0,.6);}
+    #wcyt-sticky.wcyt-sticky--show{transform:translateY(0);}
+    #wcyt-sticky-art{width:46px;height:46px;border-radius:5px;object-fit:cover;
+      background:#333;flex-shrink:0;}
+    #wcyt-sticky-info{flex:1;min-width:0;overflow:hidden;}
+    #wcyt-sticky-station{font-size:10px;font-weight:700;letter-spacing:.1em;
+      text-transform:uppercase;color:#c8102e;margin-bottom:2px;}
+    #wcyt-sticky-title{font-size:13px;font-weight:600;color:#fff;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #wcyt-sticky-artist{font-size:12px;color:#999;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #wcyt-sticky-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+    .wcyt-sticky-stn{display:flex;gap:4px;}
+    .wcyt-sticky-stn-btn{font-size:10px;font-weight:700;letter-spacing:.05em;
+      padding:3px 8px;border-radius:12px;border:1px solid #444;
+      background:transparent;color:#aaa;cursor:pointer;white-space:nowrap;}
+    .wcyt-sticky-stn-btn--on{border-color:#c8102e;color:#fff;background:rgba(200,16,46,.18);}
+    .wcyt-sticky-play{width:38px;height:38px;border-radius:50%;background:#c8102e;
+      border:none;color:#fff;font-size:13px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .wcyt-sticky-play:hover{background:#a50d25;}
+    .wcyt-sticky-close{background:none;border:none;color:#555;font-size:18px;
+      cursor:pointer;padding:4px;line-height:1;flex-shrink:0;}
+    .wcyt-sticky-close:hover{color:#fff;}
+  `;
+
+  function initStickyPlayer() {
+    const style = document.createElement('style');
+    style.textContent = STICKY_CSS;
+    document.head.appendChild(style);
+
+    stickyEl = document.createElement('div');
+    stickyEl.id = 'wcyt-sticky';
+    document.body.appendChild(stickyEl);
+
+    // Restore session state
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('wcyt-player') || 'null');
+      if (saved) {
+        activeStation     = saved.station ?? 0;
+        pendingAutoResume = !!saved.playing;
+      }
+    } catch {}
+
+    window.addEventListener('beforeunload', savePlayerState);
+  }
+
+  function renderSticky() {
+    if (!stickyEl) return;
+    const song      = activeStation === 0 ? currentSong : currentSong2;
+    const station   = STATIONS[activeStation];
+    const isPlaying = audioState === 'playing' || audioState === 'buffering';
+
+    if ((song || isPlaying) && !stickyVisible) {
+      stickyVisible = true;
+      stickyEl.classList.add('wcyt-sticky--show');
+    }
+
+    stickyEl.innerHTML = `
+      <img id="wcyt-sticky-art"
+        src="${esc(song?.artUrl || FALLBACK_ART)}"
+        onerror="this.src='${FALLBACK_ART}'"
+        alt="Album art">
+      <div id="wcyt-sticky-info">
+        <div id="wcyt-sticky-station">${esc(station.short)}</div>
+        <div id="wcyt-sticky-title">${esc(song?.title || 'Live Radio')}</div>
+        <div id="wcyt-sticky-artist">${esc(song?.artist || station.name)}</div>
+      </div>
+      <div id="wcyt-sticky-controls">
+        <div class="wcyt-sticky-stn">
+          ${STATIONS.map((s, i) => `
+            <button class="wcyt-sticky-stn-btn${i === activeStation ? ' wcyt-sticky-stn-btn--on' : ''}"
+              onclick="WCYTPlaylist.switchStation(${i})">${esc(s.short)}</button>
+          `).join('')}
+        </div>
+        <button class="wcyt-sticky-play" onclick="WCYTPlaylist.togglePlay()"
+          aria-label="${isPlaying ? 'Pause' : 'Play'}">
+          ${audioState === 'buffering'
+            ? '<span class="wcyt-btn-spinner"></span>'
+            : isPlaying ? '&#9646;&#9646;' : '&#9654;'}
+        </button>
+        <button class="wcyt-sticky-close" onclick="WCYTPlaylist.closeSticky()" aria-label="Close">&#x2715;</button>
+      </div>
+    `;
+  }
+
   // ── Combined render ───────────────────────────────────────────────────────
 
   function render() {
     renderHero();
     renderCompact();
     renderFull();
+    renderSticky();
   }
 
   // ── Escape HTML ───────────────────────────────────────────────────────────
@@ -701,13 +812,30 @@
       heroEl    = hero;
       compactEl = compact;
       fullEl    = full;
-      fetchNowPlaying();
+      initStickyPlayer();
+      fetchNowPlaying().then(() => {
+        if (pendingAutoResume) {
+          pendingAutoResume = false;
+          const a = getAudio();
+          a.src = STATIONS[activeStation].stream;
+          a.play().catch(() => setAudioState('stopped'));
+          setAudioState('buffering');
+        }
+      });
       fetchCurrentShow();
       pollTimer = setInterval(() => { fetchNowPlaying(); fetchCurrentShow(); }, POLL_MS);
       tickTimer = setInterval(tickAges, 30_000);
     },
     togglePlay()       { togglePlay(); },
     switchStation(idx) { switchStation(idx); },
+    closeSticky() {
+      stickyVisible = false;
+      if (stickyEl) stickyEl.classList.remove('wcyt-sticky--show');
+      const a = getAudio();
+      a.pause(); a.src = '';
+      setAudioState('stopped');
+      savePlayerState();
+    },
     _getState()        { return { currentSong, songHistory, artCache, audioState, activeStation, currentShowWCYT, currentShow2 }; },
     _mockSong(artist, title) { handleNewTitle(`${artist} - ${title}`); },
   };
