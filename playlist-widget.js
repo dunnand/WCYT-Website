@@ -20,8 +20,8 @@
 
   // ── Last.fm config ────────────────────────────────────────────────────────
   // Register free API keys at https://www.last.fm/api/account/create
-  const LASTFM_KEY    = '';   // ← paste your API key here
-  const LASTFM_SECRET = '';   // ← paste your shared secret here
+  const LASTFM_KEY    = '8c3cc9c88e3ff80e609f5ac12c6716f2';
+  const LASTFM_SECRET = '646f23eb290aea3ac27d055e459d25c1';
   const LASTFM_API    = 'https://ws.audioscrobbler.com/2.0/';
 
   const STATIONS = [
