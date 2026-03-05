@@ -359,9 +359,46 @@
   }
 
   // ── Album art (iTunes Search API only) ───────────────────────────────────
-  // iTunes only — Apple enforces content guidelines on all artwork so covers
-  // are always safe. MusicBrainz/Cover Art Archive stores unedited original
-  // artwork which can include explicit imagery (e.g. Pixies – Surfer Rosa).
+  // iTunes serves the actual cover art regardless of content, so we maintain
+  // a manual blocklist of albums with known explicit/NSFW artwork.
+  // When a song matches a blocked album, art returns null (shows logo fallback).
+  // Format: ['artist normalized', 'album normalized'] — both lowercased, no punctuation.
+  const BLOCKED_ART = [
+    // Nudity
+    ['pixies',                    'surfer rosa'],
+    ['janes addiction',           'nothings shocking'],
+    ['janes addiction',           'ritual de lo habitual'],
+    ['nirvana',                   'nevermind'],
+    ['nirvana',                   'in utero'],
+    ['red hot chili peppers',     'mothers milk'],
+    ['blind faith',               'blind faith'],
+    ['the slits',                 'cut'],
+    ['pulp',                      'this is hardcore'],
+    ['sky ferreira',              'night time my time'],
+    ['lorde',                     'solar power'],
+    ['biffy clyro',               'the vertigo of bliss'],
+    ['marilyn manson',            'mechanical animals'],
+    ['the strokes',               'is this it'],
+    ['the black crowes',          'amorica'],
+    ['bow wow wow',               'see jungle see jungle go join your gang yeah city all over go ape crazy'],
+    ['roxy music',                'country life'],
+    ['roger waters',              'the pros and cons of hitch hiking'],
+    // Graphic / violent / sexual
+    ['death grips',               'no love deep web'],
+    ['guns n roses',              'appetite for destruction'],
+    ['tool',                      'undertow'],
+    ['dead kennedys',             'frankenchrist'],
+    ['nofx',                      'heavy petting zoo'],
+    ['chumbawamba',               'anarchy'],
+    ['pantera',                   'far beyond driven'],
+    ['slayer',                    'christ illusion'],
+  ];
+
+  function artIsBlocked(artist, album) {
+    const a = stripDiacritics(artist).toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    const b = stripDiacritics(album ).toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
+  }
 
   // Album types that are never the original release — hard reject
   const ITUNES_REJECT = [
@@ -391,19 +428,21 @@
     const data = await res.json();
     const na   = normArtist(artist);
 
+    const isSecondary = r => { const col = (r.collectionName ?? '').toLowerCase(); return ITUNES_SECONDARY.some(t => col.includes(t)); };
+
     const candidates = (data.results ?? []).filter(r => {
       if (!normArtist(r.artistName).includes(na)) return false;
       const col = (r.collectionName ?? '').toLowerCase();
       if (ITUNES_REJECT.some(t => col.includes(t))) return false;
+      // Skip any result whose album art is on the explicit-art blocklist
+      if (artIsBlocked(r.artistName, r.collectionName ?? '')) return false;
       return true;
     });
 
-    // Prefer original albums; fall back to soundtracks/compilations if nothing else
-    const isSecondary = r => {
-      const col = (r.collectionName ?? '').toLowerCase();
-      return ITUNES_SECONDARY.some(t => col.includes(t));
-    };
-    const match = candidates.find(r => !isSecondary(r)) ?? candidates.find(r => isSecondary(r));
+    // Prefer original albums over soundtracks/compilations
+    const match =
+      candidates.find(r => !isSecondary(r)) ??
+      candidates.find(r =>  isSecondary(r));
 
     return match?.artworkUrl100
       ? match.artworkUrl100.replace('100x100bb', '500x500bb')
