@@ -374,7 +374,7 @@
 
   <!-- Page header -->
   <header class="page-header">
-    <div class="page-header-eyebrow">The Point 91 FM &middot; WCYT</div>
+    <div class="page-header-eyebrow" id="pl-eyebrow">The Point 91 FM &middot; WCYT</div>
     <h1>Live <strong>Playlist</strong></h1>
     <p class="page-header-note">
       Showing what's on air right now &mdash; history builds as songs change while you have this page open.
@@ -403,7 +403,13 @@
 
   <script src="/playlist-widget.js"></script>
   <script>
-    WCYTPlaylist.init(null, null, document.getElementById('wcyt-full-widget'));
+    const _s = new URLSearchParams(location.search).get('s');
+    const _stationIdx = _s === '2' ? 1 : 0;
+    if (_stationIdx === 1) {
+      document.title = '2.0 Next Level of Radio \u2014 Live Playlist \u00b7 WCYT';
+      document.getElementById('pl-eyebrow').textContent = '2.0 Next Level of Radio \u00b7 WCYT';
+    }
+    WCYTPlaylist.init(null, null, document.getElementById('wcyt-full-widget'), _stationIdx);
   </script>
 
 </body>

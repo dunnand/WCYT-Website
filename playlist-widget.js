@@ -698,7 +698,7 @@
                   ${relativeTime(song.startedAt)}
                 </span>
                 ${playBtnHTML('lg')}
-                <a href="/playlist" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
+                <a href="${activeStation === 1 ? '/playlist?s=2' : '/playlist'}" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
               </div>
             ` : `<div class="wcyt-hero-loading">Loading&hellip;</div>`}
 
@@ -821,7 +821,7 @@
           </div>
         ` : ''}
         <div class="wcyt-compact-footer">
-          <a href="/playlist" class="wcyt-full-link">Full playlist &rarr;</a>
+          <a href="${activeStation === 1 ? '/playlist?s=2' : '/playlist'}" class="wcyt-full-link">Full playlist &rarr;</a>
         </div>
       </div>
     `;
@@ -834,8 +834,8 @@
   function renderFull() {
     if (!fullEl) return;
 
-    const song    = currentSong;
-    const history = songHistory;
+    const song    = activeStation === 1 ? currentSong2  : currentSong;
+    const history = activeStation === 1 ? songHistory2  : songHistory;
 
     fullEl.innerHTML = `
       <div class="wcyt-full">
@@ -1047,10 +1047,11 @@
      * @param {HTMLElement|null} compact - compact widget container
      * @param {HTMLElement|null} full    - full playlist page container
      */
-    init(hero, compact, full) {
+    init(hero, compact, full, initialStation) {
       heroEl    = hero;
       compactEl = compact;
       fullEl    = full;
+      if (initialStation === 0 || initialStation === 1) activeStation = initialStation;
       lfmLoad();
       lfmHandleCallback();
       initStickyPlayer();
