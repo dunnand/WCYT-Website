@@ -947,7 +947,7 @@
         </button>
         <button class="wcyt-sticky-lfm${lastfmSession ? ' wcyt-sticky-lfm--on' : ''}"
           onclick="WCYTPlaylist.lfmConnect()"
-          title="${lastfmSession ? 'Scrobbling as ' + lastfmSession.name + ' · click to disconnect' : 'Connect Last.fm to scrobble'}">LFM</button>
+          title="${lastfmSession ? 'Scrobbling as ' + lastfmSession.name + ' · click to disconnect' : 'Connect Last.fm to scrobble'}">LastFM</button>
         <button class="wcyt-sticky-close" onclick="WCYTPlaylist.closeSticky()" aria-label="Close">&#x2715;</button>
       </div>
     `;
