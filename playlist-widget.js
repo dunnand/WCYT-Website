@@ -27,7 +27,7 @@
   const STATIONS = [
     {
       id:         'wcyt',
-      label:      'WCYT 91 FM',
+      label:      'WCYT THE POINT 91FM',
       short:      'The Point',
       name:       'The Point 91 FM',
       tagline:    'Where Music is the Point',
@@ -36,7 +36,7 @@
     },
     {
       id:         '2pt0',
-      label:      '2.0 Next Level of Radio',
+      label:      '2.0 NEXT LEVEL OF RADIO',
       short:      '2.0',
       name:       '2.0 – The Next Level of Radio',
       tagline:    'The Next Level of Radio',
@@ -363,10 +363,15 @@
   // are always safe. MusicBrainz/Cover Art Archive stores unedited original
   // artwork which can include explicit imagery (e.g. Pixies – Surfer Rosa).
 
-  // Album types that are not the original release
+  // Album types that are never the original release — hard reject
   const ITUNES_REJECT = [
     'lullaby', 'karaoke', 'tribute', 'cover version',
     'instrumental version', 'made famous', 'originally performed',
+  ];
+  // Secondary releases — prefer originals over these, but fall back if nothing else
+  const ITUNES_SECONDARY = [
+    'soundtrack', 'motion picture', 'original score', 'compilation',
+    'greatest hits', 'best of', 'collection', 'anthology',
   ];
 
   function normArtist(s) {
@@ -381,16 +386,19 @@
     const data = await res.json();
     const na   = normArtist(artist);
 
-    const match = (data.results ?? []).find(r => {
-      // Artist name must contain the searched artist (blocks lullaby covers, tributes)
-      if (!normArtist(r.artistName).includes(na))  return false;
-      // Reject cover/tribute/lullaby collection names
+    const candidates = (data.results ?? []).filter(r => {
+      if (!normArtist(r.artistName).includes(na)) return false;
       const col = (r.collectionName ?? '').toLowerCase();
-      if (ITUNES_REJECT.some(t => col.includes(t)))  return false;
+      if (ITUNES_REJECT.some(t => col.includes(t))) return false;
       return true;
-      // Note: we intentionally skip the explicit flag — it refers to lyrics,
-      // not the album artwork, so filtering on it blocks real releases.
     });
+
+    // Prefer original albums; fall back to soundtracks/compilations if nothing else
+    const isSecondary = r => {
+      const col = (r.collectionName ?? '').toLowerCase();
+      return ITUNES_SECONDARY.some(t => col.includes(t));
+    };
+    const match = candidates.find(r => !isSecondary(r)) ?? candidates.find(r => isSecondary(r));
 
     return match?.artworkUrl100
       ? match.artworkUrl100.replace('100x100bb', '500x500bb')
@@ -485,8 +493,18 @@
 
   async function fetchNowPlaying() {
     try {
-      const res  = await fetch(METADATA_URL, { cache: 'no-store' });
-      const data = await res.json();
+      const res = await fetch(METADATA_URL, { cache: 'no-store' });
+      const buf = await res.arrayBuffer();
+      let text;
+      try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+      catch { text = new TextDecoder('latin1').decode(buf); }
+
+      let data;
+      try { data = JSON.parse(text); }
+      catch (parseErr) {
+        console.warn('[WCYTPlaylist] JSON parse failed. Raw response (first 500 chars):', text?.slice(0, 500));
+        return; // skip poll, keep current display
+      }
 
       let sources = data?.icestats?.source ?? [];
       if (!Array.isArray(sources)) sources = [sources];
@@ -495,7 +513,9 @@
         sources.find(s => (s.listenurl ?? '').toLowerCase().includes(mount.toLowerCase()));
 
       // Station 1 — WCYT (drives history + full playlist page)
-      handleNewTitle(findSource(STATIONS[0].mount)?.title ?? null);
+      const rawTitle1 = findSource(STATIONS[0].mount)?.title ?? null;
+      console.log('[WCYTPlaylist] raw title WCYT:', rawTitle1);
+      handleNewTitle(rawTitle1);
 
       // Station 2 — track current song + history
       const raw2    = findSource(STATIONS[1].mount)?.title ?? null;
