@@ -162,10 +162,13 @@
     });
   }
 
+  const PAUSE_SVG = '<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><rect x="0" y="0" width="3.5" height="16" rx="1.5"/><rect x="8.5" y="0" width="3.5" height="16" rx="1.5"/></svg>';
+  const PLAY_SVG  = '<span class="wcyt-btn-icon">&#9654;</span>';
+
   function btnIcon(state) {
     if (state === 'buffering') return '<span class="wcyt-btn-spinner"></span>';
-    if (state === 'playing')   return '<span class="wcyt-btn-icon">&#9646;&#9646;</span>';
-    return '<span class="wcyt-btn-icon">&#9654;</span>';
+    if (state === 'playing')   return PAUSE_SVG;
+    return PLAY_SVG;
   }
 
   function playBtnHTML(size) {
@@ -943,7 +946,7 @@
           aria-label="${isPlaying ? 'Pause' : 'Play'}">
           ${audioState === 'buffering'
             ? '<span class="wcyt-btn-spinner"></span>'
-            : isPlaying ? '&#9646;&#9646;' : '&#9654;'}
+            : isPlaying ? PAUSE_SVG : '&#9654;'}
         </button>
         <button class="wcyt-sticky-lfm${lastfmSession ? ' wcyt-sticky-lfm--on' : ''}"
           onclick="WCYTPlaylist.lfmConnect()"
