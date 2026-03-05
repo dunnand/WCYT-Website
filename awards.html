@@ -1701,31 +1701,29 @@
 /* Body */
 .aw-body {
   display: none;
-  padding: 24px 22px;
+  padding: 0;
   background: #141414;
 }
 .aw-year.open .aw-body {
-  display: flex;
-  gap: 28px;
-  align-items: flex-start;
+  display: block;
 }
 
-/* Photo side */
+/* Photo — full-width banner */
 .aw-photo {
-  flex-shrink: 0;
-  width: 280px;
+  width: 100%;
+  margin-bottom: 0;
 }
 .aw-photo img {
   width: 100%;
-  border-radius: 6px;
-  display: block;
+  max-height: 500px;
   object-fit: cover;
+  object-position: center top;
+  display: block;
 }
 
-/* Categories side */
+/* Categories — padded below photo */
 .aw-categories {
-  flex: 1;
-  min-width: 0;
+  padding: 24px 22px;
 }
 
 /* Place header bands */
@@ -1812,6 +1810,7 @@
 }
 .aw-year.no-photo .aw-categories {
   width: 100%;
+  padding: 24px 22px;
 }
 
 /* ===== Modal ===== */
