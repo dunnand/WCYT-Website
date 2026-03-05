@@ -18,6 +18,12 @@
   const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
   const SHOW_TTL_MS   = 60 * 60 * 1000; // auto-clear after 1 hour
 
+  // ── Last.fm config ────────────────────────────────────────────────────────
+  // Register free API keys at https://www.last.fm/api/account/create
+  const LASTFM_KEY    = '';   // ← paste your API key here
+  const LASTFM_SECRET = '';   // ← paste your shared secret here
+  const LASTFM_API    = 'https://ws.audioscrobbler.com/2.0/';
+
   const STATIONS = [
     {
       id:         'wcyt',
@@ -66,6 +72,12 @@
   let tickTimer         = null;
   let activeStation     = 0;   // index into STATIONS
 
+  // ── Last.fm state ─────────────────────────────────────────────────────────
+  let lastfmSession  = null;   // { key, name } | null
+  let lfmCurrent     = null;   // { artist, title, startedAt } | null
+  let lfmListenMs    = 0;      // ms of current song actually heard
+  let lfmListenTick  = null;   // timestamp audio started for current accumulation
+
   // ── Audio player state ────────────────────────────────────────────────────
   let audio          = null;
   let audioState     = 'stopped';
@@ -84,6 +96,12 @@
   }
 
   function setAudioState(state) {
+    // Track listen time for scrobbling
+    if (state === 'playing' && audioState !== 'playing') {
+      lfmListenTick = Date.now();
+    } else if (state !== 'playing' && audioState === 'playing') {
+      if (lfmListenTick) { lfmListenMs += Date.now() - lfmListenTick; lfmListenTick = null; }
+    }
     audioState = state;
     updatePlayerButtons();
     updateBarsAnimation();
@@ -158,6 +176,147 @@
       aria-label="${audioState === 'playing' ? 'Pause' : 'Play'}"
       onclick="WCYTPlaylist.togglePlay()"
     >${btnIcon(audioState)}</button>`;
+  }
+
+  // ── Last.fm MD5 + API helpers ─────────────────────────────────────────────
+
+  function lfmMd5(input) {
+    function safeAdd(x, y) {
+      const lsw = (x & 0xffff) + (y & 0xffff);
+      return (((x >> 16) + (y >> 16) + (lsw >> 16)) << 16) | (lsw & 0xffff);
+    }
+    const rol = (n, s) => (n << s) | (n >>> (32 - s));
+    const cmn = (q, a, b, x, s, t) => safeAdd(rol(safeAdd(safeAdd(a, q), safeAdd(x, t)), s), b);
+    const ff  = (a,b,c,d,x,s,t) => cmn((b & c) | (~b & d), a, b, x, s, t);
+    const gg  = (a,b,c,d,x,s,t) => cmn((b & d) | (c & ~d), a, b, x, s, t);
+    const hh  = (a,b,c,d,x,s,t) => cmn(b ^ c ^ d, a, b, x, s, t);
+    const ii  = (a,b,c,d,x,s,t) => cmn(c ^ (b | ~d), a, b, x, s, t);
+    const str = unescape(encodeURIComponent(input));
+    const M   = [];
+    for (let i = 0; i < str.length * 8; i += 8) M[i >> 5] = (M[i >> 5] || 0) | (str.charCodeAt(i / 8) & 0xff) << (i % 32);
+    M[str.length * 8 >> 5] |= 0x80 << (str.length * 8 % 32);
+    M[(((str.length * 8 + 64) >>> 9) << 4) + 14] = str.length * 8;
+    let [a, b, c, d] = [1732584193, -271733879, -1732584194, 271733878];
+    for (let i = 0, n = M.length; i < n; i += 16) {
+      const [oa, ob, oc, od] = [a, b, c, d];
+      const w = [...M.slice(i, i + 16), ...Array(16).fill(0)].slice(0, 16);
+      a=ff(a,b,c,d,w[0],7,-680876936);d=ff(d,a,b,c,w[1],12,-389564586);c=ff(c,d,a,b,w[2],17,606105819);b=ff(b,c,d,a,w[3],22,-1044525330);
+      a=ff(a,b,c,d,w[4],7,-176418897);d=ff(d,a,b,c,w[5],12,1200080426);c=ff(c,d,a,b,w[6],17,-1473231341);b=ff(b,c,d,a,w[7],22,-45705983);
+      a=ff(a,b,c,d,w[8],7,1770035416);d=ff(d,a,b,c,w[9],12,-1958414417);c=ff(c,d,a,b,w[10],17,-42063);b=ff(b,c,d,a,w[11],22,-1990404162);
+      a=ff(a,b,c,d,w[12],7,1804603682);d=ff(d,a,b,c,w[13],12,-40341101);c=ff(c,d,a,b,w[14],17,-1502002290);b=ff(b,c,d,a,w[15],22,1236535329);
+      a=gg(a,b,c,d,w[1],5,-165796510);d=gg(d,a,b,c,w[6],9,-1069501632);c=gg(c,d,a,b,w[11],14,643717713);b=gg(b,c,d,a,w[0],20,-373897302);
+      a=gg(a,b,c,d,w[5],5,-701558691);d=gg(d,a,b,c,w[10],9,38016083);c=gg(c,d,a,b,w[15],14,-660478335);b=gg(b,c,d,a,w[4],20,-405537848);
+      a=gg(a,b,c,d,w[9],5,568446438);d=gg(d,a,b,c,w[14],9,-1019803690);c=gg(c,d,a,b,w[3],14,-187363961);b=gg(b,c,d,a,w[8],20,1163531501);
+      a=gg(a,b,c,d,w[13],5,-1444681467);d=gg(d,a,b,c,w[2],9,-51403784);c=gg(c,d,a,b,w[7],14,1735328473);b=gg(b,c,d,a,w[12],20,-1926607734);
+      a=hh(a,b,c,d,w[5],4,-378558);d=hh(d,a,b,c,w[8],11,-2022574463);c=hh(c,d,a,b,w[11],16,1839030562);b=hh(b,c,d,a,w[14],23,-35309556);
+      a=hh(a,b,c,d,w[1],4,-1530992060);d=hh(d,a,b,c,w[4],11,1272893353);c=hh(c,d,a,b,w[7],16,-155497632);b=hh(b,c,d,a,w[10],23,-1094730640);
+      a=hh(a,b,c,d,w[13],4,681279174);d=hh(d,a,b,c,w[0],11,-358537222);c=hh(c,d,a,b,w[3],16,-722521979);b=hh(b,c,d,a,w[6],23,76029189);
+      a=hh(a,b,c,d,w[9],4,-640364487);d=hh(d,a,b,c,w[12],11,-421815835);c=hh(c,d,a,b,w[15],16,530742520);b=hh(b,c,d,a,w[2],23,-995338651);
+      a=ii(a,b,c,d,w[0],6,-198630844);d=ii(d,a,b,c,w[7],10,1126891415);c=ii(c,d,a,b,w[14],15,-1416354905);b=ii(b,c,d,a,w[5],21,-57434055);
+      a=ii(a,b,c,d,w[12],6,1700485571);d=ii(d,a,b,c,w[3],10,-1894986606);c=ii(c,d,a,b,w[10],15,-1051523);b=ii(b,c,d,a,w[1],21,-2054922799);
+      a=ii(a,b,c,d,w[8],6,1873313359);d=ii(d,a,b,c,w[15],10,-30611744);c=ii(c,d,a,b,w[6],15,-1560198380);b=ii(b,c,d,a,w[13],21,1309151649);
+      a=ii(a,b,c,d,w[4],6,-145523070);d=ii(d,a,b,c,w[11],10,-1120210379);c=ii(c,d,a,b,w[2],15,718787259);b=ii(b,c,d,a,w[9],21,-343485551);
+      a=safeAdd(a,oa); b=safeAdd(b,ob); c=safeAdd(c,oc); d=safeAdd(d,od);
+    }
+    let hex = '';
+    [a, b, c, d].forEach(n => { for (let i = 0; i < 4; i++) hex += ((n >> (i * 8)) & 0xff).toString(16).padStart(2, '0'); });
+    return hex;
+  }
+
+  function lfmSign(params) {
+    return lfmMd5(
+      Object.keys(params).sort()
+        .filter(k => k !== 'format')
+        .map(k => k + params[k])
+        .join('') + LASTFM_SECRET
+    );
+  }
+
+  async function lfmPost(params) {
+    if (!LASTFM_KEY || !LASTFM_SECRET) return null;
+    params.api_key = LASTFM_KEY;
+    params.api_sig  = lfmSign(params);
+    params.format   = 'json';
+    try {
+      const res = await fetch(LASTFM_API, { method: 'POST', body: new URLSearchParams(params) });
+      return res.json();
+    } catch { return null; }
+  }
+
+  function lfmLoad() {
+    try {
+      const s = JSON.parse(localStorage.getItem('wcyt-lastfm') || 'null');
+      if (s?.key) lastfmSession = s;
+    } catch {}
+  }
+
+  function lfmConnect() {
+    if (!LASTFM_KEY) return;
+    if (lastfmSession) {
+      lastfmSession = null;
+      localStorage.removeItem('wcyt-lastfm');
+      renderSticky();
+      return;
+    }
+    const cb = encodeURIComponent(location.href.split('?')[0] + '?lfmcb=1');
+    const popup = window.open(
+      `https://www.last.fm/api/auth/?api_key=${LASTFM_KEY}&cb=${cb}`,
+      'lfm-auth', 'width=800,height=600,left=200,top=100'
+    );
+    window.addEventListener('message', function h(e) {
+      if (e.data?.type !== 'wcyt-lastfm') return;
+      window.removeEventListener('message', h);
+      lastfmSession = e.data.session;
+      localStorage.setItem('wcyt-lastfm', JSON.stringify(lastfmSession));
+      renderSticky();
+    });
+  }
+
+  async function lfmHandleCallback() {
+    const p     = new URLSearchParams(location.search);
+    const token = p.get('token');
+    if (!p.get('lfmcb') || !token || !window.opener) return;
+    const data = await lfmPost({ method: 'auth.getSession', token });
+    if (data?.session) {
+      window.opener.postMessage(
+        { type: 'wcyt-lastfm', session: { key: data.session.key, name: data.session.name } },
+        '*'
+      );
+    }
+    window.close();
+  }
+
+  async function lfmNowPlaying(artist, title) {
+    if (!lastfmSession || !artist) return;
+    await lfmPost({ method: 'track.updateNowPlaying', sk: lastfmSession.key, artist, track: title });
+  }
+
+  async function lfmScrobbleTrack(artist, title, startedAt) {
+    if (!lastfmSession || !artist) return;
+    await lfmPost({
+      method:    'track.scrobble',
+      sk:        lastfmSession.key,
+      artist,
+      track:     title,
+      timestamp: String(Math.floor(startedAt / 1000)),
+    });
+  }
+
+  function lfmOnSongStart(artist, title) {
+    if (!lastfmSession || !LASTFM_KEY) return;
+    lfmCurrent    = { artist, title, startedAt: Date.now() };
+    lfmListenMs   = 0;
+    lfmListenTick = (audioState === 'playing') ? Date.now() : null;
+    lfmNowPlaying(artist, title);
+  }
+
+  function lfmOnSongEnd() {
+    if (!lfmCurrent || !lastfmSession || !LASTFM_KEY) return;
+    const extra = lfmListenTick ? Date.now() - lfmListenTick : 0;
+    if (lfmListenMs + extra >= 30_000) {
+      lfmScrobbleTrack(lfmCurrent.artist, lfmCurrent.title, lfmCurrent.startedAt);
+    }
+    lfmCurrent = null;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -343,11 +502,13 @@
         const cur2  = currentSong2 ? artCacheKey(currentSong2.artist, currentSong2.title) : null;
         if (key2 !== cur2) {
           if (currentSong2) {
+            if (activeStation === 1) lfmOnSongEnd();
             songHistory2.unshift({ ...currentSong2, endedAt: new Date() });
             if (songHistory2.length > MAX_HISTORY) songHistory2.pop();
           }
           const artUrl = parsed2.artist ? await fetchArt(parsed2.artist, parsed2.title) : null;
           currentSong2 = { ...parsed2, startedAt: new Date(), artUrl };
+          if (activeStation === 1) lfmOnSongStart(parsed2.artist, parsed2.title);
           if (activeStation === 1) render();
         }
       } else {
@@ -374,6 +535,7 @@
     if (!currentSong) {
       const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
       currentSong = { ...parsed, startedAt: new Date(), artUrl };
+      if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
       render();
       return;
     }
@@ -382,11 +544,13 @@
     const newKey     = artCacheKey(parsed.artist, parsed.title);
     if (newKey === currentKey) return;
 
+    if (activeStation === 0) lfmOnSongEnd();
     songHistory.unshift({ ...currentSong, endedAt: new Date() });
     if (songHistory.length > MAX_HISTORY) songHistory.pop();
 
     const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
     currentSong = { ...parsed, startedAt: new Date(), artUrl };
+    if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
     render();
   }
 
@@ -719,6 +883,11 @@
     .wcyt-sticky-close{background:none;border:none;color:#555;font-size:18px;
       cursor:pointer;padding:4px;line-height:1;flex-shrink:0;}
     .wcyt-sticky-close:hover{color:#fff;}
+    .wcyt-sticky-lfm{background:none;border:none;cursor:pointer;padding:4px;
+      color:#555;font-size:10px;font-weight:700;letter-spacing:.06em;
+      line-height:1;flex-shrink:0;border-radius:4px;transition:color .2s;}
+    .wcyt-sticky-lfm:hover{color:#d51007;}
+    .wcyt-sticky-lfm--on{color:#d51007 !important;}
   `;
 
   function initStickyPlayer() {
@@ -776,6 +945,9 @@
             ? '<span class="wcyt-btn-spinner"></span>'
             : isPlaying ? '&#9646;&#9646;' : '&#9654;'}
         </button>
+        <button class="wcyt-sticky-lfm${lastfmSession ? ' wcyt-sticky-lfm--on' : ''}"
+          onclick="WCYTPlaylist.lfmConnect()"
+          title="${lastfmSession ? 'Scrobbling as ' + lastfmSession.name + ' · click to disconnect' : 'Connect Last.fm to scrobble'}">LFM</button>
         <button class="wcyt-sticky-close" onclick="WCYTPlaylist.closeSticky()" aria-label="Close">&#x2715;</button>
       </div>
     `;
@@ -812,6 +984,8 @@
       heroEl    = hero;
       compactEl = compact;
       fullEl    = full;
+      lfmLoad();
+      lfmHandleCallback();
       initStickyPlayer();
       fetchNowPlaying().then(() => {
         if (pendingAutoResume) {
@@ -828,6 +1002,7 @@
     },
     togglePlay()       { togglePlay(); },
     switchStation(idx) { switchStation(idx); },
+    lfmConnect()       { lfmConnect(); },
     closeSticky() {
       stickyVisible = false;
       if (stickyEl) stickyEl.classList.remove('wcyt-sticky--show');
