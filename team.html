@@ -310,10 +310,15 @@
       return result;
     }
 
+    function photoUrl(url) {
+      const m = (url || '').match(/\/d\/([^/?]+)/);
+      return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w500` : url;
+    }
+
     function renderGrid(el, members) {
       el.innerHTML = members.map(m => `
         <div class="team-card">
-          <img class="team-photo" src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy"
+          <img class="team-photo" src="${esc(photoUrl(m.photo))}" alt="${esc(m.name)}" loading="lazy"
                onerror="this.style.opacity='0'">
           <div class="team-name">${esc(m.name)}</div>
           <div class="team-role">${esc(m.show)}</div>
