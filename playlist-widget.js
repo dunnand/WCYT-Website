@@ -372,6 +372,7 @@
     ['nirvana',                   'nevermind'],
     ['nirvana',                   'in utero'],
     ['red hot chili peppers',     'mothers milk'],
+    ['red hot chili peppers',     'by the way'],
     ['blind faith',               'blind faith'],
     ['the slits',                 'cut'],
     ['pulp',                      'this is hardcore'],
