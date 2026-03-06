@@ -338,7 +338,7 @@
     <div id="pod-featured"><p class="ep-loading">Loading latest episode&hellip;</p></div>
 
     <!-- All episodes -->
-    <div class="section-heading">All Episodes</div>
+    <div class="section-heading" id="pod-all-heading">All Episodes</div>
     <div id="pod-list"><p class="ep-loading">Loading episodes&hellip;</p></div>
 
   </main>
@@ -352,7 +352,6 @@
 
   <script>
     const RSS_URL = 'https://anchor.fm/s/2b0e634/podcast/rss';
-    const API     = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_URL) + '&api_key=&count=50';
 
     function esc(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -361,24 +360,40 @@
     function fmtDate(str) {
       if (!str) return '';
       const d = new Date(str);
-      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     }
 
-    function stripHtml(s) {
-      return String(s ?? '').replace(/<[^>]*>/g, '').trim();
+    function getText(el, tag) {
+      return el.querySelector(tag)?.textContent?.trim() || '';
     }
 
-    function renderFeatured(ep, showArt) {
-      const art  = ep.thumbnail || showArt || '';
-      const desc = stripHtml(ep.description || ep.content || '');
+    function getAttr(el, tag, attr) {
+      return el.querySelector(tag)?.getAttribute(attr) || '';
+    }
+
+    function parseRSS(xml) {
+      const doc     = new DOMParser().parseFromString(xml, 'text/xml');
+      const channel = doc.querySelector('channel');
+      const showArt = channel?.querySelector('image url')?.textContent?.trim()
+                   || getAttr(channel, 'itunes\\:image, image', 'href')
+                   || '';
+      const items   = [...doc.querySelectorAll('item')].map(item => ({
+        title   : getText(item, 'title'),
+        date    : getText(item, 'pubDate'),
+        link    : getText(item, 'link') || getAttr(item, 'enclosure', 'url'),
+        art     : getAttr(item, 'itunes\\:image, image', 'href') || showArt,
+      }));
+      return { showArt, items };
+    }
+
+    function renderFeatured(ep) {
       document.getElementById('pod-featured').innerHTML = `
         <div class="featured-episode">
-          ${art ? `<img class="featured-art" src="${esc(art)}" alt="${esc(ep.title)}">` : ''}
+          ${ep.art ? `<img class="featured-art" src="${esc(ep.art)}" alt="${esc(ep.title)}">` : ''}
           <div class="featured-info">
             <div class="featured-badge">Latest Episode</div>
             <div class="featured-title">${esc(ep.title)}</div>
-            <div class="featured-date">${fmtDate(ep.pubDate)}</div>
-            <div class="featured-desc">${esc(desc)}</div>
+            <div class="featured-date">${fmtDate(ep.date)}</div>
             <a class="listen-btn" href="${esc(ep.link)}" target="_blank" rel="noopener">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
               Listen now
@@ -387,40 +402,44 @@
         </div>`;
     }
 
-    function renderList(items, showArt) {
+    function renderList(items) {
       if (!items.length) {
         document.getElementById('pod-list').innerHTML = '<p class="ep-error">No episodes found.</p>';
         return;
       }
       document.getElementById('pod-list').innerHTML = `
         <div class="episode-list">
-          ${items.map(ep => {
-            const art = ep.thumbnail || showArt || '';
-            return `
+          ${items.map(ep => `
             <a class="episode-card" href="${esc(ep.link)}" target="_blank" rel="noopener">
-              ${art ? `<img class="episode-art" src="${esc(art)}" alt="${esc(ep.title)}" loading="lazy">` : ''}
+              ${ep.art ? `<img class="episode-art" src="${esc(ep.art)}" alt="${esc(ep.title)}" loading="lazy">` : ''}
               <div class="episode-info">
                 <div class="episode-title">${esc(ep.title)}</div>
-                <div class="episode-date">${fmtDate(ep.pubDate)}</div>
+                <div class="episode-date">${fmtDate(ep.date)}</div>
               </div>
               <span class="episode-listen">Listen &rarr;</span>
-            </a>`;
-          }).join('')}
+            </a>`).join('')}
         </div>`;
     }
 
-    fetch(API)
-      .then(r => r.json())
-      .then(data => {
-        if (data.status !== 'ok' || !data.items?.length) throw new Error('No episodes');
-        const showArt = data.feed?.image || '';
-        renderFeatured(data.items[0], showArt);
-        renderList(data.items.slice(1), showArt);
+    function showSpotifyFallback() {
+      document.getElementById('pod-featured').innerHTML = `
+        <iframe src="https://open.spotify.com/embed/show/7g9PiMxCO93XMKJzLkLu7D?utm_source=generator&theme=0"
+          width="100%" height="352" frameborder="0" allowfullscreen loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          style="border-radius:12px;display:block"></iframe>`;
+      document.getElementById('pod-list').innerHTML = '';
+      document.getElementById('pod-all-heading').style.display = 'none';
+    }
+
+    fetch(RSS_URL)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(xml => {
+        const { items } = parseRSS(xml);
+        if (!items.length) throw new Error('empty');
+        renderFeatured(items[0]);
+        renderList(items.slice(1));
       })
-      .catch(() => {
-        document.getElementById('pod-featured').innerHTML = '<p class="ep-error">Could not load episodes. <a href="https://open.spotify.com/show/7g9PiMxCO93XMKJzLkLu7D" target="_blank">Listen on Spotify &rarr;</a></p>';
-        document.getElementById('pod-list').innerHTML = '';
-      });
+      .catch(() => showSpotifyFallback());
   </script>
 
 </body>
