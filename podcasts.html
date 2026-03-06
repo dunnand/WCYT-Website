@@ -91,19 +91,48 @@
       padding: 48px 24px 80px;
     }
 
-    /* ── Spotify embed ── */
-    .podcast-player {
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 48px;
+    /* ── Subscribe strip ── */
+    .subscribe-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 40px;
     }
-    .podcast-player iframe {
-      display: block;
-      border-radius: 12px;
+    .subscribe-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+    .platform-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--white);
+      transition: border-color .2s, background .2s, transform .15s;
+    }
+    .platform-btn:hover {
+      border-color: var(--accent);
+      background: #222;
+      transform: translateY(-2px);
+    }
+    .platform-btn svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
     }
 
-    /* ── Available on ── */
-    .available-heading {
+    /* ── Section heading ── */
+    .section-heading {
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.15em;
@@ -114,34 +143,131 @@
       margin-bottom: 24px;
     }
 
-    .platform-grid {
+    /* ── Latest episode (featured) ── */
+    .featured-episode {
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 12px;
+      padding: 24px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 40px;
     }
-
-    .platform-btn {
+    .featured-art {
+      flex-shrink: 0;
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #333;
+    }
+    .featured-info { min-width: 0; }
+    .featured-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .featured-title {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .featured-date {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .featured-desc {
+      font-size: 13px;
+      color: #bbb;
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .listen-btn {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px 20px;
+      gap: 6px;
+      padding: 9px 18px;
+      background: var(--accent);
+      color: var(--white);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      transition: background .2s, transform .15s;
+    }
+    .listen-btn:hover { background: #a50d26; transform: translateY(-1px); }
+
+    /* ── Episode list ── */
+    .episode-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+    .episode-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
       background: var(--mid);
       border: 1px solid var(--border);
       border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--white);
-      transition: border-color .2s, background .2s, transform .15s;
+      transition: border-color .2s, transform .15s;
     }
-    .platform-btn:hover {
-      border-color: var(--accent);
-      background: #222;
-      transform: translateY(-2px);
+    .episode-card:hover {
+      border-color: #444;
+      transform: translateY(-1px);
     }
-    .platform-btn svg, .platform-btn img {
-      width: 22px;
-      height: 22px;
+    .episode-art {
       flex-shrink: 0;
+      width: 60px;
+      height: 60px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #333;
+    }
+    .episode-info { flex: 1; min-width: 0; }
+    .episode-title {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .episode-date {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .episode-listen {
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      padding: 6px 12px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      transition: background .2s, color .2s;
+    }
+    .episode-listen:hover { background: var(--accent); color: var(--white); }
+
+    /* ── Loading / error ── */
+    .ep-loading, .ep-error {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 24px 0;
     }
 
     /* ── Footer ── */
@@ -160,6 +286,9 @@
       .site-nav { padding: 0 20px; }
       .page-header { padding: 32px 20px 28px; }
       .podcasts-main { padding: 32px 16px 60px; }
+      .featured-episode { flex-direction: column; }
+      .featured-art { width: 80px; height: 80px; }
+      .episode-listen { display: none; }
     }
   </style>
 </head>
@@ -184,21 +313,9 @@
 
   <main class="podcasts-main">
 
-    <div class="podcast-player">
-      <iframe
-        src="https://open.spotify.com/embed/show/7g9PiMxCO93XMKJzLkLu7D?utm_source=generator&theme=0"
-        width="100%"
-        height="352"
-        frameborder="0"
-        allowfullscreen
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy">
-      </iframe>
-    </div>
-
-    <div class="available-heading">Also available on</div>
-
-    <div class="platform-grid">
+    <!-- Subscribe strip -->
+    <div class="subscribe-strip">
+      <span class="subscribe-label">Listen on</span>
 
       <a class="platform-btn" href="https://open.spotify.com/show/7g9PiMxCO93XMKJzLkLu7D" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
@@ -214,8 +331,15 @@
         <svg viewBox="0 0 24 24" fill="#f26522"><path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19.01 7.38 20 6.18 20C4.98 20 4 19.01 4 17.82a2.18 2.18 0 0 1 2.18-2.18M6.18 11.8a6.02 6.02 0 0 1 6.02 6.02v.36H10.1v-.36a3.93 3.93 0 0 0-3.92-3.92a3.93 3.93 0 0 0-3.92 3.92v.36H.17v-.36A6.02 6.02 0 0 1 6.18 11.8m0-3.8A9.82 9.82 0 0 1 16 17.82v.36h-2.09v-.36A7.73 7.73 0 0 0 6.18 10.1a7.73 7.73 0 0 0-7.73 7.72v.36H-3.64v-.36A9.82 9.82 0 0 1 6.18 8z" transform="translate(4 2)"/></svg>
         RSS Feed
       </a>
-
     </div>
+
+    <!-- Latest episode -->
+    <div class="section-heading">Latest Episode</div>
+    <div id="pod-featured"><p class="ep-loading">Loading latest episode&hellip;</p></div>
+
+    <!-- All episodes -->
+    <div class="section-heading">All Episodes</div>
+    <div id="pod-list"><p class="ep-loading">Loading episodes&hellip;</p></div>
 
   </main>
 
@@ -225,6 +349,79 @@
 
   <script src="/playlist-widget.js"></script>
   <script>WCYTPlaylist.init(null, null, null);</script>
+
+  <script>
+    const RSS_URL = 'https://anchor.fm/s/2b0e634/podcast/rss';
+    const API     = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(RSS_URL) + '&api_key=&count=50';
+
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function fmtDate(str) {
+      if (!str) return '';
+      const d = new Date(str);
+      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+
+    function stripHtml(s) {
+      return String(s ?? '').replace(/<[^>]*>/g, '').trim();
+    }
+
+    function renderFeatured(ep, showArt) {
+      const art  = ep.thumbnail || showArt || '';
+      const desc = stripHtml(ep.description || ep.content || '');
+      document.getElementById('pod-featured').innerHTML = `
+        <div class="featured-episode">
+          ${art ? `<img class="featured-art" src="${esc(art)}" alt="${esc(ep.title)}">` : ''}
+          <div class="featured-info">
+            <div class="featured-badge">Latest Episode</div>
+            <div class="featured-title">${esc(ep.title)}</div>
+            <div class="featured-date">${fmtDate(ep.pubDate)}</div>
+            <div class="featured-desc">${esc(desc)}</div>
+            <a class="listen-btn" href="${esc(ep.link)}" target="_blank" rel="noopener">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              Listen now
+            </a>
+          </div>
+        </div>`;
+    }
+
+    function renderList(items, showArt) {
+      if (!items.length) {
+        document.getElementById('pod-list').innerHTML = '<p class="ep-error">No episodes found.</p>';
+        return;
+      }
+      document.getElementById('pod-list').innerHTML = `
+        <div class="episode-list">
+          ${items.map(ep => {
+            const art = ep.thumbnail || showArt || '';
+            return `
+            <a class="episode-card" href="${esc(ep.link)}" target="_blank" rel="noopener">
+              ${art ? `<img class="episode-art" src="${esc(art)}" alt="${esc(ep.title)}" loading="lazy">` : ''}
+              <div class="episode-info">
+                <div class="episode-title">${esc(ep.title)}</div>
+                <div class="episode-date">${fmtDate(ep.pubDate)}</div>
+              </div>
+              <span class="episode-listen">Listen &rarr;</span>
+            </a>`;
+          }).join('')}
+        </div>`;
+    }
+
+    fetch(API)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok' || !data.items?.length) throw new Error('No episodes');
+        const showArt = data.feed?.image || '';
+        renderFeatured(data.items[0], showArt);
+        renderList(data.items.slice(1), showArt);
+      })
+      .catch(() => {
+        document.getElementById('pod-featured').innerHTML = '<p class="ep-error">Could not load episodes. <a href="https://open.spotify.com/show/7g9PiMxCO93XMKJzLkLu7D" target="_blank">Listen on Spotify &rarr;</a></p>';
+        document.getElementById('pod-list').innerHTML = '';
+      });
+  </script>
 
 </body>
 </html>
