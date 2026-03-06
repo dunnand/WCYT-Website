@@ -333,11 +333,15 @@
       </a>
     </div>
 
-    <!-- Latest episode -->
-    <div class="section-heading">Latest Episode</div>
-    <div id="pod-featured"><p class="ep-loading">Loading latest episode&hellip;</p></div>
+    <!-- Spotify embed (play directly on page) -->
+    <iframe
+      src="https://open.spotify.com/embed/show/7g9PiMxCO93XMKJzLkLu7D?utm_source=generator&theme=0"
+      width="100%" height="352" frameborder="0" allowfullscreen loading="lazy"
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      style="border-radius:12px;display:block;margin-bottom:40px">
+    </iframe>
 
-    <!-- All episodes -->
+    <!-- All episodes from RSS -->
     <div class="section-heading" id="pod-all-heading">All Episodes</div>
     <div id="pod-list"><p class="ep-loading">Loading episodes&hellip;</p></div>
 
@@ -386,22 +390,6 @@
       return { showArt, items };
     }
 
-    function renderFeatured(ep) {
-      document.getElementById('pod-featured').innerHTML = `
-        <div class="featured-episode">
-          ${ep.art ? `<img class="featured-art" src="${esc(ep.art)}" alt="${esc(ep.title)}">` : ''}
-          <div class="featured-info">
-            <div class="featured-badge">Latest Episode</div>
-            <div class="featured-title">${esc(ep.title)}</div>
-            <div class="featured-date">${fmtDate(ep.date)}</div>
-            <a class="listen-btn" href="${esc(ep.link)}" target="_blank" rel="noopener">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-              Listen now
-            </a>
-          </div>
-        </div>`;
-    }
-
     function renderList(items) {
       if (!items.length) {
         document.getElementById('pod-list').innerHTML = '<p class="ep-error">No episodes found.</p>';
@@ -421,25 +409,17 @@
         </div>`;
     }
 
-    function showSpotifyFallback() {
-      document.getElementById('pod-featured').innerHTML = `
-        <iframe src="https://open.spotify.com/embed/show/7g9PiMxCO93XMKJzLkLu7D?utm_source=generator&theme=0"
-          width="100%" height="352" frameborder="0" allowfullscreen loading="lazy"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          style="border-radius:12px;display:block"></iframe>`;
-      document.getElementById('pod-list').innerHTML = '';
-      document.getElementById('pod-all-heading').style.display = 'none';
-    }
-
     fetch(RSS_URL)
       .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then(xml => {
         const { items } = parseRSS(xml);
         if (!items.length) throw new Error('empty');
-        renderFeatured(items[0]);
-        renderList(items.slice(1));
+        renderList(items);
       })
-      .catch(() => showSpotifyFallback());
+      .catch(() => {
+        document.getElementById('pod-list').innerHTML = '';
+        document.getElementById('pod-all-heading').style.display = 'none';
+      });
   </script>
 
 </body>
