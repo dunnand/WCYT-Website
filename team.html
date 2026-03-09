@@ -28,33 +28,6 @@
     body { min-height: 100vh; display: flex; flex-direction: column; }
     a    { color: inherit; text-decoration: none; }
 
-    /* ── Nav ── */
-    .site-nav {
-      background: var(--black);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      height: 64px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      border-bottom: 1px solid #1a1a1a;
-    }
-    .site-nav-logo img { height: 36px; display: block; }
-    .site-nav-back {
-      color: #aaa;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: color .2s;
-    }
-    .site-nav-back:hover { color: var(--white); }
-    .site-nav-back svg { width: 14px; height: 14px; }
-
     /* ── Page header ── */
     .page-header {
       background: var(--black);
@@ -200,7 +173,6 @@
     .site-footer a:hover { color: #aaa; }
 
     @media (max-width: 600px) {
-      .site-nav { padding: 0 20px; }
       .page-header { padding: 32px 20px 28px; }
       .team-main { padding: 32px 16px 60px; }
       .team-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; }
@@ -209,16 +181,6 @@
 </head>
 
 <body>
-
-  <nav class="site-nav">
-    <a class="site-nav-logo" href="/" aria-label="The Point 91 FM – Home">
-      <img src="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png" alt="WCYT The Point 91 FM">
-    </a>
-    <a class="site-nav-back" href="/">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12L6 8l4-4"/></svg>
-      Back to site
-    </a>
-  </nav>
 
   <header class="page-header">
     <div class="page-header-eyebrow">The Point 91 FM &middot; WCYT</div>
@@ -344,7 +306,8 @@
     function groupByName(members) {
       const map = new Map();
       for (const m of members) {
-        const key = m.name.trim().toLowerCase();
+        // Normalize: collapse all whitespace types, strip invisible chars, lowercase
+        const key = (m.name || '').replace(/[\s\u00a0\u200b]+/g, ' ').trim().toLowerCase();
         if (!map.has(key)) {
           map.set(key, { name: m.name, photo: m.photo, section: m.section, shows: [] });
         }
