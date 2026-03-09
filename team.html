@@ -151,6 +151,24 @@
       font-size: 12px;
       color: var(--muted);
       line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .team-show {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .team-time {
+      display: block;
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.03em;
     }
 
     /* ── Managers grid (fewer, larger) ── */
@@ -226,52 +244,58 @@
     // ─────────────────────────────────────────────────────────────────────────
     // TEAM PAGE — Google Sheet config
     //
-    // To update team members without touching code:
-    //   1. Open your Google Sheet (columns: Name | Show | Photo | Section)
-    //      Section must be either "Personalities" or "Management"
-    //   2. File → Share → Publish to web → choose "Sheet1" → CSV → Publish
-    //   3. Copy the URL and paste it below (replace the empty string)
+    // Sheet columns: Name | Show | Time | Photo | Section
+    //   - Section must be "Personalities" or "Management"
+    //   - Time is optional (e.g. "Mon/Wed 7–8am")
+    //   - For a student with multiple shows, add one row per show
+    //     with the same Name and Photo — they will be grouped on one card
     //
-    // Leave TEAM_SHEET_URL empty to use the built-in fallback data below.
+    // To publish: File → Share → Publish to web → Sheet1 → CSV → Publish
+    // Paste the URL below.
     // ─────────────────────────────────────────────────────────────────────────
     const TEAM_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkht4RErJ_OYuqhoSw54AUUwNjfl-D-pNX-n_eH4PoKGtYOLW6FEy_aKG_cyyvTAPDZKBs0vgo1LTD/pub?gid=0&single=true&output=csv';
 
     // Built-in fallback data — used when TEAM_SHEET_URL is empty
+    // For multiple shows, add extra rows with the same Name/Photo/Section
     const FALLBACK_MEMBERS = [
-      { name: 'Alayna Baker',     show: 'Co-Host, RU For Real?',                                        photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720395-2J64LUCQZK54HDVUM3LE/P1083983.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Jackson Blanton',  show: 'Co-Host, Theory Killers',                                      photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720399-070B3RUZD1G7EJI9SJSY/P1083832.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Josh Bobay',       show: 'Co-Host, 9th Inning',                                          photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720402-7IN2YUD3CRQ04N38KXML/P1083898.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Graysen Branam',   show: 'Co-Host, Question the Truth',                                  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720405-8SONK0GBOYOU0IHYTHPF/P1083967.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Caroline Burns',   show: 'Co-Host, RU For Real?',                                        photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720408-9JFJARL0B6WHVJEKW6DW/P1084000.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Will Chiaruttini', show: 'Co-Host, 9th Inning',                                          photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720411-GAIE38LVKNLIC74F3HL0/P1083913.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Grace Dickmeyer',  show: 'Co-Host, RU For Real?',                                        photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720413-Y8H6RZ2VPSZ7NIKM18P4/P1083985.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Christian Dollens',show: 'Co-Host, Boomer Vs. Zoomer',                                   photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720416-BVKM90J9K9XS8GIRO1PE/P1083823.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Abegail Donaldson',show: 'Co-Host, Theory Killers',                                      photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720420-NX1ESSYJQ44S5HQG63BS/P1083761.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Jacob Erb',        show: 'Co-Host, Sports Corner',                                       photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720423-8JEACQYF470Q2RZA5XBX/P1083952.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Justin Estrada',   show: 'Co-Host, The Big Q, The R.P.G.s & The Really Phantastic Gamers', photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720426-YL1U9F4WZP5TGYKV78QJ/P1083855.jpg?format=500w', section: 'Personalities' },
-      { name: 'Josiah Exford',    show: 'Co-Host, 9th Inning',                                          photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720429-R0TG2JCDLNFGQJRWQUJC/P1083904.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Graham DeWitte',   show: 'Co-Host, The Big Q & The Final Drive',                         photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720432-UKK9BRTTO846TG4NSBD7/P1083764.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Ian Fraser',       show: 'Co-Host, 8-bit Boys',                                          photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720436-FI5SHZB9OKYKF3RMYN6Q/P1083788.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Braxton Hall',     show: 'Basketball Main Commentator, Co-Host, The Final Drive',        photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720440-6NUZIB239H252IQ2AWDW/P1083908.jpg?format=500w',        section: 'Personalities' },
-      { name: 'DaVon Hawkins',    show: 'Co-Host, The Really Phantastic Gamers',                        photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720443-341NE8NEITWTAH264N2L/P1083862.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Noah Lancz',       show: 'Basketball Main Commentator, Co-Host, The Final Drive',        photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720447-A0RGHTI8WHM1B5S7ZNMF/P1083890.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Jacob Lanier',     show: 'Co-Host, Boomer Vs. Zoomer',                                   photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720450-YK9FTTP5VS8BDHY1MOO7/P1083776.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Noah Lanier',      show: 'Co-Host, 8-bit Boys',                                          photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720453-L7QO7S1KEN5R5KGHZIPI/P1083811.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Keegan McClure',   show: 'Co-Host, 9th Inning',                                          photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720456-MWV9WP35W83QCZTSXH13/P1083919.jpg?format=500w',        section: 'Personalities' },
-      { name: 'C.J. Majewski',    show: 'Co-Host, My For You Page',                                     photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720461-3UHZL6YHZJETRWQPGBY0/P1083844.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Kyle Malone',      show: 'Co-Host, Sports Corner',                                       photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720464-G2MF20FS31EJHW9VWV3H/P1083934.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Cole Obioma',      show: 'Co-Host, SpelChek',                                            photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720467-7L21G95TEDFM03HHJN9J/P1084111.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Zenaido Ochoa',    show: 'Co-Host, Theory Killers',                                      photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720470-200GHQUCMLISD808LNOP/P1083836.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Matthew Otten',    show: 'Co-Host, The Final Drive',                                     photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720474-EA10RHKH582YN02OGOL6/P1083929.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Logan Poswinski',  show: 'Co-Host, Sports Corner',                                       photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720478-HZDHYBIRPILKCIPP4IEE/P1083925.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Carter Schwartz',  show: 'Co-Host, Question the Truth',                                  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720481-YQ3Q680F494K6FSO6M80/P1083877-Edit.png?format=500w',   section: 'Personalities' },
-      { name: 'Andrea Valcarcel', show: 'Co-Host, SpelChek',                                            photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720484-D5JJSVMRAVA2NNM2OOO4/P1084088.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Michael White',    show: 'Co-Host, Sports Corner',                                       photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720487-16ZOCYNSY7XZQDNUXE09/P1083943.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Jake Zishka',      show: 'Co-Host, My For You Page',                                     photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720490-U529JUWRDZ7J9W3TAG9M/P1083874.jpg?format=500w',        section: 'Personalities' },
-      { name: 'Anelia Rybka',     show: 'Co-Host, Entertainment Island',                                photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/8008f1cb-1a22-4894-8fd2-d178fb844bda/P1084161.jpg?format=500w',      section: 'Personalities' },
-      { name: 'Dax Thakker',      show: 'Co-Host, The R.P.G.s',                                         photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/ac350815-d985-4e92-84b8-30a06044fb95/P1084155.jpg?format=500w',      section: 'Personalities' },
-      { name: 'Andy Dunn',        show: 'General Manager',                                              photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720493-JHBWXBFE3ID16UN4I53E/P1083956.jpg?format=500w',        section: 'Management' },
-      { name: 'Adam Schenkel',    show: 'Radio/TV Director',                                            photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720496-83CYQ05V0S8RON2QKROC/P1083964.jpg?format=500w',        section: 'Management' },
+      { name: 'Alayna Baker',     show: 'Co-Host, RU For Real?',      time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720395-2J64LUCQZK54HDVUM3LE/P1083983.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jackson Blanton',  show: 'Co-Host, Theory Killers',    time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720399-070B3RUZD1G7EJI9SJSY/P1083832.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Josh Bobay',       show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720402-7IN2YUD3CRQ04N38KXML/P1083898.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Graysen Branam',   show: 'Co-Host, Question the Truth',time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720405-8SONK0GBOYOU0IHYTHPF/P1083967.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Caroline Burns',   show: 'Co-Host, RU For Real?',      time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720408-9JFJARL0B6WHVJEKW6DW/P1084000.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Will Chiaruttini', show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720411-GAIE38LVKNLIC74F3HL0/P1083913.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Grace Dickmeyer',  show: 'Co-Host, RU For Real?',      time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720413-Y8H6RZ2VPSZ7NIKM18P4/P1083985.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Christian Dollens',show: 'Co-Host, Boomer Vs. Zoomer', time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720416-BVKM90J9K9XS8GIRO1PE/P1083823.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Abegail Donaldson',show: 'Co-Host, Theory Killers',    time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720420-NX1ESSYJQ44S5HQG63BS/P1083761.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jacob Erb',        show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720423-8JEACQYF470Q2RZA5XBX/P1083952.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Justin Estrada',   show: 'Co-Host, The Big Q',         time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720426-YL1U9F4WZP5TGYKV78QJ/P1083855.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Justin Estrada',   show: 'Co-Host, The R.P.G.s',       time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720426-YL1U9F4WZP5TGYKV78QJ/P1083855.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Josiah Exford',    show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720429-R0TG2JCDLNFGQJRWQUJC/P1083904.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Graham DeWitte',   show: 'Co-Host, The Big Q',         time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720432-UKK9BRTTO846TG4NSBD7/P1083764.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Graham DeWitte',   show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720432-UKK9BRTTO846TG4NSBD7/P1083764.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Ian Fraser',       show: 'Co-Host, 8-bit Boys',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720436-FI5SHZB9OKYKF3RMYN6Q/P1083788.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Braxton Hall',     show: 'Basketball Commentator',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720440-6NUZIB239H252IQ2AWDW/P1083908.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Braxton Hall',     show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720440-6NUZIB239H252IQ2AWDW/P1083908.jpg?format=500w',        section: 'Personalities' },
+      { name: 'DaVon Hawkins',    show: 'Co-Host, The Really Phantastic Gamers', time: '', photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720443-341NE8NEITWTAH264N2L/P1083862.jpg?format=500w', section: 'Personalities' },
+      { name: 'Noah Lancz',       show: 'Basketball Commentator',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720447-A0RGHTI8WHM1B5S7ZNMF/P1083890.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Noah Lancz',       show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720447-A0RGHTI8WHM1B5S7ZNMF/P1083890.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jacob Lanier',     show: 'Co-Host, Boomer Vs. Zoomer', time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720450-YK9FTTP5VS8BDHY1MOO7/P1083776.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Noah Lanier',      show: 'Co-Host, 8-bit Boys',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720453-L7QO7S1KEN5R5KGHZIPI/P1083811.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Keegan McClure',   show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720456-MWV9WP35W83QCZTSXH13/P1083919.jpg?format=500w',        section: 'Personalities' },
+      { name: 'C.J. Majewski',    show: 'Co-Host, My For You Page',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720461-3UHZL6YHZJETRWQPGBY0/P1083844.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Kyle Malone',      show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720464-G2MF20FS31EJHW9VWV3H/P1083934.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Cole Obioma',      show: 'Co-Host, SpelChek',          time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720467-7L21G95TEDFM03HHJN9J/P1084111.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Zenaido Ochoa',    show: 'Co-Host, Theory Killers',    time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720470-200GHQUCMLISD808LNOP/P1083836.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Matthew Otten',    show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720474-EA10RHKH582YN02OGOL6/P1083929.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Logan Poswinski',  show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720478-HZDHYBIRPILKCIPP4IEE/P1083925.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Carter Schwartz',  show: 'Co-Host, Question the Truth',time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720481-YQ3Q680F494K6FSO6M80/P1083877-Edit.png?format=500w',   section: 'Personalities' },
+      { name: 'Andrea Valcarcel', show: 'Co-Host, SpelChek',          time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720484-D5JJSVMRAVA2NNM2OOO4/P1084088.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Michael White',    show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720487-16ZOCYNSY7XZQDNUXE09/P1083943.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jake Zishka',      show: 'Co-Host, My For You Page',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720490-U529JUWRDZ7J9W3TAG9M/P1083874.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Anelia Rybka',     show: 'Co-Host, Entertainment Island', time: '', photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/8008f1cb-1a22-4894-8fd2-d178fb844bda/P1084161.jpg?format=500w',  section: 'Personalities' },
+      { name: 'Dax Thakker',      show: 'Co-Host, The R.P.G.s',       time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/ac350815-d985-4e92-84b8-30a06044fb95/P1084155.jpg?format=500w',      section: 'Personalities' },
+      { name: 'Andy Dunn',        show: 'General Manager',            time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720493-JHBWXBFE3ID16UN4I53E/P1083956.jpg?format=500w',        section: 'Management' },
+      { name: 'Adam Schenkel',    show: 'Radio/TV Director',          time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720496-83CYQ05V0S8RON2QKROC/P1083964.jpg?format=500w',        section: 'Management' },
     ];
 
     function esc(s) {
@@ -315,14 +339,33 @@
       return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w500` : url;
     }
 
+    // Group rows by name so multi-show students appear on one card
+    function groupByName(members) {
+      const map = new Map();
+      for (const m of members) {
+        const key = m.name.trim().toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { name: m.name, photo: m.photo, section: m.section, shows: [] });
+        }
+        if (m.show) map.get(key).shows.push({ show: m.show, time: m.time || '' });
+      }
+      return [...map.values()];
+    }
+
     function renderGrid(el, members) {
-      el.innerHTML = members.map(m => `
+      const grouped = groupByName(members);
+      el.innerHTML = grouped.map(m => {
+        const showsHtml = m.shows.map(s =>
+          `<div class="team-show">${esc(s.show)}${s.time ? `<span class="team-time">${esc(s.time)}</span>` : ''}</div>`
+        ).join('');
+        return `
         <div class="team-card">
           <img class="team-photo" src="${esc(photoUrl(m.photo))}" alt="${esc(m.name)}" loading="lazy"
                onerror="this.style.opacity='0'">
           <div class="team-name">${esc(m.name)}</div>
-          <div class="team-role">${esc(m.show)}</div>
-        </div>`).join('');
+          <div class="team-role">${showsHtml}</div>
+        </div>`;
+      }).join('');
     }
 
     function renderTeam(members) {
