@@ -2000,7 +2000,11 @@ student-run: student DJs, student shows, and student broadcasters." />
       const title=item.querySelector('title')?.textContent?.trim()||'';
       const date=item.querySelector('pubDate')?.textContent?.trim()||'';
       const link=item.querySelector('link')?.textContent?.trim()||'';
-      const art=item.querySelector('itunes\\:image')?.getAttribute('href')||doc.querySelector('channel image url')?.textContent?.trim()||'';
+      const art=(()=>{
+        try { const n=item.getElementsByTagName('itunes:image'); if(n.length) return n[0].getAttribute('href')||''; } catch(e){}
+        try { const n=doc.querySelector('channel')?.getElementsByTagName('itunes:image'); if(n?.length) return n[0].getAttribute('href')||''; } catch(e){}
+        return doc.querySelector('channel image url')?.textContent?.trim()||'';
+      })();
       document.getElementById('home-pod').innerHTML=`
         <div class="latest-pod">
           ${art?`<img class="latest-pod-art" src="${esc(art)}" alt="${esc(title)}">`:''}
