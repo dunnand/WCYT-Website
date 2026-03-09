@@ -159,7 +159,7 @@
   function updateBarsAnimation() {
     const playing = audioState === 'playing';
     document.querySelectorAll('.wcyt-bars span').forEach(bar => {
-      bar.style.animationPlayState = playing ? 'running' : 'paused';
+      bar.style.animationPlayState = 'running';
     });
   }
 
