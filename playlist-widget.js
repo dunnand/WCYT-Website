@@ -419,7 +419,9 @@
   }
 
   function normArtist(s) {
-    return stripDiacritics(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return stripDiacritics(s ?? '').toLowerCase()
+      .replace(/\s*&\s*/g, 'and')
+      .replace(/[^a-z0-9]/g, '');
   }
 
   async function fetchArtFromiTunes(artist, title) {
