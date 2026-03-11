@@ -34,7 +34,7 @@
 
     /* ── logo ── */
     #wcyt-nav .wn-logo img {
-      height: 36px;
+      height: 48px;
       display: block;
     }
 
