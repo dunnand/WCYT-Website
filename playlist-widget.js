@@ -1058,7 +1058,6 @@
       compactEl = compact;
       fullEl    = full;
       if (initialStation === 0 || initialStation === 1) activeStation = initialStation;
-      render();
       lfmLoad();
       lfmHandleCallback();
       initStickyPlayer();
