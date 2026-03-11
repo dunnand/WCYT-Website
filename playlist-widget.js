@@ -17,7 +17,7 @@
   const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
   const FALLBACK_ART_2 = '/images/2.0 Logo 500x500.jpg';
   const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
-  const SHOW_TTL_MS   = 60 * 60 * 1000; // auto-clear after 1 hour
+  const SHOW_TTL_MS   = 45 * 60 * 1000; // auto-clear after 45 minutes
 
   // ── Last.fm config ────────────────────────────────────────────────────────
   // Register free API keys at https://www.last.fm/api/account/create
