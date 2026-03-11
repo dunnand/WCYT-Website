@@ -59,6 +59,23 @@
   text-align: center;
   font-family: 'Space Grotesk', sans-serif;
 }
+/* Album art backdrop */
+.wcyt-backdrop {
+  position: absolute;
+  inset: -30px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px);
+  opacity: 0.6;
+  z-index: 0;
+  transition: opacity .4s;
+}
+.wcyt-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+}
 /* Override backdrop for hero: bigger blur, more spread */
 .wcyt-hero .wcyt-backdrop {
   inset: -20px;
