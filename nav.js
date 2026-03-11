@@ -24,7 +24,7 @@
       z-index: 9999;
       background: var(--nav-bg);
       border-bottom: 1px solid var(--nav-border);
-      height: 64px;
+      height: 96px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -34,7 +34,7 @@
 
     /* ── logo ── */
     #wcyt-nav .wn-logo img {
-      height: 56px;
+      height: 80px;
       display: block;
     }
 
@@ -183,7 +183,8 @@
     @media (max-width: 680px) {
       #wcyt-nav .wn-links  { display: none; }
       #wcyt-nav .wn-burger { display: flex; }
-      #wcyt-nav { padding: 0 20px; }
+      #wcyt-nav { padding: 0 20px; height: 64px; }
+      #wcyt-nav .wn-logo img { height: 44px; }
     }
   `;
 
