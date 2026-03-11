@@ -584,6 +584,7 @@
         }
       } else {
         currentSong2 = null;
+        if (activeStation === 1) render();
       }
     } catch (err) {
       if (!corsWarned) {
@@ -1057,6 +1058,7 @@
       compactEl = compact;
       fullEl    = full;
       if (initialStation === 0 || initialStation === 1) activeStation = initialStation;
+      render();
       lfmLoad();
       lfmHandleCallback();
       initStickyPlayer();
