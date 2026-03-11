@@ -114,6 +114,8 @@
       sessionStorage.setItem('wcyt-player', JSON.stringify({
         station: activeStation,
         playing: audioState === 'playing' || audioState === 'buffering',
+        showWCYT: currentShowWCYT ? { name: currentShowWCYT.name, expiresAt: currentShowWCYT.expiresAt.toISOString() } : null,
+        show2:    currentShow2    ? { name: currentShow2.name,    expiresAt: currentShow2.expiresAt.toISOString()    } : null,
       }));
     } catch {}
   }
@@ -943,6 +945,9 @@
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     #wcyt-sticky-artist{font-size:12px;color:#999;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #wcyt-sticky-show{font-size:10px;color:#c8102e;font-weight:600;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      letter-spacing:.04em;margin-top:1px;}
     #wcyt-sticky-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;}
     .wcyt-sticky-stn{display:flex;gap:4px;}
     .wcyt-sticky-stn-btn{font-size:10px;font-weight:700;letter-spacing:.05em;
@@ -978,6 +983,14 @@
       if (saved) {
         activeStation     = saved.station ?? 0;
         pendingAutoResume = !!saved.playing;
+        if (saved.showWCYT) {
+          const exp = new Date(saved.showWCYT.expiresAt);
+          if (Date.now() < exp.getTime()) currentShowWCYT = { name: saved.showWCYT.name, expiresAt: exp };
+        }
+        if (saved.show2) {
+          const exp = new Date(saved.show2.expiresAt);
+          if (Date.now() < exp.getTime()) currentShow2 = { name: saved.show2.name, expiresAt: exp };
+        }
       }
     } catch {}
 
@@ -986,9 +999,10 @@
 
   function renderSticky() {
     if (!stickyEl) return;
-    const song      = activeStation === 0 ? currentSong : currentSong2;
-    const station   = STATIONS[activeStation];
-    const isPlaying = audioState === 'playing' || audioState === 'buffering';
+    const song        = activeStation === 0 ? currentSong : currentSong2;
+    const station     = STATIONS[activeStation];
+    const isPlaying   = audioState === 'playing' || audioState === 'buffering';
+    const currentShow = activeStation === 0 ? currentShowWCYT : currentShow2;
 
     if ((song || isPlaying) && !stickyVisible) {
       stickyVisible = true;
@@ -1004,6 +1018,7 @@
         <div id="wcyt-sticky-station">${esc(station.short)}</div>
         <div id="wcyt-sticky-title">${esc(song?.title || 'Live Radio')}</div>
         <div id="wcyt-sticky-artist">${esc(song?.artist || station.name)}</div>
+        ${currentShow ? `<div id="wcyt-sticky-show">ON AIR: ${esc(currentShow.name)}</div>` : ''}
       </div>
       <div id="wcyt-sticky-controls">
         <div class="wcyt-sticky-stn">
