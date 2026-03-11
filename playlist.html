@@ -11,55 +11,27 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
 
   <style>
-    /* ── Reset & base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --black:   #0d0d0d;
       --dark:    #111111;
-      --mid:     #222222;
-      --border:  #e5e5e5;
-      --muted:   #666666;
-      --accent:  #c8102e;   /* WCYT red */
+      --mid:     #1a1a1a;
+      --card:    #161616;
+      --border:  #2a2a2a;
+      --muted:   #888888;
+      --accent:  #c8102e;
       --white:   #ffffff;
-      --off:     #f5f5f5;
       --font:    'Space Grotesk', sans-serif;
     }
 
-    html { font-family: var(--font); background: var(--off); color: var(--black); }
+    html { font-family: var(--font); background: var(--black); color: var(--white); }
     body { min-height: 100vh; display: flex; flex-direction: column; }
     a    { color: inherit; }
 
-    /* ── Top nav ── */
-    .site-nav {
-      background: var(--black);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      height: 64px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .site-nav-logo img { height: 36px; display: block; }
-    .site-nav-back {
-      color: #aaa;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: color .2s;
-    }
-    .site-nav-back:hover { color: var(--white); }
-    .site-nav-back svg  { width: 14px; height: 14px; }
-
     /* ── Page header ── */
     .page-header {
-      background: var(--black);
+      background: var(--dark);
       color: var(--white);
       padding: 48px 32px 40px;
       border-bottom: 3px solid var(--accent);
@@ -77,11 +49,11 @@
       font-weight: 700;
       line-height: 1.1;
     }
-    .page-header h1 strong { color: var(--accent); font-weight: 700; }
+    .page-header h1 strong { color: var(--accent); }
     .page-header-note {
       margin-top: 10px;
       font-size: 13px;
-      color: #888;
+      color: #666;
     }
 
     /* ── Main content ── */
@@ -97,12 +69,13 @@
     .wcyt-full-now-card {
       position: relative;
       overflow: hidden;
-      background: var(--dark);
+      background: var(--card);
       color: var(--white);
       border-radius: 12px;
       padding: 28px 32px 32px;
       margin-bottom: 48px;
-      box-shadow: 0 4px 24px rgba(0,0,0,.18);
+      box-shadow: 0 4px 24px rgba(0,0,0,.4);
+      border: 1px solid var(--border);
     }
     .wcyt-backdrop {
       position: absolute;
@@ -110,7 +83,7 @@
       background-size: cover;
       background-position: center;
       filter: blur(28px);
-      opacity: 0.6;
+      opacity: 0.5;
       z-index: 0;
       transition: opacity .4s;
     }
@@ -118,9 +91,8 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.65);
     }
-    /* keep all card content above backdrop */
     .wcyt-full-card-header,
     .wcyt-full-song { position: relative; z-index: 1; }
     .wcyt-full-card-header {
@@ -156,14 +128,13 @@
       animation-timing-function: ease-in-out;
       animation-iteration-count: infinite;
     }
-    .wcyt-bars span:nth-child(1) { animation-name: eq-bar-1; animation-delay: 0s;    height: 8px;  }
-    .wcyt-bars span:nth-child(2) { animation-name: eq-bar-2; animation-delay: .15s;  height: 14px; }
-    .wcyt-bars span:nth-child(3) { animation-name: eq-bar-3; animation-delay: .05s;  height: 10px; }
-    .wcyt-bars span:nth-child(4) { animation-name: eq-bar-4; animation-delay: .25s;  height: 16px; }
-    .wcyt-bars span:nth-child(5) { animation-name: eq-bar-5; animation-delay: .1s;   height: 6px;  }
+    .wcyt-bars span:nth-child(1) { animation-name: eq-bar-1; animation-delay: 0s;   height: 8px;  }
+    .wcyt-bars span:nth-child(2) { animation-name: eq-bar-2; animation-delay: .15s; height: 14px; }
+    .wcyt-bars span:nth-child(3) { animation-name: eq-bar-3; animation-delay: .05s; height: 10px; }
+    .wcyt-bars span:nth-child(4) { animation-name: eq-bar-4; animation-delay: .25s; height: 16px; }
+    .wcyt-bars span:nth-child(5) { animation-name: eq-bar-5; animation-delay: .1s;  height: 6px;  }
     .wcyt-bars--lg span { width: 4px; }
     .wcyt-bars--lg { height: 22px; }
-
     @keyframes eq-bar-1 { 0%,100% { transform: scaleY(.35); } 50% { transform: scaleY(.8);  } }
     @keyframes eq-bar-2 { 0%,100% { transform: scaleY(.2);  } 50% { transform: scaleY(1);   } }
     @keyframes eq-bar-3 { 0%,100% { transform: scaleY(.3);  } 50% { transform: scaleY(.95); } }
@@ -182,7 +153,7 @@
       border-radius: 8px;
       object-fit: cover;
       background: #333;
-      box-shadow: 0 4px 16px rgba(0,0,0,.4);
+      box-shadow: 0 4px 16px rgba(0,0,0,.6);
     }
     .wcyt-full-art.wcyt-art-fallback {
       object-fit: contain;
@@ -199,7 +170,7 @@
     .wcyt-full-title {
       font-size: clamp(16px, 2.5vw, 22px);
       font-weight: 400;
-      color: #ccc;
+      color: #bbb;
       line-height: 1.3;
       margin-bottom: 20px;
     }
@@ -211,7 +182,7 @@
     }
     .wcyt-age {
       font-size: 13px;
-      color: #888;
+      color: #666;
     }
     .wcyt-play-btn {
       flex-shrink: 0;
@@ -249,7 +220,7 @@
       font-weight: 700;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #555;
       padding-bottom: 12px;
       margin-bottom: 8px;
     }
@@ -265,26 +236,27 @@
       height: 52px;
       border-radius: 6px;
       object-fit: cover;
-      background: #ddd;
+      background: #222;
     }
     .wcyt-history-art--full.wcyt-art-fallback {
       object-fit: contain;
       padding: 6px;
-      background: #eee;
+      background: #1a1a1a;
     }
     .wcyt-full-history-item {
       display: flex;
       align-items: center;
       gap: 14px;
       padding: 12px 16px;
-      background: var(--white);
+      background: var(--card);
       border-radius: 8px;
       border-left: 3px solid var(--accent);
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
-      transition: box-shadow .15s, transform .15s;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      transition: background .15s, transform .15s;
     }
     .wcyt-full-history-item:hover {
-      box-shadow: 0 3px 10px rgba(0,0,0,.12);
+      background: #1e1e1e;
       transform: translateY(-1px);
     }
     .wcyt-history-time {
@@ -295,7 +267,7 @@
       font-variant-numeric: tabular-nums;
       width: 52px;
       text-align: center;
-      background: rgba(200,16,46,.07);
+      background: rgba(200,16,46,.12);
       padding: 4px 6px;
       border-radius: 4px;
     }
@@ -308,7 +280,7 @@
     .wcyt-full-history-artist {
       font-weight: 700;
       font-size: 15px;
-      color: var(--black);
+      color: var(--white);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -320,7 +292,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
     .wcyt-history-empty {
       padding: 40px 0;
       color: var(--muted);
@@ -329,55 +300,35 @@
     }
 
     /* ── Loading / error ── */
-    .wcyt-loading {
-      color: #888;
-      font-size: 15px;
-      padding: 12px 0;
-    }
-    .wcyt-error {
-      color: #888;
-      font-size: 14px;
-      padding: 12px 0;
-    }
+    .wcyt-loading { color: #666; font-size: 15px; padding: 12px 0; }
+    .wcyt-error   { color: #666; font-size: 14px; padding: 12px 0; }
     .wcyt-error a { color: var(--accent); }
 
     /* ── Footer ── */
     .site-footer {
-      background: var(--black);
-      color: #555;
+      background: var(--dark);
+      color: #444;
       text-align: center;
       padding: 24px;
       font-size: 12px;
+      border-top: 1px solid #1a1a1a;
     }
-    .site-footer a { color: #777; text-decoration: none; }
+    .site-footer a { color: #666; text-decoration: none; }
     .site-footer a:hover { color: #aaa; }
+    .site-footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-bottom: 10px; }
 
     /* ── Responsive ── */
     @media (max-width: 600px) {
       .page-header { padding: 32px 20px 28px; }
       .playlist-main { padding: 28px 16px 60px; }
       .wcyt-full-now-card { padding: 20px; }
-      .site-nav { padding: 0 20px; }
+      .wcyt-full-song { flex-direction: column; align-items: center; }
+      .wcyt-full-art { width: 200px; height: 200px; }
     }
   </style>
 </head>
 
 <body>
-
-  <!-- Nav -->
-  <nav class="site-nav">
-    <a class="site-nav-logo" href="/" aria-label="The Point 91 FM – Home">
-      <img
-        src="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png"
-        alt="WCYT The Point 91 FM">
-    </a>
-    <a class="site-nav-back" href="/">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 12L6 8l4-4"/>
-      </svg>
-      Back to site
-    </a>
-  </nav>
 
   <!-- Page header -->
   <header class="page-header">
@@ -395,19 +346,23 @@
 
   <!-- Footer -->
   <footer class="site-footer">
-    <p>
-      &copy; WCYT &middot; The Point 91 FM &middot; Homestead High School, Fort Wayne, IN
-      &nbsp;&middot;&nbsp;
-      <a href="/listen">Listen live</a>
-    </p>
+    <div class="site-footer-links">
+      <a href="/playlist">Playlist</a>
+      <a href="/podcasts">Podcasts</a>
+      <a href="/sports">Sports</a>
+      <a href="/team">Team</a>
+      <a href="/awards">Awards</a>
+      <a href="/contact">Contact</a>
+      <a href="https://publicfiles.fcc.gov/fm-profile/wcyt" target="_blank" rel="noopener">FCC Filing</a>
+    </div>
+    <p>&copy; WCYT &middot; The Point 91 FM &middot; Homestead High School, Fort Wayne, IN</p>
   </footer>
 
-  <!-- Widget styles (shared with compact widget on home page) -->
   <style>
-    /* Styles for the JS-rendered inner elements on this page */
     .wcyt-full { width: 100%; }
   </style>
 
+  <script src="/nav.js"></script>
   <script src="/playlist-widget.js"></script>
   <script>
     const _s = new URLSearchParams(location.search).get('s');
