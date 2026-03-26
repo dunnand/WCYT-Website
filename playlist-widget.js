@@ -408,7 +408,7 @@
     ['chumbawamba',               'anarchy'],
     ['pantera',                   'far beyond driven'],
     ['slayer',                    'christ illusion'],
-	['ween',                    'chocolate and cheese'],
+	['ween',                      'chocolate and cheese'],
   ];
 
   function artIsBlocked(artist, album) {
@@ -449,7 +449,11 @@
       if (!normArtist(r.artistName).includes(na)) return false;
       const col = (r.collectionName ?? '').toLowerCase();
       if (ITUNES_REJECT.some(t => col.includes(t))) return false;
-      if (artIsBlocked(r.artistName, r.collectionName ?? '')) return false;
+      if (artIsBlocked(r.artistName, r.collectionName ?? '')) {
+        console.log('[WCYTPlaylist] art blocked:', r.artistName, '/', r.collectionName);
+        return false;
+      }
+      console.log('[WCYTPlaylist] art candidate:', r.artistName, '/', r.collectionName, r.artworkUrl100);
       return true;
     });
 
