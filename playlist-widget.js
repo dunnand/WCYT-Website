@@ -408,12 +408,13 @@
     ['chumbawamba',               'anarchy'],
     ['pantera',                   'far beyond driven'],
     ['slayer',                    'christ illusion'],
-	['ween',                      'chocolate and cheese'],
+    ['ween',                      'chocolate cheese'],
   ];
 
   function artIsBlocked(artist, album) {
-    const a = stripDiacritics(artist).toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
-    const b = stripDiacritics(album ).toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    const norm = s => stripDiacritics(s).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    const a = norm(artist);
+    const b = norm(album);
     return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
   }
 
