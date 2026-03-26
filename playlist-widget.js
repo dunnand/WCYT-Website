@@ -361,6 +361,18 @@
     return BLOCKED_TERMS.some(term => haystack.includes(term));
   }
 
+  // ── Manual art overrides ──────────────────────────────────────────────────
+  // For artists whose music isn't on iTunes (e.g. Bandcamp-only releases).
+  // Key: normalized artist name (lowercase, no punctuation). Value: image URL.
+  const ART_OVERRIDES = {
+    'cindylee': 'https://f4.bcbits.com/img/a1091823768_10.jpg',
+  };
+
+  function artOverride(artist) {
+    const key = normArtist(artist);
+    return ART_OVERRIDES[key] ?? null;
+  }
+
   // ── Album art (iTunes Search API only) ───────────────────────────────────
   // iTunes serves the actual cover art regardless of content, so we maintain
   // a manual blocklist of albums with known explicit/NSFW artwork.
@@ -396,6 +408,7 @@
     ['chumbawamba',               'anarchy'],
     ['pantera',                   'far beyond driven'],
     ['slayer',                    'christ illusion'],
+	['ween',                    'chocolate and cheese'],
   ];
 
   function artIsBlocked(artist, album) {
@@ -427,37 +440,49 @@
   }
 
   async function fetchArtFromiTunes(artist, title) {
-    const term = encodeURIComponent(`${stripDiacritics(artist)} ${stripDiacritics(title)}`);
-    const res  = await fetch(
-      `https://itunes.apple.com/search?term=${term}&entity=song&limit=10&country=US`
-    );
-    const data = await res.json();
-    const na   = normArtist(artist);
+    const na = normArtist(artist);
+    const nt = stripDiacritics(title).toLowerCase();
 
     const isSecondary = r => { const col = (r.collectionName ?? '').toLowerCase(); return ITUNES_SECONDARY.some(t => col.includes(t)); };
 
-    const candidates = (data.results ?? []).filter(r => {
+    const filterCandidates = results => (results ?? []).filter(r => {
       if (!normArtist(r.artistName).includes(na)) return false;
       const col = (r.collectionName ?? '').toLowerCase();
       if (ITUNES_REJECT.some(t => col.includes(t))) return false;
-      // Skip any result whose album art is on the explicit-art blocklist
       if (artIsBlocked(r.artistName, r.collectionName ?? '')) return false;
       return true;
     });
 
-    // Prefer original albums over soundtracks/compilations
-    const match =
+    const pickMatch = candidates =>
       candidates.find(r => !isSecondary(r)) ??
       candidates.find(r =>  isSecondary(r));
 
-    return match?.artworkUrl100
+    const toArtUrl = match => match?.artworkUrl100
       ? match.artworkUrl100.replace('100x100bb', '500x500bb')
       : null;
+
+    // First try: combined artist + title search
+    const term1 = encodeURIComponent(`${stripDiacritics(artist)} ${stripDiacritics(title)}`);
+    const res1  = await fetch(`https://itunes.apple.com/search?term=${term1}&entity=song&limit=10&country=US`);
+    const data1 = await res1.json();
+    const match1 = pickMatch(filterCandidates(data1.results));
+    if (match1) return toArtUrl(match1);
+
+    // Fallback: artist-only search, then match title
+    const term2 = encodeURIComponent(stripDiacritics(artist));
+    const res2  = await fetch(`https://itunes.apple.com/search?term=${term2}&entity=song&limit=50&country=US`);
+    const data2 = await res2.json();
+    const byTitle = filterCandidates(data2.results).filter(r =>
+      stripDiacritics(r.trackName ?? '').toLowerCase() === nt
+    );
+    return toArtUrl(pickMatch(byTitle));
   }
 
   async function fetchArt(artist, title) {
     const key = artCacheKey(artist, title);
     if (key in artCache) return artCache[key];
+    const override = artOverride(artist);
+    if (override) { artCache[key] = override; return override; }
     artCache[key] = null;
     try { artCache[key] = await fetchArtFromiTunes(artist, title); } catch {}
     return artCache[key];
@@ -482,13 +507,13 @@
     return v === '2' || v === '2.0' || v.includes('next level') || v.includes('2.0');
   }
 
-  function applyShowEntry(tsRaw, stationVal, showName) {
+  function applyShowEntry(tsRaw, stationVal, showName, imageUrl) {
     const CLEAR_WORDS = ['clear', 'end', 'done', 'off'];
     const isClear     = !showName || CLEAR_WORDS.includes(showName.toLowerCase());
     const submittedAt = new Date(tsRaw);
     const expiresAt   = new Date(submittedAt.getTime() + SHOW_TTL_MS);
     const entry       = (!isClear && Date.now() < expiresAt.getTime())
-      ? { name: showName, expiresAt }
+      ? { name: showName, expiresAt, imageUrl: imageUrl || null }
       : null;
 
     if (isStation2(stationVal)) {
@@ -519,6 +544,7 @@
       const resolvedShw = byShowDj !== -1 ? byShowDj
                         : byName   !== -1 ? byName
                         : resolvedStn + 1;
+      const imageCol = headers.findIndex(h => h.includes('image') || h.includes('photo') || h.includes('pic'));
 
       console.log('[WCYTPlaylist] Show sheet headers:', headers);
       console.log('[WCYTPlaylist] stationCol:', resolvedStn, '| showCol:', resolvedShw);
@@ -532,7 +558,8 @@
         const tsRaw     = (cols[0]              ?? '').trim();
         const stationV  = (cols[resolvedStn]    ?? '').trim();
         const showName  = (cols[resolvedShw]    ?? '').trim();
-        applyShowEntry(tsRaw, stationV, showName);
+        const imageUrl  = imageCol !== -1 ? (cols[imageCol] ?? '').trim() : '';
+        applyShowEntry(tsRaw, stationV, showName, imageUrl);
       }
 
       render();
@@ -672,10 +699,11 @@
     const station    = STATIONS[activeStation];
     const isWCYT     = activeStation === 0;
     const currentShow = isWCYT ? currentShowWCYT : currentShow2;
+    const showArt    = currentShow?.imageUrl || null;
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
-        ${isWCYT ? (song ? backdropDiv(song.artUrl) : '') : (currentSong2 ? backdropDiv(currentSong2.artUrl) : '')}
+        ${isWCYT ? (song ? backdropDiv(showArt || song.artUrl) : '') : (currentSong2 ? backdropDiv(showArt || currentSong2.artUrl) : '')}
         <div class="wcyt-hero-inner">
 
           <div class="wcyt-hero-eyebrow">
@@ -697,7 +725,7 @@
 
           ${isWCYT ? `
             ${song ? `
-              ${artImg(song.artUrl, 220, 'wcyt-hero-art')}
+              ${artImg(showArt || song.artUrl, 220, 'wcyt-hero-art')}
               <div class="wcyt-hero-artist">${esc(song.artist || 'WCYT')}</div>
               <div class="wcyt-hero-title">${esc(song.title)}</div>
               <div class="wcyt-hero-controls">
@@ -715,7 +743,7 @@
                 <ul class="wcyt-hero-recent-list">
                   ${history.map(s => `
                     <li>
-                      ${artImg(s.artUrl, 32, 'wcyt-hero-recent-art')}
+                      ${artImg(s.artUrl, 72, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
                         <span class="wcyt-hero-recent-artist">${esc(s.artist || 'WCYT')}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
@@ -730,7 +758,7 @@
           ` : `
             <div class="wcyt-hero-s2">
               ${currentSong2 ? `
-                ${artImg(currentSong2.artUrl || FALLBACK_ART_2, 180, 'wcyt-hero-art')}
+                ${artImg(showArt || currentSong2.artUrl || FALLBACK_ART_2, 180, 'wcyt-hero-art')}
                 <div class="wcyt-hero-artist">${esc(currentSong2.artist || '2.0')}</div>
                 <div class="wcyt-hero-title">${esc(currentSong2.title)}</div>
               ` : `<img src="${FALLBACK_ART_2}" class="wcyt-hero-art" width="180" height="180" alt="2.0 Next Level of Radio">`}
@@ -750,7 +778,7 @@
                 <ul class="wcyt-hero-recent-list">
                   ${songHistory2.slice(0, 3).map(s => `
                     <li>
-                      ${artImg(s.artUrl, 32, 'wcyt-hero-recent-art')}
+                      ${artImg(s.artUrl, 72, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
                         <span class="wcyt-hero-recent-artist">${esc(s.artist || '2.0')}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
@@ -785,11 +813,12 @@
 
     const song    = currentSong;
     const history = songHistory.slice(0, 5);
+    const compactShowArt = currentShowWCYT?.imageUrl || null;
 
     compactEl.innerHTML = `
       <div class="wcyt-compact">
         <div class="wcyt-compact-now">
-          ${song ? backdropDiv(song.artUrl) : ''}
+          ${song ? backdropDiv(compactShowArt || song.artUrl) : ''}
           <div class="wcyt-compact-header">
             <span class="wcyt-label">NOW PLAYING</span>
             <span class="wcyt-bars" aria-hidden="true">
@@ -798,7 +827,7 @@
           </div>
           ${song ? `
             <div class="wcyt-compact-song">
-              ${artImg(song.artUrl, 140, 'wcyt-compact-art')}
+              ${artImg(compactShowArt || song.artUrl, 140, 'wcyt-compact-art')}
               <div class="wcyt-compact-song-text">
                 <div class="wcyt-artist">${esc(song.artist || 'WCYT')}</div>
                 <div class="wcyt-title">${esc(song.title)}</div>
@@ -844,11 +873,13 @@
 
     const song    = activeStation === 1 ? currentSong2  : currentSong;
     const history = activeStation === 1 ? songHistory2  : songHistory;
+    const fullShow    = activeStation === 1 ? currentShow2 : currentShowWCYT;
+    const fullShowArt = fullShow?.imageUrl || null;
 
     fullEl.innerHTML = `
       <div class="wcyt-full">
         <div class="wcyt-full-now-card">
-          ${song ? backdropDiv(song.artUrl) : ''}
+          ${song ? backdropDiv(fullShowArt || song.artUrl) : ''}
           <div class="wcyt-full-card-header">
             <span class="wcyt-label">NOW PLAYING</span>
             <span class="wcyt-bars wcyt-bars--lg" aria-hidden="true">
@@ -857,7 +888,7 @@
           </div>
           ${song ? `
             <div class="wcyt-full-song">
-              ${artImg(song.artUrl, 260, 'wcyt-full-art')}
+              ${artImg(fullShowArt || song.artUrl, 340, 'wcyt-full-art')}
               <div class="wcyt-full-song-text">
                 <div class="wcyt-full-artist">${esc(song.artist || 'WCYT')}</div>
                 <div class="wcyt-full-title">${esc(song.title)}</div>
@@ -878,7 +909,7 @@
             <ul class="wcyt-full-history-list">
               ${history.map(s => `
                 <li class="wcyt-full-history-item">
-                  ${artImg(s.artUrl, 48, 'wcyt-history-art wcyt-history-art--full')}
+                  ${artImg(s.artUrl, 72, 'wcyt-history-art wcyt-history-art--full')}
                   <span class="wcyt-history-time">${formatTime(s.startedAt)}</span>
                   <span class="wcyt-full-history-track">
                     <span class="wcyt-full-history-artist">${esc(s.artist || 'WCYT')}</span>
