@@ -744,15 +744,20 @@
     // DJ panel overrides: image, show name, artist, title
     const showArt    = djP?.imageUrl   || currentShow?.imageUrl || null;
     const showName   = djP?.showName   || currentShow?.name     || null;
+    const songObj    = isWCYT ? song : currentSong2;
+    const songPlaying = !!songObj;
 
-    // Displayed artist/title: manual override > on-break message > stream
-    const dispArtist = djP?.onBreak ? (showName || 'WCYT')
-                     : djP?.manualArtist ? djP.manualArtist
-                     : (isWCYT ? (song?.artist || null) : (currentSong2?.artist || null));
-    const dispTitle  = djP?.onBreak ? 'On Break'
-                     : djP?.manualTitle ? djP.manualTitle
-                     : (isWCYT ? (song?.title  || null) : (currentSong2?.title  || null));
-    const dispArt    = showArt || (isWCYT ? song?.artUrl : currentSong2?.artUrl) || null;
+    // When a song is actively playing, song art/info takes priority.
+    // Show image and DJ overrides only appear between songs (dead air / breaks).
+    const dispArt    = (songPlaying ? songObj?.artUrl : null) || showArt || null;
+    const dispArtist = songPlaying        ? (songObj?.artist || null)
+                     : djP?.onBreak       ? (showName || 'WCYT')
+                     : djP?.manualArtist  ? djP.manualArtist
+                     : null;
+    const dispTitle  = songPlaying        ? (songObj?.title  || null)
+                     : djP?.onBreak       ? 'On Break'
+                     : djP?.manualTitle   ? djP.manualTitle
+                     : null;
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
