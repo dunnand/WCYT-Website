@@ -1,5 +1,7 @@
 {
   "shows": [
-    { "name": "WCYT Default", "url": "/images/shows/wcyt-default.jpg" }
+    { "name": "WCYT Default", "url": "/images/shows/wcyt-default.jpg" },
+	{ "name": "2.0 Default", "url": "/images/shows/2.0 Logo.jpg" },
+    { "name": "If I'm Being Honest Podcast", "url": "/images/shows/If I'm Being Honest Podcast.jpg" }
   ]
 }
