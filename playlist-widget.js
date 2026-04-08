@@ -758,8 +758,12 @@
     const dispArt    = showBreakArt
                      ? (showArt || songObj?.artUrl || null)
                      : (songObj?.artUrl || null);
-    const dispArtist = showBreakArt ? (showName || 'WCYT') : (songObj?.artist || null);
-    const dispTitle  = showBreakArt ? 'On Break'           : (songObj?.title  || null);
+    const dispArtist = showBreakArt        ? (showName || 'WCYT')
+                     : djP?.manualArtist  ? djP.manualArtist
+                     : (songObj?.artist   || null);
+    const dispTitle  = showBreakArt        ? 'On Break'
+                     : djP?.manualTitle   ? djP.manualTitle
+                     : (songObj?.title    || null);
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
