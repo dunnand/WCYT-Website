@@ -458,7 +458,7 @@
     }
 
     disableButtons(true);
-    const ok = await saveState({ active: true, onBreak: false, showName, imageUrl, manualArtist, manualTitle });
+    const ok = await saveState({ active: true, onBreak: false, onBreakAt: '', showName, imageUrl, manualArtist, manualTitle });
     disableButtons(false);
 
     if (ok) {
@@ -474,6 +474,7 @@
     const ok = await saveState({
       active: true,
       onBreak: true,
+      onBreakAt: new Date().toISOString(),
       manualArtist: document.getElementById('manual-artist').value.trim(),
       manualTitle:  document.getElementById('manual-title').value.trim(),
     });

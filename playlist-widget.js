@@ -741,23 +741,25 @@
     const currentShow = isWCYT ? currentShowWCYT : currentShow2;
     const djP        = getDJPanel(activeStation);  // real-time DJ panel data (takes priority)
 
-    // DJ panel overrides: image, show name, artist, title
-    const showArt    = djP?.imageUrl   || currentShow?.imageUrl || null;
-    const showName   = djP?.showName   || currentShow?.name     || null;
-    const songObj    = isWCYT ? song : currentSong2;
-    const songPlaying = !!songObj;
+    // DJ panel state
+    const showArt  = djP?.imageUrl || currentShow?.imageUrl || null;
+    const showName = djP?.showName || currentShow?.name     || null;
+    const songObj  = isWCYT ? song : currentSong2;
 
-    // When a song is actively playing, song art/info takes priority.
-    // Show image and DJ overrides only appear between songs (dead air / breaks).
-    const dispArt    = (songPlaying ? songObj?.artUrl : null) || showArt || null;
-    const dispArtist = songPlaying        ? (songObj?.artist || null)
-                     : djP?.onBreak       ? (showName || 'WCYT')
-                     : djP?.manualArtist  ? djP.manualArtist
-                     : null;
-    const dispTitle  = songPlaying        ? (songObj?.title  || null)
-                     : djP?.onBreak       ? 'On Break'
-                     : djP?.manualTitle   ? djP.manualTitle
-                     : null;
+    // On Break: show image appears immediately, but yields to song art
+    // once a new song starts (song started after the DJ clicked On Break).
+    const onBreakAt        = djP?.onBreakAt ? new Date(djP.onBreakAt) : null;
+    const newSongSinceBreak = djP?.onBreak && onBreakAt && songObj?.startedAt > onBreakAt;
+    const showBreakArt     = djP?.onBreak && !newSongSinceBreak;
+
+    // On Air: show name banner only — art and song info stay as-is (no image override).
+    // On Break (before new song): show image + "On Break".
+    // On Break (after new song) / On Air: song art + song info.
+    const dispArt    = showBreakArt
+                     ? (showArt || songObj?.artUrl || null)
+                     : (songObj?.artUrl || null);
+    const dispArtist = showBreakArt ? (showName || 'WCYT') : (songObj?.artist || null);
+    const dispTitle  = showBreakArt ? 'On Break'           : (songObj?.title  || null);
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
