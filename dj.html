@@ -385,7 +385,7 @@
     if (!JSONBIN_URL) return;
     try {
       const res = await fetch(JSONBIN_URL + '/latest', {
-        headers: { 'X-Access-Key': WRITE_KEY }
+        headers: { 'X-Master-Key': WRITE_KEY }
       });
       const data = await res.json();
       const rec = data.record || {};
@@ -411,7 +411,7 @@
     try {
       // Read current full record first
       const getRes = await fetch(JSONBIN_URL + '/latest', {
-        headers: { 'X-Access-Key': WRITE_KEY }
+        headers: { 'X-Master-Key': WRITE_KEY }
       });
       const getData = await getRes.json();
       const current = getData.record || {};
@@ -424,7 +424,7 @@
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Access-Key': WRITE_KEY
+          'X-Master-Key': WRITE_KEY
         },
         body: JSON.stringify(current)
       });
