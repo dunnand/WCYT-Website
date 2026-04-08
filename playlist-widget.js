@@ -746,29 +746,21 @@
     const showName = djP?.showName || currentShow?.name     || null;
     const songObj  = isWCYT ? song : currentSong2;
 
-    // On Break: show image appears immediately, but yields to song art
-    // once a new song starts (song started after the DJ clicked On Break).
-    const onBreakAt        = djP?.onBreakAt ? new Date(djP.onBreakAt) : null;
-    const newSongSinceBreak = djP?.onBreak && onBreakAt && songObj?.startedAt > onBreakAt;
-    const showBreakArt     = djP?.onBreak && !newSongSinceBreak;
+    // Manual override clears when a new song starts after it was set.
+    // Show image stays up the whole time the DJ is active, and only gives
+    // way to song art once the override expires (new song detected).
+    const manualSetAt     = djP?.manualSetAt ? new Date(djP.manualSetAt) : null;
+    const manualStale     = manualSetAt && songObj?.startedAt > manualSetAt;
+    const overridesActive = !manualStale;
+    const showDJImage     = djP && !manualStale;
 
-    // On Air: show name banner only — art and song info stay as-is (no image override).
-    // On Break (before new song): show image + "On Break".
-    // On Break (after new song) / On Air: song art + song info.
-    const dispArt    = showBreakArt
-                     ? (showArt || songObj?.artUrl || null)
-                     : (songObj?.artUrl || null);
-    // Manual override clears when a new song starts after it was set (On Air or On Break)
-    const manualSetAt   = djP?.manualSetAt ? new Date(djP.manualSetAt) : null;
-    const manualStale   = manualSetAt && songObj?.startedAt > manualSetAt;
-    const overridesActive = !newSongSinceBreak && !manualStale;
-
-    const dispArtist = showBreakArt                          ? (showName || 'WCYT')
-                     : (djP?.manualArtist && overridesActive) ? djP.manualArtist
-                     : (songObj?.artist                      || null);
-    const dispTitle  = showBreakArt                          ? 'On Break'
-                     : (djP?.manualTitle  && overridesActive) ? djP.manualTitle
-                     : (songObj?.title                       || null);
+    const dispArt    = (showDJImage && showArt)
+                     ? showArt
+                     : (songObj?.artUrl || showArt || null);
+    const dispArtist = (djP?.manualArtist && overridesActive) ? djP.manualArtist
+                     : (songObj?.artist || null);
+    const dispTitle  = (djP?.manualTitle  && overridesActive) ? djP.manualTitle
+                     : (songObj?.title   || null);
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">

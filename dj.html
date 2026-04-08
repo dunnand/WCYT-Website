@@ -406,7 +406,7 @@
       const sel = document.getElementById('show-image');
       if (s.imageUrl) sel.value = s.imageUrl;
       previewImage();
-      setStatusUI(s.active ? (s.onBreak ? 'on-break' : 'on-air') : 'idle');
+      setStatusUI(s.active ? (s.manualTitle === 'On Break' ? 'on-break' : 'on-air') : 'idle');
     } catch(e) {
       console.warn('Could not load state:', e);
     }
@@ -471,20 +471,27 @@
   }
 
   async function goOnBreak() {
+    const showName = document.getElementById('show-name').value.trim();
+    if (!showName) { showMsg('Enter a show name first.', 'error'); return; }
+
+    // Auto-fill override fields so the site shows the break message
+    document.getElementById('manual-artist').value = showName;
+    document.getElementById('manual-title').value  = 'On Break';
+
     disableButtons(true);
     const ok = await saveState({
       active: true,
-      onBreak: true,
-      onBreakAt: new Date().toISOString(),
-      manualArtist: document.getElementById('manual-artist').value.trim(),
-      manualTitle:  document.getElementById('manual-title').value.trim(),
-      manualSetAt:  (document.getElementById('manual-artist').value.trim() || document.getElementById('manual-title').value.trim()) ? new Date().toISOString() : '',
+      onBreak: false,
+      onBreakAt: '',
+      manualArtist: showName,
+      manualTitle:  'On Break',
+      manualSetAt:  new Date().toISOString(),
     });
     disableButtons(false);
 
     if (ok) {
       setStatusUI('on-break');
-      showMsg('On break. Show image stays on site.', 'ok');
+      showMsg('On break. Override fields filled.', 'ok');
     } else {
       showMsg('Save failed.', 'error');
     }
