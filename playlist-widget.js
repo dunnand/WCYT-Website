@@ -758,12 +758,13 @@
     const dispArt    = showBreakArt
                      ? (showArt || songObj?.artUrl || null)
                      : (songObj?.artUrl || null);
-    const dispArtist = showBreakArt        ? (showName || 'WCYT')
-                     : djP?.manualArtist  ? djP.manualArtist
-                     : (songObj?.artist   || null);
-    const dispTitle  = showBreakArt        ? 'On Break'
-                     : djP?.manualTitle   ? djP.manualTitle
-                     : (songObj?.title    || null);
+    const overridesActive = !newSongSinceBreak; // manual overrides clear with show image when new song starts
+    const dispArtist = showBreakArt                          ? (showName || 'WCYT')
+                     : (djP?.manualArtist && overridesActive) ? djP.manualArtist
+                     : (songObj?.artist                      || null);
+    const dispTitle  = showBreakArt                          ? 'On Break'
+                     : (djP?.manualTitle  && overridesActive) ? djP.manualTitle
+                     : (songObj?.title                       || null);
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
