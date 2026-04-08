@@ -390,6 +390,16 @@
       const data = await res.json();
       const rec = data.record || {};
       const s = rec[activeStation] || {};
+
+      // Auto-expire: if active but no update in 30 min, clear the state
+      const EXPIRE_MS = 30 * 60 * 1000;
+      if (s.active && s.updatedAt && Date.now() - new Date(s.updatedAt).getTime() > EXPIRE_MS) {
+        await saveState({ active: false, onBreak: false, showName: '', imageUrl: '', manualArtist: '', manualTitle: '' });
+        showMsg('Previous show expired after 30 min of inactivity.', 'error');
+        setStatusUI('idle');
+        return;
+      }
+
       document.getElementById('show-name').value     = s.showName    || '';
       document.getElementById('manual-artist').value = s.manualArtist || '';
       document.getElementById('manual-title').value  = s.manualTitle  || '';

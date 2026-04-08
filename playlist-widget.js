@@ -97,10 +97,13 @@
     }
   }
 
+  const DJ_EXPIRE_MS = 30 * 60 * 1000; // 30 minutes
+
   function getDJPanel(stationIdx) {
     const key = stationIdx === 0 ? 'wcyt' : '2pt0';
     const p   = djPanel[key];
     if (!p || !p.active) return null;
+    if (p.updatedAt && Date.now() - new Date(p.updatedAt).getTime() > DJ_EXPIRE_MS) return null;
     return p;
   }
 
