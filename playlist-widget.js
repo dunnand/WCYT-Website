@@ -19,6 +19,13 @@
   const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
   const SHOW_TTL_MS   = 45 * 60 * 1000; // auto-clear after 45 minutes
 
+  // ── DJ Panel (JSONBin) ────────────────────────────────────────────
+  // After setting up JSONBin, paste your Bin ID here.
+  const DJPANEL_BIN_ID = '69d6461336566621a88e9c7c'; // e.g. '6613abc123def456'
+  const DJPANEL_URL    = DJPANEL_BIN_ID
+    ? `https://api.jsonbin.io/v3/b/${DJPANEL_BIN_ID}/latest`
+    : '';
+
   // ── Last.fm config ────────────────────────────────────────────────────────
   // Register free API keys at https://www.last.fm/api/account/create
   const LASTFM_KEY    = 'cdd7c1932d8d41d9ec8918ef01b617c9';
@@ -72,6 +79,30 @@
   let pollTimer         = null;
   let tickTimer         = null;
   let activeStation     = 0;   // index into STATIONS
+
+  // ── DJ Panel state ────────────────────────────────────────────────
+  let djPanel = { wcyt: null, '2pt0': null };
+
+  async function fetchDJPanel() {
+    if (!DJPANEL_URL) return;
+    try {
+      const res  = await fetch(DJPANEL_URL, { cache: 'no-store' });
+      const data = await res.json();
+      const rec  = data.record || {};
+      djPanel['wcyt'] = rec['wcyt']  || null;
+      djPanel['2pt0'] = rec['2pt0'] || null;
+      render();
+    } catch (err) {
+      console.warn('[WCYTPlaylist] DJ panel fetch error:', err);
+    }
+  }
+
+  function getDJPanel(stationIdx) {
+    const key = stationIdx === 0 ? 'wcyt' : '2pt0';
+    const p   = djPanel[key];
+    if (!p || !p.active) return null;
+    return p;
+  }
 
   // ── Last.fm state ─────────────────────────────────────────────────────────
   let lastfmSession  = null;   // { key, name } | null
@@ -409,6 +440,7 @@
     ['pantera',                   'far beyond driven'],
     ['slayer',                    'christ illusion'],
     ['ween',                      'chocolate cheese'],
+	['the strokes',				  'is this it'],
   ];
 
   function artIsBlocked(artist, album) {
@@ -704,11 +736,24 @@
     const station    = STATIONS[activeStation];
     const isWCYT     = activeStation === 0;
     const currentShow = isWCYT ? currentShowWCYT : currentShow2;
-    const showArt    = currentShow?.imageUrl || null;
+    const djP        = getDJPanel(activeStation);  // real-time DJ panel data (takes priority)
+
+    // DJ panel overrides: image, show name, artist, title
+    const showArt    = djP?.imageUrl   || currentShow?.imageUrl || null;
+    const showName   = djP?.showName   || currentShow?.name     || null;
+
+    // Displayed artist/title: manual override > on-break message > stream
+    const dispArtist = djP?.onBreak ? (showName || 'WCYT')
+                     : djP?.manualArtist ? djP.manualArtist
+                     : (isWCYT ? (song?.artist || null) : (currentSong2?.artist || null));
+    const dispTitle  = djP?.onBreak ? 'On Break'
+                     : djP?.manualTitle ? djP.manualTitle
+                     : (isWCYT ? (song?.title  || null) : (currentSong2?.title  || null));
+    const dispArt    = showArt || (isWCYT ? song?.artUrl : currentSong2?.artUrl) || null;
 
     heroEl.innerHTML = `
       <div class="wcyt-hero">
-        ${isWCYT ? (song ? backdropDiv(showArt || song.artUrl) : '') : (currentSong2 ? backdropDiv(showArt || currentSong2.artUrl) : '')}
+        ${dispArt ? backdropDiv(dispArt) : ''}
         <div class="wcyt-hero-inner">
 
           <div class="wcyt-hero-eyebrow">
@@ -720,23 +765,25 @@
 
           ${stationSwitcher()}
 
-          ${currentShow ? `
+          ${showName ? `
             <div class="wcyt-hero-show">
               <span class="wcyt-hero-show-dot"></span>
               <span class="wcyt-hero-show-label">NOW ON AIR</span>
-              <span class="wcyt-hero-show-name">${esc(currentShow.name)}</span>
+              <span class="wcyt-hero-show-name">${esc(showName)}</span>
             </div>
           ` : ''}
 
           ${isWCYT ? `
-            ${song ? `
-              ${artImg(showArt || song.artUrl, 220, 'wcyt-hero-art')}
-              <div class="wcyt-hero-artist">${esc(song.artist || 'WCYT')}</div>
-              <div class="wcyt-hero-title">${esc(song.title)}</div>
+            ${(song || djP) ? `
+              ${artImg(dispArt, 220, 'wcyt-hero-art')}
+              <div class="wcyt-hero-artist">${esc(dispArtist || 'WCYT')}</div>
+              <div class="wcyt-hero-title">${esc(dispTitle || 'On Air')}</div>
               <div class="wcyt-hero-controls">
-                <span class="wcyt-age wcyt-hero-age" data-started="${song.startedAt.toISOString()}">
-                  ${relativeTime(song.startedAt)}
-                </span>
+                ${(!djP?.onBreak && !djP?.manualTitle && song) ? `
+                  <span class="wcyt-age wcyt-hero-age" data-started="${song.startedAt.toISOString()}">
+                    ${relativeTime(song.startedAt)}
+                  </span>
+                ` : ''}
                 ${playBtnHTML('lg')}
                 <a href="${activeStation === 1 ? '/playlist?s=2' : '/playlist'}" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
               </div>
@@ -762,15 +809,15 @@
             ` : ''}
           ` : `
             <div class="wcyt-hero-s2">
-              ${currentSong2 ? `
-                ${artImg(showArt || currentSong2.artUrl || FALLBACK_ART_2, 180, 'wcyt-hero-art')}
-                <div class="wcyt-hero-artist">${esc(currentSong2.artist || '2.0')}</div>
-                <div class="wcyt-hero-title">${esc(currentSong2.title)}</div>
+              ${(currentSong2 || djP) ? `
+                ${artImg(dispArt || FALLBACK_ART_2, 180, 'wcyt-hero-art')}
+                <div class="wcyt-hero-artist">${esc(dispArtist || '2.0')}</div>
+                <div class="wcyt-hero-title">${esc(dispTitle || 'On Air')}</div>
               ` : `<img src="${FALLBACK_ART_2}" class="wcyt-hero-art" width="180" height="180" alt="2.0 Next Level of Radio">`}
                 <div class="wcyt-hero-controls">
                 <span class="wcyt-age wcyt-hero-age"
-                  ${currentSong2 ? `data-started="${currentSong2.startedAt.toISOString()}"` : ''}>
-                  ${currentSong2 ? relativeTime(currentSong2.startedAt) : 'Live now'}
+                  ${currentSong2 && !djP?.manualTitle ? `data-started="${currentSong2.startedAt.toISOString()}"` : ''}>
+                  ${(currentSong2 && !djP?.manualTitle) ? relativeTime(currentSong2.startedAt) : 'Live now'}
                 </span>
                 ${playBtnHTML('lg')}
                 <a href="/playlist?s=2" class="wcyt-hero-playlist-link">Full playlist &rarr;</a>
@@ -1122,7 +1169,8 @@
         }
       });
       fetchCurrentShow();
-      pollTimer = setInterval(() => { fetchNowPlaying(); fetchCurrentShow(); }, POLL_MS);
+      fetchDJPanel();
+      pollTimer = setInterval(() => { fetchNowPlaying(); fetchCurrentShow(); fetchDJPanel(); }, POLL_MS);
       tickTimer = setInterval(tickAges, 30_000);
     },
     togglePlay()       { togglePlay(); },

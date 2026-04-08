@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DJ Panel — WCYT</title>
+  <link rel="icon" type="image/x-icon" href="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453742941-Z0LFTEREVU8L8RIFHHUL/favicon.ico?format=100w">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black:  #0d0d0d;
+      --dark:   #111111;
+      --mid:    #1a1a1a;
+      --card:   #161616;
+      --border: #2a2a2a;
+      --muted:  #888888;
+      --accent: #c8102e;
+      --green:  #22c55e;
+      --yellow: #f59e0b;
+      --white:  #ffffff;
+      --font:   'Space Grotesk', sans-serif;
+    }
+    html { font-family: var(--font); background: var(--black); color: var(--white); min-height: 100vh; }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Password gate ── */
+    #pw-gate {
+      position: fixed; inset: 0; background: var(--black);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 24px;
+    }
+    #pw-gate.hidden { display: none; }
+    .pw-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 380px;
+      text-align: center;
+    }
+    .pw-logo {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 8px;
+    }
+    .pw-box h1 { font-size: 24px; font-weight: 700; margin-bottom: 28px; }
+    .pw-box input[type=password] {
+      width: 100%; padding: 14px 16px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--mid);
+      color: var(--white); font: inherit; font-size: 16px;
+      margin-bottom: 12px; outline: none;
+      transition: border-color .2s;
+    }
+    .pw-box input[type=password]:focus { border-color: var(--accent); }
+    .pw-error { color: #ef4444; font-size: 13px; margin-bottom: 12px; min-height: 18px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 24px; border-radius: 8px; border: none;
+      font: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all .15s; text-decoration: none;
+    }
+    .btn-primary { background: var(--accent); color: var(--white); width: 100%; }
+    .btn-primary:hover { background: #a50d26; }
+    .btn-secondary { background: var(--mid); color: var(--white); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #222; }
+    .btn-green  { background: var(--green); color: #000; }
+    .btn-green:hover  { background: #16a34a; }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-yellow:hover { background: #d97706; }
+    .btn-danger { background: #ef4444; color: var(--white); }
+    .btn-danger:hover { background: #dc2626; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Setup notice ── */
+    #setup-notice {
+      background: #1a1200; border: 1px solid #f59e0b44;
+      border-radius: 12px; padding: 20px 24px; margin: 24px;
+    }
+    #setup-notice h2 { color: var(--yellow); font-size: 16px; margin-bottom: 10px; }
+    #setup-notice p, #setup-notice li { font-size: 13px; color: #ccc; line-height: 1.7; }
+    #setup-notice ol { padding-left: 20px; margin: 8px 0; }
+    #setup-notice code {
+      background: #333; padding: 2px 6px; border-radius: 4px;
+      font-family: monospace; font-size: 12px; color: var(--yellow);
+    }
+
+    /* ── Panel header ── */
+    .panel-header {
+      background: var(--dark); padding: 20px 24px;
+      border-bottom: 3px solid var(--accent);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .panel-header-left { display: flex; flex-direction: column; gap: 2px; }
+    .panel-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+    .panel-title { font-size: 22px; font-weight: 700; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 999px;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      transition: all .3s;
+    }
+    .status-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .status-pill.idle    { background: #1a1a1a; color: var(--muted); }
+    .status-pill.idle .dot    { background: var(--muted); }
+    .status-pill.on-air  { background: rgba(34,197,94,.15); color: var(--green); }
+    .status-pill.on-air .dot  { background: var(--green); animation: pulse 1.2s ease infinite; }
+    .status-pill.on-break { background: rgba(245,158,11,.15); color: var(--yellow); }
+    .status-pill.on-break .dot { background: var(--yellow); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+    /* ── Main layout ── */
+    .panel-main {
+      flex: 1; padding: 24px; max-width: 640px; width: 100%; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    /* ── Station tabs ── */
+    .station-tabs { display: flex; gap: 8px; }
+    .station-tab {
+      flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted); font: inherit; font-size: 13px;
+      font-weight: 600; cursor: pointer; text-align: center; transition: all .15s;
+    }
+    .station-tab.active { background: var(--accent); border-color: var(--accent); color: var(--white); }
+
+    /* ── Cards ── */
+    .panel-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .card-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 16px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { font-size: 13px; font-weight: 600; color: #ccc; }
+    .field input[type=text], .field select, .field input[type=url] {
+      padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--mid); color: var(--white); font: inherit; font-size: 15px;
+      outline: none; transition: border-color .2s; width: 100%;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field select option { background: var(--mid); }
+
+    /* ── Image preview ── */
+    .image-preview-wrap {
+      display: flex; align-items: center; gap: 16px; margin-top: 10px;
+    }
+    #img-preview {
+      width: 80px; height: 80px; border-radius: 8px; object-fit: cover;
+      background: var(--mid); border: 1px solid var(--border); display: block;
+      flex-shrink: 0;
+    }
+    .img-preview-label { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Action buttons ── */
+    .action-btns {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .action-btns .btn-end { grid-column: 1 / -1; }
+    .btn-lg { padding: 16px 24px; font-size: 15px; border-radius: 10px; }
+
+    /* ── Save feedback ── */
+    .save-msg {
+      text-align: center; font-size: 13px; font-weight: 600;
+      min-height: 20px; transition: opacity .3s;
+    }
+    .save-msg.ok    { color: var(--green); }
+    .save-msg.error { color: #ef4444; }
+
+    /* ── Tip box ── */
+    .tip {
+      background: #0d1a0d; border: 1px solid #22c55e33;
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 13px; color: #9ca3af; line-height: 1.6;
+    }
+    .tip strong { color: #ccc; }
+
+    @media (max-width: 480px) {
+      .panel-main { padding: 16px; }
+      .panel-card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Password Gate ── -->
+<div id="pw-gate">
+  <div class="pw-box">
+    <div class="pw-logo">WCYT · The Point 91 FM</div>
+    <h1>DJ Panel</h1>
+    <input type="password" id="pw-input" placeholder="Enter password" autocomplete="current-password">
+    <div class="pw-error" id="pw-error"></div>
+    <button class="btn btn-primary" onclick="checkPassword()">Sign In</button>
+  </div>
+</div>
+
+<!-- ── Main Panel ── -->
+<div id="dj-panel" style="display:none; flex-direction:column; min-height:100vh;">
+
+  <!-- Setup notice (only shown if not configured) -->
+  <div id="setup-notice" style="display:none;">
+    <h2>⚠ Setup Required</h2>
+    <p>To use the DJ Panel, complete the one-time JSONBin setup:</p>
+    <ol>
+      <li>Create a free account at <strong>jsonbin.io</strong></li>
+      <li>Create a new bin with this content:<br>
+        <code>{"wcyt":{"active":false},"2pt0":{"active":false}}</code>
+      </li>
+      <li>Set the bin to <strong>Public</strong> (so the website can read it)</li>
+      <li>Copy your <strong>Bin ID</strong> and <strong>API Key</strong></li>
+      <li>Edit <code>dj.html</code> and fill in <code>BIN_ID</code> and <code>WRITE_KEY</code> in the config section</li>
+      <li>Also update <code>playlist-widget.js</code> with the same <code>BIN_ID</code></li>
+    </ol>
+  </div>
+
+  <header class="panel-header">
+    <div class="panel-header-left">
+      <div class="panel-eyebrow">WCYT · The Point 91 FM</div>
+      <div class="panel-title">DJ Panel</div>
+    </div>
+    <div class="status-pill idle" id="status-pill">
+      <span class="dot"></span>
+      <span id="status-text">Idle</span>
+    </div>
+  </header>
+
+  <main class="panel-main">
+
+    <!-- Station selector -->
+    <div class="station-tabs">
+      <button class="station-tab active" id="tab-wcyt" onclick="setStation('wcyt')">The Point 91 FM</button>
+      <button class="station-tab"        id="tab-2pt0" onclick="setStation('2pt0')">2.0 Next Level</button>
+    </div>
+
+    <!-- Show info -->
+    <div class="panel-card">
+      <div class="card-title">Show Info</div>
+
+      <div class="field">
+        <label for="show-name">Show / DJ Name</label>
+        <input type="text" id="show-name" placeholder="e.g. The Morning Drive with Alex">
+      </div>
+
+      <div class="field">
+        <label for="show-image">Show Image</label>
+        <select id="show-image" onchange="previewImage()">
+          <option value="">— Select show image —</option>
+        </select>
+      </div>
+
+      <div class="image-preview-wrap">
+        <img id="img-preview" src="" alt="Preview" onerror="this.src=''">
+        <div class="img-preview-label">
+          Select an image above to preview it.<br>
+          To add new show logos, ask your station manager.
+        </div>
+      </div>
+    </div>
+
+    <!-- Now playing override -->
+    <div class="panel-card">
+      <div class="card-title">Now Playing Override <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+
+      <div class="field">
+        <label for="manual-artist">Artist / DJ Name</label>
+        <input type="text" id="manual-artist" placeholder="e.g. Taylor Swift   or   Live with DJ Alex">
+      </div>
+
+      <div class="field">
+        <label for="manual-title">Song Title / Description</label>
+        <input type="text" id="manual-title" placeholder="e.g. Anti-Hero   or   Taking your requests!">
+      </div>
+
+      <div class="tip">
+        <strong>Tip:</strong> Leave these blank to let the system auto-detect what's playing from the stream.
+        Fill them in when you're on mic, on a break, or playing something the system won't recognize.
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="panel-card">
+      <div class="card-title">Status</div>
+      <div class="action-btns">
+        <button class="btn btn-green btn-lg" id="btn-onair"  onclick="goOnAir()">🎙 On Air</button>
+        <button class="btn btn-yellow btn-lg" id="btn-break" onclick="goOnBreak()">☕ On Break</button>
+        <button class="btn btn-danger btn-lg btn-end" id="btn-end" onclick="endShow()">⏹ End Show</button>
+      </div>
+      <div class="save-msg" id="save-msg"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────────────────────────
+  // CONFIG — fill these in after JSONBin setup
+  // ─────────────────────────────────────────────────────────────────
+  const BIN_ID   = '69d6461336566621a88e9c7c';   // e.g. '6613abc123def456'
+  const WRITE_KEY = '$2a$10$s2EAQ4fmcOv4Z3qirUkUA.IzIm6h6s2THmXDWhxGbcFhVAytzJFrK';  // Your JSONBin API key (Master or Collection key)
+  const MANIFEST_URL = '/images/shows/manifest.json';
+
+  // Password hash — generate with: https://emn178.github.io/online-tools/sha256.html
+  // Default password is: Homestead911-2.0  (change this!)
+  const PASSWORD_HASH = 'ffcdc229a107fe12739ea7db0647229f372ad1f3f90e0ba2be6fd762bd00d7eb';
+  // ─────────────────────────────────────────────────────────────────
+
+  const JSONBIN_URL = BIN_ID ? `https://api.jsonbin.io/v3/b/${BIN_ID}` : '';
+  let activeStation = 'wcyt';
+
+  // ── Password ───────────────────────────────────────────────────────
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function checkPassword() {
+    const pw = document.getElementById('pw-input').value;
+    if (!pw) return;
+    const hash = await sha256(pw);
+    if (hash === PASSWORD_HASH) {
+      sessionStorage.setItem('wcyt-dj-auth', '1');
+      showPanel();
+    } else {
+      document.getElementById('pw-error').textContent = 'Incorrect password.';
+      document.getElementById('pw-input').value = '';
+    }
+  }
+
+  document.getElementById('pw-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPassword();
+  });
+
+  function showPanel() {
+    document.getElementById('pw-gate').classList.add('hidden');
+    const panel = document.getElementById('dj-panel');
+    panel.style.display = 'flex';
+    if (!BIN_ID || !WRITE_KEY) {
+      document.getElementById('setup-notice').style.display = 'block';
+    }
+    loadManifest();
+    loadCurrentState();
+  }
+
+  // Auto-login if session active
+  if (sessionStorage.getItem('wcyt-dj-auth') === '1') showPanel();
+
+  // ── Station tabs ───────────────────────────────────────────────────
+  function setStation(id) {
+    activeStation = id;
+    document.getElementById('tab-wcyt').classList.toggle('active', id === 'wcyt');
+    document.getElementById('tab-2pt0').classList.toggle('active', id === '2pt0');
+    loadCurrentState();
+  }
+
+  // ── Manifest (show images) ─────────────────────────────────────────
+  async function loadManifest() {
+    try {
+      const res = await fetch(MANIFEST_URL + '?_t=' + Date.now());
+      const data = await res.json();
+      const sel = document.getElementById('show-image');
+      sel.innerHTML = '<option value="">— Select show image —</option>';
+      (data.shows || []).forEach(show => {
+        const opt = document.createElement('option');
+        opt.value = show.url;
+        opt.textContent = show.name;
+        sel.appendChild(opt);
+      });
+    } catch(e) {
+      console.warn('Could not load manifest:', e);
+    }
+  }
+
+  function previewImage() {
+    const url = document.getElementById('show-image').value;
+    const img = document.getElementById('img-preview');
+    img.src = url || '';
+    img.style.display = url ? 'block' : 'none';
+  }
+
+  // ── Load current state from JSONBin ───────────────────────────────
+  async function loadCurrentState() {
+    if (!JSONBIN_URL) return;
+    try {
+      const res = await fetch(JSONBIN_URL + '/latest', {
+        headers: { 'X-Access-Key': WRITE_KEY }
+      });
+      const data = await res.json();
+      const rec = data.record || {};
+      const s = rec[activeStation] || {};
+      document.getElementById('show-name').value     = s.showName    || '';
+      document.getElementById('manual-artist').value = s.manualArtist || '';
+      document.getElementById('manual-title').value  = s.manualTitle  || '';
+      const sel = document.getElementById('show-image');
+      if (s.imageUrl) sel.value = s.imageUrl;
+      previewImage();
+      setStatusUI(s.active ? (s.onBreak ? 'on-break' : 'on-air') : 'idle');
+    } catch(e) {
+      console.warn('Could not load state:', e);
+    }
+  }
+
+  // ── Write to JSONBin ───────────────────────────────────────────────
+  async function saveState(patch) {
+    if (!JSONBIN_URL || !WRITE_KEY) {
+      showMsg('Setup not complete — see instructions above.', 'error');
+      return false;
+    }
+    try {
+      // Read current full record first
+      const getRes = await fetch(JSONBIN_URL + '/latest', {
+        headers: { 'X-Access-Key': WRITE_KEY }
+      });
+      const getData = await getRes.json();
+      const current = getData.record || {};
+
+      // Merge patch into the active station
+      current[activeStation] = { ...(current[activeStation] || {}), ...patch, updatedAt: new Date().toISOString() };
+
+      // Write back
+      const putRes = await fetch(JSONBIN_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Access-Key': WRITE_KEY
+        },
+        body: JSON.stringify(current)
+      });
+      return putRes.ok;
+    } catch(e) {
+      console.error('Save failed:', e);
+      return false;
+    }
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────
+  async function goOnAir() {
+    const showName    = document.getElementById('show-name').value.trim();
+    const imageUrl    = document.getElementById('show-image').value;
+    const manualArtist = document.getElementById('manual-artist').value.trim();
+    const manualTitle  = document.getElementById('manual-title').value.trim();
+
+    if (!showName) {
+      showMsg('Enter a show name first.', 'error');
+      return;
+    }
+
+    disableButtons(true);
+    const ok = await saveState({ active: true, onBreak: false, showName, imageUrl, manualArtist, manualTitle });
+    disableButtons(false);
+
+    if (ok) {
+      setStatusUI('on-air');
+      showMsg('You\'re on air! Website updated.', 'ok');
+    } else {
+      showMsg('Save failed. Check your connection.', 'error');
+    }
+  }
+
+  async function goOnBreak() {
+    disableButtons(true);
+    const ok = await saveState({
+      active: true,
+      onBreak: true,
+      manualArtist: document.getElementById('manual-artist').value.trim(),
+      manualTitle:  document.getElementById('manual-title').value.trim(),
+    });
+    disableButtons(false);
+
+    if (ok) {
+      setStatusUI('on-break');
+      showMsg('On break. Show image stays on site.', 'ok');
+    } else {
+      showMsg('Save failed.', 'error');
+    }
+  }
+
+  async function endShow() {
+    if (!confirm('End your show? This clears your show info from the website.')) return;
+    disableButtons(true);
+    const ok = await saveState({ active: false, onBreak: false, showName: '', imageUrl: '', manualArtist: '', manualTitle: '' });
+    disableButtons(false);
+
+    if (ok) {
+      setStatusUI('idle');
+      showMsg('Show ended. Website cleared.', 'ok');
+      document.getElementById('show-name').value = '';
+      document.getElementById('show-image').value = '';
+      document.getElementById('manual-artist').value = '';
+      document.getElementById('manual-title').value = '';
+      previewImage();
+    } else {
+      showMsg('Save failed.', 'error');
+    }
+  }
+
+  // ── UI helpers ─────────────────────────────────────────────────────
+  function setStatusUI(state) {
+    const pill = document.getElementById('status-pill');
+    const text = document.getElementById('status-text');
+    pill.className = 'status-pill ' + state;
+    text.textContent = state === 'on-air' ? 'On Air' : state === 'on-break' ? 'On Break' : 'Idle';
+  }
+
+  function disableButtons(yes) {
+    ['btn-onair','btn-break','btn-end'].forEach(id => {
+      document.getElementById(id).disabled = yes;
+    });
+  }
+
+  let msgTimer;
+  function showMsg(msg, type) {
+    const el = document.getElementById('save-msg');
+    el.textContent = msg;
+    el.className = 'save-msg ' + type;
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => { el.textContent = ''; el.className = 'save-msg'; }, 4000);
+  }
+</script>
+
+</body>
+</html>
