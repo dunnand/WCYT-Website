@@ -458,7 +458,8 @@
     }
 
     disableButtons(true);
-    const ok = await saveState({ active: true, onBreak: false, onBreakAt: '', showName, imageUrl, manualArtist, manualTitle });
+    const manualSetAt = (manualArtist || manualTitle) ? new Date().toISOString() : '';
+    const ok = await saveState({ active: true, onBreak: false, onBreakAt: '', showName, imageUrl, manualArtist, manualTitle, manualSetAt });
     disableButtons(false);
 
     if (ok) {
@@ -477,6 +478,7 @@
       onBreakAt: new Date().toISOString(),
       manualArtist: document.getElementById('manual-artist').value.trim(),
       manualTitle:  document.getElementById('manual-title').value.trim(),
+      manualSetAt:  (document.getElementById('manual-artist').value.trim() || document.getElementById('manual-title').value.trim()) ? new Date().toISOString() : '',
     });
     disableButtons(false);
 

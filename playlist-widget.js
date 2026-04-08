@@ -758,7 +758,11 @@
     const dispArt    = showBreakArt
                      ? (showArt || songObj?.artUrl || null)
                      : (songObj?.artUrl || null);
-    const overridesActive = !newSongSinceBreak; // manual overrides clear with show image when new song starts
+    // Manual override clears when a new song starts after it was set (On Air or On Break)
+    const manualSetAt   = djP?.manualSetAt ? new Date(djP.manualSetAt) : null;
+    const manualStale   = manualSetAt && songObj?.startedAt > manualSetAt;
+    const overridesActive = !newSongSinceBreak && !manualStale;
+
     const dispArtist = showBreakArt                          ? (showName || 'WCYT')
                      : (djP?.manualArtist && overridesActive) ? djP.manualArtist
                      : (songObj?.artist                      || null);
