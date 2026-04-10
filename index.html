@@ -668,21 +668,21 @@ body { background: #0d0d0d; }
       if (s < 86400) return Math.floor(s/3600) + 'h ago';
       return Math.floor(s/86400) + 'd ago';
     }
-    fetch('https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest', { cache: 'no-store' })
+    fetch('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=5')
       .then(r => r.json())
       .then(data => {
-        const log = ((data.record || {}).songlog || []).slice(0, 5);
-        const el  = document.getElementById('home-recent-played');
-        if (!log.length) { el.innerHTML = '<p style="color:#555;font-size:14px">Nothing logged yet — check back soon.</p>'; return; }
-        el.innerHTML = '<div class="home-recent-list">' + log.map(e => `
+        const spins = data.items || [];
+        const el    = document.getElementById('home-recent-played');
+        if (!spins.length) { el.innerHTML = '<p style="color:#555;font-size:14px">Nothing logged yet — check back soon.</p>'; return; }
+        el.innerHTML = '<div class="home-recent-list">' + spins.map(e => `
           <div class="home-recent-item">
-            <img class="home-recent-art" src="${e.artUrl || FALLBACK}" alt="${e.artist || ''}"
+            <img class="home-recent-art" src="${e.image || FALLBACK}" alt="${e.artist || ''}"
                  onerror="this.src='${FALLBACK}'">
             <div style="min-width:0;flex:1">
               <div class="home-recent-artist">${e.artist || ''}</div>
-              <div class="home-recent-title">${e.title || ''}</div>
+              <div class="home-recent-title">${e.song || ''}</div>
             </div>
-            <div class="home-recent-ago">${e.playedAt ? timeAgo(e.playedAt) : ''}</div>
+            <div class="home-recent-ago">${e.start ? timeAgo(e.start) : ''}</div>
           </div>`).join('') + '</div>';
       })
       .catch(() => {

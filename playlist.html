@@ -448,9 +448,9 @@
   </script>
 
   <script>
-    // ── Recently Played (persistent song log) ─────────────────────────
-    const DJBIN_URL    = 'https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest';
-    const FALLBACK_IMG = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+    // ── Recently Played (Spinitron) ───────────────────────────────────
+    const SPINITRON_URL = 'https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=15';
+    const FALLBACK_IMG  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
 
     function timeAgo(isoString) {
       const diff = Math.floor((Date.now() - new Date(isoString)) / 1000);
@@ -460,17 +460,17 @@
       return Math.floor(diff / 86400) + 'd ago';
     }
 
-    function renderSongLog(log) {
+    function renderSpins(spins) {
       const el = document.getElementById('recent-shows-list');
-      if (!log || !log.length) {
-        el.innerHTML = '<div class="wcyt-loading" style="color:#555">No history yet — it builds automatically as songs play.</div>';
+      if (!spins || !spins.length) {
+        el.innerHTML = '<div class="wcyt-loading" style="color:#555">No spins logged yet.</div>';
         return;
       }
-      el.innerHTML = log.map(entry => {
-        const img    = entry.artUrl || FALLBACK_IMG;
-        const artist = entry.artist || '';
-        const title  = entry.title  || '';
-        const ago    = entry.playedAt ? timeAgo(entry.playedAt) : '';
+      el.innerHTML = spins.map(spin => {
+        const img    = spin.image || FALLBACK_IMG;
+        const artist = spin.artist || '';
+        const title  = spin.song   || '';
+        const ago    = spin.start  ? timeAgo(spin.start) : '';
         return `
           <div class="recent-show-item">
             <img class="recent-show-img" src="${img}" alt="${artist}"
@@ -483,9 +483,9 @@
       }).join('');
     }
 
-    fetch(DJBIN_URL, { cache: 'no-store' })
+    fetch(SPINITRON_URL)
       .then(r => r.json())
-      .then(data => renderSongLog((data.record || {}).songlog || []))
+      .then(data => renderSpins(data.items || []))
       .catch(() => {
         document.getElementById('recent-shows-list').innerHTML =
           '<div class="wcyt-loading" style="color:#555">Could not load recently played.</div>';
