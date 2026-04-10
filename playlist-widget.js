@@ -21,10 +21,13 @@
 
   // ── DJ Panel (JSONBin) ────────────────────────────────────────────
   // After setting up JSONBin, paste your Bin ID here.
-  const DJPANEL_BIN_ID = '69d6461336566621a88e9c7c'; // e.g. '6613abc123def456'
-  const DJPANEL_URL    = DJPANEL_BIN_ID
+  const DJPANEL_BIN_ID  = '69d6461336566621a88e9c7c'; // e.g. '6613abc123def456'
+  const DJPANEL_URL     = DJPANEL_BIN_ID
     ? `https://api.jsonbin.io/v3/b/${DJPANEL_BIN_ID}/latest`
     : '';
+  const DJPANEL_WRITE_KEY = '$2a$10$s2EAQ4fmcOv4Z3qirUkUA.IzIm6h6s2THmXDWhxGbcFhVAytzJFrK';
+  const MAX_SONG_LOG      = 15;
+  const LOG_COOLDOWN_MS   = 90_000; // per-tab write cooldown (90s)
 
   // ── Last.fm config ────────────────────────────────────────────────────────
   // Register free API keys at https://www.last.fm/api/account/create
@@ -668,6 +671,32 @@
     }
   }
 
+  // ── Persistent song log ───────────────────────────────────────────────────
+  async function logSongChange(artist, title, artUrl) {
+    if (!DJPANEL_BIN_ID || !DJPANEL_WRITE_KEY || !artist) return;
+    // Per-tab cooldown so concurrent visitors don't all write simultaneously
+    const last = parseInt(sessionStorage.getItem('wcyt-log-ts') || '0');
+    if (Date.now() - last < LOG_COOLDOWN_MS) return;
+    try {
+      const binUrl = `https://api.jsonbin.io/v3/b/${DJPANEL_BIN_ID}`;
+      const getRes = await fetch(binUrl + '/latest', { cache: 'no-store' });
+      const { record = {} } = await getRes.json();
+      const log = Array.isArray(record.songlog) ? [...record.songlog] : [];
+      // Dedup: skip if already the top entry
+      if (log.length && log[0].artist === artist && log[0].title === title) return;
+      log.unshift({ artist, title, artUrl: artUrl || null, playedAt: new Date().toISOString() });
+      record.songlog = log.slice(0, MAX_SONG_LOG);
+      await fetch(binUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': DJPANEL_WRITE_KEY },
+        body: JSON.stringify(record)
+      });
+      sessionStorage.setItem('wcyt-log-ts', String(Date.now()));
+    } catch (e) {
+      console.warn('[WCYTPlaylist] song log write error:', e);
+    }
+  }
+
   async function handleNewTitle(raw) {
     const parsed = parseTitle(raw);
 
@@ -677,6 +706,7 @@
       const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
       currentSong = { ...parsed, startedAt: new Date(), artUrl };
       if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
+      logSongChange(parsed.artist, parsed.title, artUrl);
       render();
       return;
     }
@@ -692,6 +722,7 @@
     const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
     currentSong = { ...parsed, startedAt: new Date(), artUrl };
     if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
+    logSongChange(parsed.artist, parsed.title, artUrl);
     render();
   }
 
