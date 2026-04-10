@@ -450,6 +450,71 @@ body { background: #0d0d0d; }
 
   <hr class="section-divider">
 
+  <!-- Recently Played -->
+  <section class="home-section home-section--alt">
+    <div class="home-inner--narrow">
+      <div class="section-eyebrow">The Point 91 FM</div>
+      <div class="section-heading">Recently <strong>Played</strong></div>
+      <div id="home-recent-played">
+        <p style="color:#555;font-size:14px">Loading&hellip;</p>
+      </div>
+      <p style="margin-top:20px;font-size:13px;color:#888">
+        <a href="/playlist" style="color:#aaa;font-weight:600">Full playlist &rarr;</a>
+      </p>
+    </div>
+  </section>
+
+  <style>
+    .home-recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .home-recent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #161616;
+      border-radius: 8px;
+      border: 1px solid #222;
+      border-left: 3px solid #c8102e;
+    }
+    .home-recent-art {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #222;
+    }
+    .home-recent-artist {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .home-recent-title {
+      font-size: 12px;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .home-recent-ago {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: #555;
+      margin-left: auto;
+      padding-left: 8px;
+    }
+  </style>
+
+  <hr class="section-divider">
+
   <!-- Latest podcast -->
   <section class="home-section home-section--alt">
     <div class="home-inner--narrow">
@@ -593,5 +658,37 @@ body { background: #0d0d0d; }
 <!-- ====== END WCYT HOMEPAGE SECTIONS ====== -->
 
 <script src="/nav.js"></script>
+<script>
+  (function() {
+    const FALLBACK = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+    function timeAgo(iso) {
+      const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+      if (s < 60)    return 'Just now';
+      if (s < 3600)  return Math.floor(s/60) + 'm ago';
+      if (s < 86400) return Math.floor(s/3600) + 'h ago';
+      return Math.floor(s/86400) + 'd ago';
+    }
+    fetch('https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => {
+        const log = ((data.record || {}).songlog || []).slice(0, 5);
+        const el  = document.getElementById('home-recent-played');
+        if (!log.length) { el.innerHTML = '<p style="color:#555;font-size:14px">Nothing logged yet — check back soon.</p>'; return; }
+        el.innerHTML = '<div class="home-recent-list">' + log.map(e => `
+          <div class="home-recent-item">
+            <img class="home-recent-art" src="${e.artUrl || FALLBACK}" alt="${e.artist || ''}"
+                 onerror="this.src='${FALLBACK}'">
+            <div style="min-width:0;flex:1">
+              <div class="home-recent-artist">${e.artist || ''}</div>
+              <div class="home-recent-title">${e.title || ''}</div>
+            </div>
+            <div class="home-recent-ago">${e.playedAt ? timeAgo(e.playedAt) : ''}</div>
+          </div>`).join('') + '</div>';
+      })
+      .catch(() => {
+        document.getElementById('home-recent-played').innerHTML = '';
+      });
+  })();
+</script>
 </body>
 </html>
