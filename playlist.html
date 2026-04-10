@@ -460,17 +460,6 @@
       return Math.floor(diff / 86400) + 'd ago';
     }
 
-    async function fetchItunesArt(artist, song) {
-      try {
-        const q   = encodeURIComponent(artist + ' ' + song);
-        const res = await fetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`);
-        const data = await res.json();
-        const match = (data.results || []).find(r =>
-          r.artworkUrl100 && r.artistName.toLowerCase().includes(artist.toLowerCase().slice(0, 5))
-        );
-        return match ? match.artworkUrl100.replace('100x100', '500x500') : null;
-      } catch { return null; }
-    }
 
     function renderSpins(spins) {
       const el = document.getElementById('recent-shows-list');
@@ -498,7 +487,7 @@
       // Backfill iTunes art for each spin
       spins.forEach((spin, i) => {
         if (spin.image || !spin.artist) return;
-        fetchItunesArt(spin.artist, spin.song || '').then(url => {
+        WCYTPlaylist.fetchArt(spin.artist, spin.song || '').then(url => {
           if (!url) return;
           const img = document.getElementById(`spin-art-${i}`);
           if (img) img.src = url;

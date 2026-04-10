@@ -1195,6 +1195,7 @@
       setAudioState('stopped');
       savePlayerState();
     },
+    fetchArt(artist, title) { return fetchArt(artist, title); },
     _getState()        { return { currentSong, songHistory, artCache, audioState, activeStation, currentShowWCYT, currentShow2 }; },
     _mockSong(artist, title) { handleNewTitle(`${artist} - ${title}`); },
   };

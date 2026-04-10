@@ -668,17 +668,6 @@ body { background: #0d0d0d; }
       if (s < 86400) return Math.floor(s/3600) + 'h ago';
       return Math.floor(s/86400) + 'd ago';
     }
-    async function fetchItunesArt(artist, song) {
-      try {
-        const q = encodeURIComponent(artist + ' ' + song);
-        const res = await fetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`);
-        const data = await res.json();
-        const match = (data.results || []).find(r =>
-          r.artworkUrl100 && r.artistName.toLowerCase().includes(artist.toLowerCase().slice(0, 5))
-        );
-        return match ? match.artworkUrl100.replace('100x100', '500x500') : null;
-      } catch { return null; }
-    }
     fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=5'))
       .then(r => r.json())
       .then(wrapper => {
@@ -697,7 +686,7 @@ body { background: #0d0d0d; }
           </div>`).join('') + '</div>';
         spins.forEach((e, i) => {
           if (e.image || !e.artist) return;
-          fetchItunesArt(e.artist, e.song || '').then(url => {
+          WCYTPlaylist.fetchArt(e.artist, e.song || '').then(url => {
             if (!url) return;
             const img = document.getElementById(`home-art-${i}`);
             if (img) img.src = url;
