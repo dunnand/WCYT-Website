@@ -449,7 +449,7 @@
 
   <script>
     // ── Recently Played (Spinitron) ───────────────────────────────────
-    const SPINITRON_URL = 'https://corsproxy.io/?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=15');
+    const SPINITRON_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=15');
     const FALLBACK_IMG  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
 
     function timeAgo(isoString) {
@@ -485,7 +485,7 @@
 
     fetch(SPINITRON_URL)
       .then(r => r.json())
-      .then(data => renderSpins(data.items || []))
+      .then(wrapper => renderSpins(JSON.parse(wrapper.contents).items || []))
       .catch(() => {
         document.getElementById('recent-shows-list').innerHTML =
           '<div class="wcyt-loading" style="color:#555">Could not load recently played.</div>';

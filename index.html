@@ -668,10 +668,10 @@ body { background: #0d0d0d; }
       if (s < 86400) return Math.floor(s/3600) + 'h ago';
       return Math.floor(s/86400) + 'd ago';
     }
-    fetch('https://corsproxy.io/?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=5'))
+    fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=5'))
       .then(r => r.json())
-      .then(data => {
-        const spins = data.items || [];
+      .then(wrapper => {
+        const spins = JSON.parse(wrapper.contents).items || [];
         const el    = document.getElementById('home-recent-played');
         if (!spins.length) { el.innerHTML = '<p style="color:#555;font-size:14px">Nothing logged yet — check back soon.</p>'; return; }
         el.innerHTML = '<div class="home-recent-list">' + spins.map(e => `
