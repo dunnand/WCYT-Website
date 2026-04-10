@@ -966,28 +966,6 @@
           ` : `<div class="wcyt-loading">Loading&hellip;</div>`}
         </div>
 
-        <div class="wcyt-full-history-section">
-          <div class="wcyt-full-history-header">RECENT PLAYS</div>
-          ${history.length ? `
-            <ul class="wcyt-full-history-list">
-              ${history.map(s => `
-                <li class="wcyt-full-history-item">
-                  ${artImg(s.artUrl, 72, 'wcyt-history-art wcyt-history-art--full')}
-                  <span class="wcyt-history-time">${formatTime(s.startedAt)}</span>
-                  <span class="wcyt-full-history-track">
-                    <span class="wcyt-full-history-artist">${esc(s.artist || 'WCYT')}</span>
-                    <span class="wcyt-full-history-title">${esc(s.title)}</span>
-                  </span>
-                </li>
-              `).join('')}
-            </ul>
-          ` : `
-            <p class="wcyt-history-empty">
-              Song history will appear here as tracks change.<br>
-              Leave this page open to build up the playlist.
-            </p>
-          `}
-        </div>
       </div>
     `;
 
