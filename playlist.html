@@ -448,7 +448,7 @@
   </script>
 
   <script>
-    // ── Recently Played (Spinitron) ───────────────────────────────────
+    // ── Recently Played (Spinitron + iTunes art) ──────────────────────
     const SPINITRON_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=15');
     const FALLBACK_IMG  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
 
@@ -460,20 +460,33 @@
       return Math.floor(diff / 86400) + 'd ago';
     }
 
+    async function fetchItunesArt(artist, song) {
+      try {
+        const q   = encodeURIComponent(artist + ' ' + song);
+        const res = await fetch(`https://itunes.apple.com/search?term=${q}&entity=song&limit=5`);
+        const data = await res.json();
+        const match = (data.results || []).find(r =>
+          r.artworkUrl100 && r.artistName.toLowerCase().includes(artist.toLowerCase().slice(0, 5))
+        );
+        return match ? match.artworkUrl100.replace('100x100', '500x500') : null;
+      } catch { return null; }
+    }
+
     function renderSpins(spins) {
       const el = document.getElementById('recent-shows-list');
       if (!spins || !spins.length) {
         el.innerHTML = '<div class="wcyt-loading" style="color:#555">No spins logged yet.</div>';
         return;
       }
-      el.innerHTML = spins.map(spin => {
-        const img    = spin.image || FALLBACK_IMG;
+      // Render with fallback art first, then fill in iTunes art as it loads
+      el.innerHTML = spins.map((spin, i) => {
         const artist = spin.artist || '';
         const title  = spin.song   || '';
         const ago    = spin.start  ? timeAgo(spin.start) : '';
+        const img    = spin.image  || FALLBACK_IMG;
         return `
           <div class="recent-show-item">
-            <img class="recent-show-img" src="${img}" alt="${artist}"
+            <img id="spin-art-${i}" class="recent-show-img" src="${img}" alt="${artist}"
                  onerror="this.src='${FALLBACK_IMG}'; this.classList.add('fallback');">
             <div class="recent-show-info">
               <div class="recent-show-name">${artist}</div>
@@ -481,6 +494,16 @@
             </div>
           </div>`;
       }).join('');
+
+      // Backfill iTunes art for each spin
+      spins.forEach((spin, i) => {
+        if (spin.image || !spin.artist) return;
+        fetchItunesArt(spin.artist, spin.song || '').then(url => {
+          if (!url) return;
+          const img = document.getElementById(`spin-art-${i}`);
+          if (img) img.src = url;
+        });
+      });
     }
 
     fetch(SPINITRON_URL)
