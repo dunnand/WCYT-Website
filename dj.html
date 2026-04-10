@@ -413,7 +413,7 @@
   }
 
   // ── Write to JSONBin ───────────────────────────────────────────────
-  async function saveState(patch) {
+  async function saveState(patch, historyEntry = null) {
     if (!JSONBIN_URL || !WRITE_KEY) {
       showMsg('Setup not complete — see instructions above.', 'error');
       return false;
@@ -428,6 +428,13 @@
 
       // Merge patch into the active station
       current[activeStation] = { ...(current[activeStation] || {}), ...patch, updatedAt: new Date().toISOString() };
+
+      // Append to show history if provided
+      if (historyEntry) {
+        const hist = Array.isArray(current.history) ? current.history : [];
+        hist.unshift(historyEntry);
+        current.history = hist.slice(0, 20);
+      }
 
       // Write back
       const putRes = await fetch(JSONBIN_URL, {
@@ -459,7 +466,8 @@
 
     disableButtons(true);
     const manualSetAt = (manualArtist || manualTitle) ? new Date().toISOString() : '';
-    const ok = await saveState({ active: true, onBreak: false, onBreakAt: '', showName, imageUrl, manualArtist, manualTitle, manualSetAt });
+    const historyEntry = { showName, imageUrl, station: activeStation, startedAt: new Date().toISOString() };
+    const ok = await saveState({ active: true, onBreak: false, onBreakAt: '', showName, imageUrl, manualArtist, manualTitle, manualSetAt }, historyEntry);
     disableButtons(false);
 
     if (ok) {

@@ -304,6 +304,73 @@
     .wcyt-error   { color: #666; font-size: 14px; padding: 12px 0; }
     .wcyt-error a { color: var(--accent); }
 
+    /* ── Recent Shows ── */
+    .recent-shows-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #555;
+      border-top: 1px solid var(--border);
+      padding-top: 40px;
+      margin-top: 48px;
+      margin-bottom: 20px;
+    }
+    .recent-shows-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .recent-show-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      background: var(--card);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+    }
+    .recent-show-img {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #222;
+    }
+    .recent-show-img.fallback {
+      object-fit: contain;
+      padding: 6px;
+      background: #1a1a1a;
+    }
+    .recent-show-info {
+      min-width: 0;
+      flex: 1;
+    }
+    .recent-show-name {
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recent-show-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .recent-show-station {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(200,16,46,.1);
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
     /* ── Footer ── */
     .site-footer {
       background: var(--dark);
@@ -342,6 +409,12 @@
   <!-- Widget mount point -->
   <main class="playlist-main">
     <div id="wcyt-full-widget"></div>
+
+    <!-- Recent Shows -->
+    <div class="recent-shows-header">Recent Shows</div>
+    <div class="recent-shows-list" id="recent-shows-list">
+      <div class="wcyt-loading">Loading recent shows&hellip;</div>
+    </div>
   </main>
 
   <!-- Footer -->
@@ -372,6 +445,55 @@
       document.getElementById('pl-eyebrow').textContent = '2.0 Next Level of Radio \u00b7 WCYT';
     }
     WCYTPlaylist.init(null, null, document.getElementById('wcyt-full-widget'), _stationIdx);
+  </script>
+
+  <script>
+    // ── Recent Shows ──────────────────────────────────────────────────
+    const DJBIN_URL = 'https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest';
+    const FALLBACK_IMG = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+
+    function timeAgo(isoString) {
+      const diff = Math.floor((Date.now() - new Date(isoString)) / 1000);
+      if (diff < 60)   return 'Just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    function stationLabel(stationId) {
+      return stationId === '2pt0' ? '2.0' : 'The Point';
+    }
+
+    function renderRecentShows(history) {
+      const el = document.getElementById('recent-shows-list');
+      if (!history || !history.length) {
+        el.innerHTML = '<div class="wcyt-loading" style="color:#555">No show history yet — it builds as DJs go on air.</div>';
+        return;
+      }
+      el.innerHTML = history.map(entry => {
+        const img    = entry.imageUrl || FALLBACK_IMG;
+        const name   = entry.showName || 'Unknown Show';
+        const ago    = entry.startedAt ? timeAgo(entry.startedAt) : '';
+        const station = stationLabel(entry.station);
+        return `
+          <div class="recent-show-item">
+            <img class="recent-show-img" src="${img}" alt="${name}"
+                 onerror="this.src='${FALLBACK_IMG}'; this.classList.add('fallback');">
+            <div class="recent-show-info">
+              <div class="recent-show-name">${name}</div>
+              <div class="recent-show-meta">${ago}<span class="recent-show-station">${station}</span></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    fetch(DJBIN_URL, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => renderRecentShows((data.record || {}).history || []))
+      .catch(() => {
+        document.getElementById('recent-shows-list').innerHTML =
+          '<div class="wcyt-loading" style="color:#555">Could not load recent shows.</div>';
+      });
   </script>
 
 </body>
