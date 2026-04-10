@@ -2,6 +2,12 @@
   "shows": [
     { "name": "2.0 Default", "url": "/images/shows/2.0 Logo.png" },
 	{ "name": "The Point Default", "url": "/images/shows/91fm.png" },
+	{ "name": "The Last Dance", "url": "/images/shows/LastDance.png" },
+	{ "name": "Off The Theories", "url": "/images/shows/OffTheTheories.png" },
+	{ "name": "The Davon & Vaughn Show", "url": "/images/shows/DavonVaughnShow.png" },
+	{ "name": "Stage Clear", "url": "/images/shows/StageClear.png" },
+	{ "name": "Grand Gear", "url": "/images/shows/GrandGear.png" },
+	{ "name": "Reel Talk", "url": "/images/shows/ReelTalk.png" },
     { "name": "If I'm Being Honest Podcast", "url": "/images/shows/If I'm Being Honest Podcast.png" }
   ]
 }
