@@ -39,7 +39,8 @@ def git(*args):
         ["git"] + list(args),
         cwd=REPO_DIR,
         capture_output=True,
-        text=True
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW
     )
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 
