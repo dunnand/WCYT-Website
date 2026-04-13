@@ -16,8 +16,8 @@ import sys
 
 REPO_DIR      = r"C:\Users\DunnOffice\WCYT-Website"
 LOG_FILE      = r"C:\Users\DunnOffice\WCYT-Website\bsi_watcher.log"
-POLL_INTERVAL = 3    # seconds between checks
-DEBOUNCE      = 2    # seconds to wait after a change before pushing
+POLL_INTERVAL = 2    # seconds between checks
+DEBOUNCE      = 1    # seconds to wait after a change before pushing
 
 # Local files already written to this PC by Simian
 LOCAL_FILES = [

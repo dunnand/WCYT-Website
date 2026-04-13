@@ -493,6 +493,15 @@
     const state = { point: { currentKey: null }, wcyt: { currentKey: null } };
 
     // ── Update a station ───────────────────────────────────────────────────────
+    // ── Fast BSI refresh (album/year + recently played only) ──────────────────
+    async function refreshBSI(key, bsiFile) {
+      const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+      const bsi = await fetchBSI(bsiFile);
+      renderRecent(key + '-recent', bsi.recent, fallback);
+      const el = document.getElementById(key + '-album');
+      if (el && bsi.album) el.textContent = bsi.album;
+    }
+
     async function updateStation(key, rawTitle, bsiFile) {
       const fallback  = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
       const infoEl    = document.getElementById(key + '-info');
@@ -500,7 +509,7 @@
       const badgeEl   = document.getElementById(key + '-show-badge');
       const nameEl    = document.getElementById(key + '-show-name');
 
-      // Always refresh BSI data (album/year + recently played)
+      // BSI data handled by fast refresh interval — still fetch for song-change logic
       const bsi = await fetchBSI(bsiFile);
       renderRecent(key + '-recent', bsi.recent, fallback);
 
@@ -571,6 +580,11 @@
     setInterval(fetchDJPanel, 30_000);
     poll();
     setInterval(poll, 10_000);
+    // Refresh BSI album/year independently every 5 seconds
+    setInterval(() => {
+      refreshBSI('point', '/Point_Display_OUT.htm');
+      refreshBSI('wcyt',  '/2_Display_OUT.htm');
+    }, 5_000);
   </script>
 
 </body>
