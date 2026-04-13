@@ -434,6 +434,8 @@
     const FALLBACK_POINT = '/images/91fm.png';
     const FALLBACK_2     = '/images/shows/2.0 Logo.png';
     const BLOCKED_TERMS  = ['liner','legal id','btyb','sponsor'];
+    // Fetch BSI files from raw GitHub (bypasses GitHub Pages CDN — updates in seconds)
+    const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main';
 
     // ── DJ Panel ───────────────────────────────────────────────────────────────
     let djPanel = {};
@@ -480,7 +482,7 @@
     // ── Fetch BSI output file → album/year + recently played ───────────────────
     async function fetchBSI(file) {
       try {
-        const res    = await fetch(file + '?t=' + Date.now());
+        const res    = await fetch(RAW_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
         const html   = await res.text();
         const doc    = new DOMParser().parseFromString(html, 'text/html');
         const blocks = doc.querySelectorAll('.sidebar-content');
@@ -681,11 +683,11 @@
     setInterval(fetchDJPanel, 30_000);
     poll();
     setInterval(poll, 10_000);
-    // Refresh BSI album/year independently every 5 seconds
+    // Refresh BSI album/year independently every 3 seconds
     setInterval(() => {
       refreshBSI('point', '/Point_Display_OUT.htm');
       refreshBSI('wcyt',  '/2_Display_OUT.htm');
-    }, 5_000);
+    }, 3_000);
   </script>
 
 </body>

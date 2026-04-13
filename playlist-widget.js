@@ -20,6 +20,8 @@
   const SHOW_TTL_MS   = 45 * 60 * 1000; // auto-clear after 45 minutes
 
   // ── BSI output files (album/year data from Simian) ────────────────────────
+  // Raw GitHub URL bypasses the GitHub Pages CDN — updates within seconds of a push
+  const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main';
   const BSI_FILES = [
     '/Point_Display_OUT.htm', // station 0 — The Point
     '/2_Display_OUT.htm',     // station 1 — 2.0
@@ -618,7 +620,7 @@
 
   async function fetchBSIData(url) {
     try {
-      const res    = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+      const res    = await fetch(RAW_BASE + url + '?t=' + Date.now(), { cache: 'no-store' });
       const html   = await res.text();
       const doc    = new DOMParser().parseFromString(html, 'text/html');
       const albumLine = doc.querySelector('.album')?.textContent.trim() || '';
