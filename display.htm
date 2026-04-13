@@ -513,21 +513,31 @@
         const artist = doc.querySelector('.artist')?.textContent.trim() || '';
         const title  = doc.querySelector('.title')?.textContent.trim()  || '';
 
-        // Parse "9:08 am - Artist - Title  (Year)" lines
-        const lines = (blocks[1]?.innerHTML || '')
+        // Parse lines from a sidebar block
+        const parseLines = (html) => (html || '')
           .split(/<br\s*\/?>/i)
           .map(l => l.trim())
-          .filter(l => l && !isBlocked(l))
-          .reverse();
+          .filter(l => l && !isBlocked(l));
 
+        // Recently played (block[1]) — reversed so newest first
+        const recentLines = parseLines(blocks[1]?.innerHTML).reverse();
         const recent = [];
-        for (const line of lines.slice(0, 1)) {
+        for (const line of recentLines.slice(0, 1)) {
           const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
           if (!m) continue;
           const [, time, a, t] = m;
           const art = await fetchArt(a.trim(), t.trim(), album);
           recent.push({ time, artist: a.trim(), title: t.trim(), art });
         }
+
+        // Coming up (block[0]) — pre-fetch art in background so it's cached
+        const upcomingLines = parseLines(blocks[0]?.innerHTML);
+        for (const line of upcomingLines.slice(0, 4)) {
+          const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
+          if (!m) continue;
+          fetchArt(m[2].trim(), m[3].trim(), album); // fire-and-forget to warm cache
+        }
+
         return { album, artist, title, recent };
       } catch { return { album: '', artist: '', title: '', recent: [] }; }
     }
@@ -566,25 +576,20 @@
         if (songKey !== state[key].currentKey) {
           state[key].currentKey = songKey;
 
-          const infoEl = document.getElementById(key + '-info');
           const artEl  = document.getElementById(key + '-art');
 
-          // Wipe immediately
-          infoEl.classList.add('fading');
-          artEl.classList.add('fading');
           const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
-          set(key + '-artist', '');
-          set(key + '-title',  '');
-          set(key + '-album',  '');
-          artEl.src = '';
 
-          // Fill once art is resolved (pass album for better iTunes matching)
+          // Wipe art immediately, show text right away
+          artEl.classList.add('fading');
+          artEl.src = '';
+          set(key + '-artist', bsi.artist);
+          set(key + '-title',  bsi.title);
+          set(key + '-album',  bsi.album);
+
+          // Swap in art once fetched (may already be cached from pre-fetch)
           fetchArt(bsi.artist, bsi.title, bsi.album).then(art => {
-            set(key + '-artist', bsi.artist);
-            set(key + '-title',  bsi.title);
-            set(key + '-album',  bsi.album);
             if (artEl) artEl.src = art || (key === 'point' ? FALLBACK_POINT : FALLBACK_2);
-            infoEl.classList.remove('fading');
             artEl.classList.remove('fading');
           });
         }
