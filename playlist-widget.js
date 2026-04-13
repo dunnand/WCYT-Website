@@ -72,6 +72,8 @@
   let songHistory    = [];
   let currentSong2   = null;   // now-playing for station 2
   let songHistory2   = [];     // recent plays for station 2
+  let bsiRecent1     = [];     // recently played from BSI file, station 0
+  let bsiRecent2     = [];     // recently played from BSI file, station 1
   let artCache       = {};
   let currentShowWCYT = null;  // { name: string, expiresAt: Date } | null  (The Point)
   let currentShow2    = null;  // { name: string, expiresAt: Date } | null  (2.0)
@@ -614,13 +616,26 @@
 
   // ── Fetch album/year from BSI output file ────────────────────────────────
 
-  async function fetchBSIAlbum(url) {
+  async function fetchBSIData(url) {
     try {
-      const res  = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
-      const html = await res.text();
-      const doc  = new DOMParser().parseFromString(html, 'text/html');
-      return doc.querySelector('.album')?.textContent.trim() || '';
-    } catch { return ''; }
+      const res    = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+      const html   = await res.text();
+      const doc    = new DOMParser().parseFromString(html, 'text/html');
+      const albumLine = doc.querySelector('.album')?.textContent.trim() || '';
+      const blocks = doc.querySelectorAll('.sidebar-content');
+      const lines  = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
+      const recent = [];
+      for (const line of lines) {
+        const text = line.trim();
+        if (!text) continue;
+        if (BLOCKED_TERMS.some(b => text.toLowerCase().includes(b))) continue;
+        const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
+        if (!m) continue;
+        recent.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
+        if (recent.length >= 3) break;
+      }
+      return { albumLine, recent };
+    } catch { return { albumLine: '', recent: [] }; }
   }
 
   // ── Fetch stream metadata ─────────────────────────────────────────────────
@@ -646,11 +661,17 @@
       const findSource = mount =>
         sources.find(s => (s.listenurl ?? '').toLowerCase().includes(mount.toLowerCase()));
 
-      // Fetch BSI album/year for both stations in parallel
-      const [album1, album2] = await Promise.all([
-        fetchBSIAlbum(BSI_FILES[0]),
-        fetchBSIAlbum(BSI_FILES[1]),
+      // Fetch BSI data (album/year + recently played) for both stations
+      const [bsi1, bsi2] = await Promise.all([
+        fetchBSIData(BSI_FILES[0]),
+        fetchBSIData(BSI_FILES[1]),
       ]);
+      const album1 = bsi1.albumLine;
+      const album2 = bsi2.albumLine;
+      bsiRecent1 = bsi1.recent;
+      bsiRecent2 = bsi2.recent;
+      // Prefetch art for recent items into cache so next render has them
+      [...bsiRecent1, ...bsiRecent2].forEach(s => fetchArt(s.artist, s.title));
 
       // Station 1 — WCYT (drives history + full playlist page)
       const rawTitle1 = findSource(STATIONS[0].mount)?.title ?? null;
@@ -834,19 +855,19 @@
               </div>
             ` : `<div class="wcyt-hero-loading">Loading&hellip;</div>`}
 
-            ${history.length ? `
+            ${bsiRecent1.length ? `
               <div class="wcyt-hero-recent">
-                <div class="wcyt-hero-recent-label">RECENT PLAYS</div>
+                <div class="wcyt-hero-recent-label">RECENTLY PLAYED</div>
                 <ul class="wcyt-hero-recent-list">
-                  ${history.map(s => `
+                  ${bsiRecent1.map(s => `
                     <li>
-                      ${artImg(s.artUrl, 72, 'wcyt-hero-recent-art')}
+                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 72, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
-                        <span class="wcyt-hero-recent-artist">${esc(s.artist || 'WCYT')}</span>
+                        <span class="wcyt-hero-recent-artist">${esc(s.artist)}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
                         <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
                       </span>
-                      <span class="wcyt-hero-recent-time">${formatTime(s.startedAt)}</span>
+                      <span class="wcyt-hero-recent-time">${esc(s.time)}</span>
                     </li>
                   `).join('')}
                 </ul>
@@ -869,19 +890,19 @@
               </div>
             </div>
 
-            ${songHistory2.length ? `
+            ${bsiRecent2.length ? `
               <div class="wcyt-hero-recent">
-                <div class="wcyt-hero-recent-label">RECENT PLAYS</div>
+                <div class="wcyt-hero-recent-label">RECENTLY PLAYED</div>
                 <ul class="wcyt-hero-recent-list">
-                  ${songHistory2.slice(0, 3).map(s => `
+                  ${bsiRecent2.map(s => `
                     <li>
-                      ${artImg(s.artUrl, 72, 'wcyt-hero-recent-art')}
+                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 72, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
-                        <span class="wcyt-hero-recent-artist">${esc(s.artist || '2.0')}</span>
+                        <span class="wcyt-hero-recent-artist">${esc(s.artist)}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
                         <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
                       </span>
-                      <span class="wcyt-hero-recent-time">${formatTime(s.startedAt)}</span>
+                      <span class="wcyt-hero-recent-time">${esc(s.time)}</span>
                     </li>
                   `).join('')}
                 </ul>
