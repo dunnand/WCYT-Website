@@ -352,13 +352,11 @@
 
     // ── Config ─────────────────────────────────────────────────────────────────
     const ICECAST_URL    = 'https://securestreams2.autopo.st:1069/status-json.xsl';
-    const SPINITRON_URL  = 'https://api.allorigins.win/get?url=' +
-      encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=10');
     const FALLBACK_POINT = '/images/91fm.png';
     const FALLBACK_2     = '/images/2.0 Logo 500x500.jpg';
     const BLOCKED_TERMS  = ['liner','legal id','btyb','sponsor'];
 
-    // ── Art fetch (iTunes) ─────────────────────────────────────────────────────
+    // ── iTunes art ─────────────────────────────────────────────────────────────
     const artCache = {};
     function normArtist(s) {
       return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -379,7 +377,7 @@
       } catch { artCache[key] = null; return null; }
     }
 
-    // ── Parse "Artist - Title" ──────────────────────────────────────────────────
+    // ── Helpers ────────────────────────────────────────────────────────────────
     function parseTitle(raw) {
       if (!raw) return { artist: '', title: '' };
       const idx = raw.indexOf(' - ');
@@ -387,24 +385,40 @@
       return { artist: raw.slice(0, idx).trim(), title: raw.slice(idx + 3).trim() };
     }
     function isBlocked(raw) {
-      const h = (raw ?? '').toLowerCase();
-      return BLOCKED_TERMS.some(t => h.includes(t));
-    }
-    function formatTime(d) {
-      return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+      return BLOCKED_TERMS.some(t => (raw ?? '').toLowerCase().includes(t));
     }
 
-    // ── State ──────────────────────────────────────────────────────────────────
-    const state = {
-      point: { current: null, history: [] },
-      wcyt:  { current: null, history: [] }
-    };
+    // ── Fetch BSI output file → album/year + recently played ───────────────────
+    async function fetchBSI(file) {
+      try {
+        const res    = await fetch(file + '?t=' + Date.now());
+        const html   = await res.text();
+        const doc    = new DOMParser().parseFromString(html, 'text/html');
+        const blocks = doc.querySelectorAll('.sidebar-content');
+        const album  = doc.querySelector('.album')?.textContent.trim() || '';
+
+        // Parse "9:08 am - Artist - Title  (Year)" lines
+        const lines = (blocks[1]?.innerHTML || '')
+          .split(/<br\s*\/?>/i)
+          .map(l => l.trim())
+          .filter(l => l && !isBlocked(l));
+
+        const recent = [];
+        for (const line of lines.slice(0, 6)) {
+          const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
+          if (!m) continue;
+          const [, time, artist, title] = m;
+          const art = await fetchArt(artist.trim(), title.trim());
+          recent.push({ time, artist: artist.trim(), title: title.trim(), art });
+        }
+        return { album, recent };
+      } catch { return { album: '', recent: [] }; }
+    }
 
     // ── Render recently played ─────────────────────────────────────────────────
-    function renderRecent(id, history, fallback) {
+    function renderRecent(id, items, fallback) {
       const el = document.getElementById(id);
-      if (!history.length) { el.innerHTML = ''; return; }
-      el.innerHTML = history.slice(0, 5).map(s => `
+      el.innerHTML = items.map(s => `
         <div class="recent-item">
           <img class="ri-art" src="${s.art || fallback}"
                onerror="this.src='${fallback}';this.style.objectFit='contain';this.style.padding='6px';">
@@ -412,58 +426,60 @@
             <div class="ri-artist">${s.artist}</div>
             <div class="ri-title">${s.title}</div>
           </div>
-          <div class="ri-time">${formatTime(s.endedAt)}</div>
+          <div class="ri-time">${s.time}</div>
         </div>`).join('');
     }
 
+    // ── State ──────────────────────────────────────────────────────────────────
+    const state = { point: { currentKey: null }, wcyt: { currentKey: null } };
+
     // ── Update a station ───────────────────────────────────────────────────────
-    async function updateStation(key, rawTitle) {
-      const s       = state[key];
-      const infoEl  = document.getElementById(key + '-info');
-      const artEl   = document.getElementById(key + '-art');
+    async function updateStation(key, rawTitle, bsiFile) {
       const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+      const infoEl   = document.getElementById(key + '-info');
+      const artEl    = document.getElementById(key + '-art');
+
+      // Always refresh BSI data (album/year + recently played)
+      const bsi = await fetchBSI(bsiFile);
+      renderRecent(key + '-recent', bsi.recent, fallback);
 
       if (isBlocked(rawTitle)) return;
-      const parsed = parseTitle(rawTitle);
+      const parsed  = parseTitle(rawTitle);
       if (!parsed.artist && !parsed.title) return;
 
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
-      const curKey  = s.current ? (s.current.artist + '|' + s.current.title).toLowerCase() : null;
-      if (songKey === curKey) return; // no change
+
+      if (songKey === state[key].currentKey) {
+        // Same song — just refresh album line in case BSI just updated
+        const el = document.getElementById(key + '-album');
+        if (el && bsi.album) el.textContent = bsi.album;
+        return;
+      }
+      state[key].currentKey = songKey;
 
       // Fade out
       infoEl.classList.add('fading');
       artEl.classList.add('fading');
 
-      // Push old song to history
-      if (s.current) {
-        s.history.unshift({ ...s.current, endedAt: new Date() });
-        if (s.history.length > 10) s.history.pop();
-      }
-
-      // Fetch art
       const art = await fetchArt(parsed.artist, parsed.title);
-      s.current = { ...parsed, art, startedAt: new Date() };
 
       // Update DOM
       const set = (id, text) => { const e = document.getElementById(id); if(e){ e.textContent = text; e.classList.remove('loading'); }};
       set(key + '-artist', parsed.artist);
       set(key + '-title',  parsed.title);
-      set(key + '-album',  '');
+      set(key + '-album',  bsi.album);
       artEl.src = art || fallback;
-
-      renderRecent(key + '-recent', s.history, fallback);
 
       // Fade in
       infoEl.classList.remove('fading');
       artEl.classList.remove('fading');
     }
 
-    // ── Poll Icecast ───────────────────────────────────────────────────────────
+    // ── Poll ───────────────────────────────────────────────────────────────────
     async function poll() {
       try {
-        const res  = await fetch(ICECAST_URL, { cache: 'no-store' });
-        const buf  = await res.arrayBuffer();
+        const res = await fetch(ICECAST_URL, { cache: 'no-store' });
+        const buf = await res.arrayBuffer();
         let text;
         try   { text = new TextDecoder('utf-8', { fatal:true }).decode(buf); }
         catch { text = new TextDecoder('latin1').decode(buf); }
@@ -474,31 +490,13 @@
         const title1  = find('wcyt.mp3')?.title    ?? null;
         const title2  = find('wcythd2.mp3')?.title ?? null;
         await Promise.all([
-          updateStation('point', title1),
-          updateStation('wcyt',  title2)
+          updateStation('point', title1, '/Point_Display_OUT.htm'),
+          updateStation('wcyt',  title2, '/2_Display_OUT.htm')
         ]);
-      } catch(e) { console.warn('Icecast poll failed:', e.message); }
+      } catch(e) { console.warn('Poll failed:', e.message); }
     }
 
-    // ── Seed recently played from Spinitron (The Point only) ───────────────────
-    async function seedSpintron() {
-      try {
-        const res   = await fetch(SPINITRON_URL);
-        const wrap  = await res.json();
-        const spins = JSON.parse(wrap.contents).items ?? [];
-        const s     = state.point;
-        for (const spin of spins.slice(0, 8)) {
-          if (!spin.artist || isBlocked(spin.artist + ' - ' + spin.song)) continue;
-          const art = spin.image || await fetchArt(spin.artist, spin.song || '');
-          s.history.push({ artist: spin.artist, title: spin.song || '', art, endedAt: new Date(spin.start) });
-        }
-        renderRecent('point-recent', s.history, FALLBACK_POINT);
-      } catch(e) { console.warn('Spinitron seed failed:', e.message); }
-    }
-
-    // ── Start ──────────────────────────────────────────────────────────────────
     poll();
-    seedSpintron();
     setInterval(poll, 10_000);
   </script>
 
