@@ -665,33 +665,44 @@ body { background: #0d0d0d; }
 <script src="/nav.js"></script>
 <script>
   (function() {
-    const FALLBACK = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
-    function timeAgo(iso) {
-      const s = Math.floor((Date.now() - new Date(iso)) / 1000);
-      if (s < 60)    return 'Just now';
-      if (s < 3600)  return Math.floor(s/60) + 'm ago';
-      if (s < 86400) return Math.floor(s/3600) + 'h ago';
-      return Math.floor(s/86400) + 'd ago';
-    }
-    fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=3'))
-      .then(r => r.json())
-      .then(wrapper => {
-        const spins = JSON.parse(wrapper.contents).items || [];
-        const el    = document.getElementById('home-recent-played');
-        if (!spins.length) { el.innerHTML = '<p style="color:#555;font-size:14px">Nothing logged yet — check back soon.</p>'; return; }
-        el.innerHTML = '<div class="home-recent-list">' + spins.map((e, i) => `
+    const FALLBACK   = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+    const BLOCKED    = ['liner','legal id','btyb','sponsor'];
+    const BSI_FILE   = '/Point_Display_OUT.htm';
+    const MAX_ITEMS  = 3;
+
+    fetch(BSI_FILE + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.text())
+      .then(html => {
+        const doc    = new DOMParser().parseFromString(html, 'text/html');
+        const blocks = doc.querySelectorAll('.sidebar-content');
+        const raw    = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
+        const songs  = [];
+        for (const line of raw) {
+          const text = line.trim();
+          if (!text) continue;
+          if (BLOCKED.some(b => text.toLowerCase().includes(b))) continue;
+          const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
+          if (!m) continue;
+          songs.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
+          if (songs.length >= MAX_ITEMS) break;
+        }
+
+        const el = document.getElementById('home-recent-played');
+        if (!songs.length) { el.innerHTML = ''; return; }
+
+        el.innerHTML = '<div class="home-recent-list">' + songs.map((s, i) => `
           <div class="home-recent-item">
-            <img id="home-art-${i}" class="home-recent-art" src="${e.image || FALLBACK}" alt="${e.artist || ''}"
+            <img id="home-art-${i}" class="home-recent-art" src="${FALLBACK}" alt="${s.artist}"
                  onerror="this.src='${FALLBACK}'">
             <div style="min-width:0;flex:1">
-              <div class="home-recent-artist">${e.artist || ''}</div>
-              <div class="home-recent-title">${e.song || ''}</div>
+              <div class="home-recent-artist">${s.artist}</div>
+              <div class="home-recent-title">${s.title}</div>
             </div>
-            <div class="home-recent-ago">${e.start ? timeAgo(e.start) : ''}</div>
+            <div class="home-recent-ago">${s.time}</div>
           </div>`).join('') + '</div>';
-        spins.forEach((e, i) => {
-          if (e.image || !e.artist) return;
-          WCYTPlaylist.fetchArt(e.artist, e.song || '').then(url => {
+
+        songs.forEach((s, i) => {
+          WCYTPlaylist.fetchArt(s.artist, s.title).then(url => {
             if (!url) return;
             const img = document.getElementById(`home-art-${i}`);
             if (img) img.src = url;
