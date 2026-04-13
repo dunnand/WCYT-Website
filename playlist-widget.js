@@ -19,6 +19,12 @@
   const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
   const SHOW_TTL_MS   = 45 * 60 * 1000; // auto-clear after 45 minutes
 
+  // ── BSI output files (album/year data from Simian) ────────────────────────
+  const BSI_FILES = [
+    '/Point_Display_OUT.htm', // station 0 — The Point
+    '/2_Display_OUT.htm',     // station 1 — 2.0
+  ];
+
   // ── DJ Panel (JSONBin) ────────────────────────────────────────────
   // After setting up JSONBin, paste your Bin ID here.
   const DJPANEL_BIN_ID  = '69d6461336566621a88e9c7c'; // e.g. '6613abc123def456'
@@ -606,6 +612,17 @@
     } catch (err) { console.warn('[WCYTPlaylist] fetchCurrentShow error:', err); }
   }
 
+  // ── Fetch album/year from BSI output file ────────────────────────────────
+
+  async function fetchBSIAlbum(url) {
+    try {
+      const res  = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+      const html = await res.text();
+      const doc  = new DOMParser().parseFromString(html, 'text/html');
+      return doc.querySelector('.album')?.textContent.trim() || '';
+    } catch { return ''; }
+  }
+
   // ── Fetch stream metadata ─────────────────────────────────────────────────
 
   async function fetchNowPlaying() {
@@ -629,10 +646,16 @@
       const findSource = mount =>
         sources.find(s => (s.listenurl ?? '').toLowerCase().includes(mount.toLowerCase()));
 
+      // Fetch BSI album/year for both stations in parallel
+      const [album1, album2] = await Promise.all([
+        fetchBSIAlbum(BSI_FILES[0]),
+        fetchBSIAlbum(BSI_FILES[1]),
+      ]);
+
       // Station 1 — WCYT (drives history + full playlist page)
       const rawTitle1 = findSource(STATIONS[0].mount)?.title ?? null;
       console.log('[WCYTPlaylist] raw title WCYT:', rawTitle1);
-      handleNewTitle(rawTitle1);
+      handleNewTitle(rawTitle1, album1);
 
       // Station 2 — track current song + history
       const raw2    = findSource(STATIONS[1].mount)?.title ?? null;
@@ -647,8 +670,11 @@
             if (songHistory2.length > MAX_HISTORY) songHistory2.pop();
           }
           const artUrl = parsed2.artist ? await fetchArt(parsed2.artist, parsed2.title) : null;
-          currentSong2 = { ...parsed2, startedAt: new Date(), artUrl };
+          currentSong2 = { ...parsed2, startedAt: new Date(), artUrl, albumLine: album2 };
           if (activeStation === 1) lfmOnSongStart(parsed2.artist, parsed2.title);
+          if (activeStation === 1) render();
+        } else if (currentSong2 && album2 && currentSong2.albumLine !== album2) {
+          currentSong2.albumLine = album2;
           if (activeStation === 1) render();
         }
       } else {
@@ -668,14 +694,14 @@
     }
   }
 
-  async function handleNewTitle(raw) {
+  async function handleNewTitle(raw, albumLine = '') {
     const parsed = parseTitle(raw);
 
     if (isBlocked(raw, parsed)) return;
 
     if (!currentSong) {
       const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
-      currentSong = { ...parsed, startedAt: new Date(), artUrl };
+      currentSong = { ...parsed, startedAt: new Date(), artUrl, albumLine };
       if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
       render();
       return;
@@ -683,14 +709,21 @@
 
     const currentKey = artCacheKey(currentSong.artist, currentSong.title);
     const newKey     = artCacheKey(parsed.artist, parsed.title);
-    if (newKey === currentKey) return;
+    if (newKey === currentKey) {
+      // Same song — update album line if BSI just refreshed
+      if (albumLine && currentSong.albumLine !== albumLine) {
+        currentSong.albumLine = albumLine;
+        if (activeStation === 0) render();
+      }
+      return;
+    }
 
     if (activeStation === 0) lfmOnSongEnd();
     songHistory.unshift({ ...currentSong, endedAt: new Date() });
     if (songHistory.length > MAX_HISTORY) songHistory.pop();
 
     const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
-    currentSong = { ...parsed, startedAt: new Date(), artUrl };
+    currentSong = { ...parsed, startedAt: new Date(), artUrl, albumLine };
     if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
     render();
   }
@@ -955,6 +988,7 @@
               <div class="wcyt-full-song-text">
                 <div class="wcyt-full-artist">${esc(song.artist || 'WCYT')}</div>
                 <div class="wcyt-full-title">${esc(song.title)}</div>
+                ${song.albumLine ? `<div class="wcyt-full-album">${esc(song.albumLine)}</div>` : ''}
                 <div class="wcyt-full-meta">
                   <span class="wcyt-age" data-started="${song.startedAt.toISOString()}">
                     Started ${relativeTime(song.startedAt)}
