@@ -270,6 +270,42 @@
 
     .loading { color: #2a2a2a; font-style: italic; }
     .wcyt .loading { color: #ccc; }
+
+    /* ── Show badge ── */
+    .show-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .show-badge.visible { display: flex; }
+    .show-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .point .show-dot { background: #fff; }
+    .wcyt  .show-dot { background: #111; }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.3; transform:scale(.7); }
+    }
+    .show-label {
+      font-size: 0.58em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .point .show-label { color: #888; }
+    .wcyt  .show-label { color: #999; }
+    .show-name {
+      font-size: 1.1em;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .point .show-name { color: #fff; }
+    .wcyt  .show-name { color: #111; }
   </style>
 </head>
 <body>
@@ -295,6 +331,11 @@
         </div>
         <div class="info" id="point-info">
           <div class="on-air"><span class="live-dot"></span>On Air</div>
+          <div id="point-show-badge" class="show-badge">
+            <span class="show-dot"></span>
+            <span class="show-label">On Air</span>
+            <span id="point-show-name" class="show-name"></span>
+          </div>
           <div id="point-artist" class="artist loading">Loading...</div>
           <div id="point-title"  class="song-title"></div>
           <div id="point-album"  class="album-line"></div>
@@ -327,6 +368,11 @@
         </div>
         <div class="info" id="wcyt-info">
           <div class="on-air"><span class="live-dot"></span>On Air</div>
+          <div id="wcyt-show-badge" class="show-badge">
+            <span class="show-dot"></span>
+            <span class="show-label">On Air</span>
+            <span id="wcyt-show-name" class="show-name"></span>
+          </div>
           <div id="wcyt-artist" class="artist loading">Loading...</div>
           <div id="wcyt-title"  class="song-title"></div>
           <div id="wcyt-album"  class="album-line"></div>
@@ -353,9 +399,20 @@
 
     // ── Config ─────────────────────────────────────────────────────────────────
     const ICECAST_URL    = 'https://securestreams2.autopo.st:1069/status-json.xsl';
+    const DJPANEL_URL    = 'https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest';
     const FALLBACK_POINT = '/images/91fm.png';
     const FALLBACK_2     = '/images/shows/2.0 Logo.png';
     const BLOCKED_TERMS  = ['liner','legal id','btyb','sponsor'];
+
+    // ── DJ Panel ───────────────────────────────────────────────────────────────
+    let djPanel = {};
+    async function fetchDJPanel() {
+      try {
+        const res  = await fetch(DJPANEL_URL, { cache: 'no-store' });
+        const data = await res.json();
+        djPanel = data.record || {};
+      } catch {}
+    }
 
     // ── iTunes art ─────────────────────────────────────────────────────────────
     const artCache = {};
@@ -437,13 +494,22 @@
 
     // ── Update a station ───────────────────────────────────────────────────────
     async function updateStation(key, rawTitle, bsiFile) {
-      const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
-      const infoEl   = document.getElementById(key + '-info');
-      const artEl    = document.getElementById(key + '-art');
+      const fallback  = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+      const infoEl    = document.getElementById(key + '-info');
+      const artEl     = document.getElementById(key + '-art');
+      const badgeEl   = document.getElementById(key + '-show-badge');
+      const nameEl    = document.getElementById(key + '-show-name');
 
       // Always refresh BSI data (album/year + recently played)
       const bsi = await fetchBSI(bsiFile);
       renderRecent(key + '-recent', bsi.recent, fallback);
+
+      // Apply DJ panel show info
+      const djKey     = key === 'point' ? 'wcyt' : '2pt0';
+      const dj        = djPanel[djKey];
+      const showActive = dj?.active && !dj?.onBreak && dj?.showName;
+      if (badgeEl) badgeEl.classList.toggle('visible', !!showActive);
+      if (nameEl)  nameEl.textContent = showActive ? dj.showName : '';
 
       if (isBlocked(rawTitle)) return;
       const parsed  = parseTitle(rawTitle);
@@ -452,9 +518,10 @@
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
 
       if (songKey === state[key].currentKey) {
-        // Same song — just refresh album line in case BSI just updated
         const el = document.getElementById(key + '-album');
         if (el && bsi.album) el.textContent = bsi.album;
+        // Keep show art fresh if DJ panel updated
+        if (showActive && dj.imageUrl) artEl.src = dj.imageUrl;
         return;
       }
       state[key].currentKey = songKey;
@@ -463,14 +530,16 @@
       infoEl.classList.add('fading');
       artEl.classList.add('fading');
 
-      const art = await fetchArt(parsed.artist, parsed.title);
+      const art = showActive && dj.imageUrl
+        ? dj.imageUrl
+        : (await fetchArt(parsed.artist, parsed.title) || fallback);
 
       // Update DOM
       const set = (id, text) => { const e = document.getElementById(id); if(e){ e.textContent = text; e.classList.remove('loading'); }};
       set(key + '-artist', parsed.artist);
       set(key + '-title',  parsed.title);
       set(key + '-album',  bsi.album);
-      artEl.src = art || fallback;
+      artEl.src = art;
 
       // Fade in
       infoEl.classList.remove('fading');
@@ -498,6 +567,8 @@
       } catch(e) { console.warn('Poll failed:', e.message); }
     }
 
+    fetchDJPanel();
+    setInterval(fetchDJPanel, 30_000);
     poll();
     setInterval(poll, 10_000);
   </script>
