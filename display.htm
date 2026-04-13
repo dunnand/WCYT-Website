@@ -286,13 +286,15 @@
     }
     .player-play-btn:hover { background: #a00; }
     .player-stn-btn {
-      background: transparent; border: 1px solid #333; color: #555;
+      background: transparent; border: 1px solid #222; color: #333;
       font-size: 0.7em; font-weight: 700; letter-spacing: 2px;
       padding: 6px 14px; border-radius: 4px; cursor: pointer;
       font-family: inherit; transition: all .2s; white-space: nowrap;
     }
-    .player-stn-btn.active { background: #1a1a1a; border-color: #555; color: #ccc; }
-    .player-stn-btn:hover  { border-color: #888; color: #fff; }
+    /* When playing: active station lights up white, inactive is dimmer */
+    .playing .player-stn-btn.active { background: #1a1a1a; border-color: #666; color: #fff; }
+    .playing .player-stn-btn:not(.active) { border-color: #333; color: #555; }
+    .playing .player-stn-btn:hover  { border-color: #888; color: #fff; }
 
     /* ── Show badge ── */
     .show-badge {
@@ -653,6 +655,7 @@
 
     function updatePlayBtn() {
       document.getElementById('play-btn').innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
+      document.querySelector('.player-controls').classList.toggle('playing', playing);
     }
 
     function updateStreamBtns() {
