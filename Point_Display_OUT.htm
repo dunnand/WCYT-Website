@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="10">
+  <title>The Point Now Playing</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000000;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #111111;
+      padding: 14px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 4px solid #ffffff;
+      flex-shrink: 0;
+    }
+    .station-name {
+      font-size: 2.2em;
+      font-weight: bold;
+      letter-spacing: 6px;
+    }
+    .header-label {
+      font-size: 0.85em;
+      color: #aaaaaa;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      padding: 28px 36px;
+      gap: 32px;
+      min-height: 0;
+    }
+
+    .art-section {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .album-art {
+      width: 280px;
+      height: 280px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 3px solid #444444;
+      background: #111111;
+      filter: grayscale(100%);
+    }
+
+    .now-playing {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .on-air {
+      display: inline-block;
+      background: #ffffff;
+      color: #000000;
+      font-size: 0.7em;
+      font-weight: bold;
+      letter-spacing: 4px;
+      padding: 5px 14px;
+      border-radius: 4px;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .artist {
+      font-size: 2.8em;
+      font-weight: bold;
+      line-height: 1.15;
+      margin-bottom: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .title {
+      font-size: 1.9em;
+      color: #cccccc;
+      font-weight: normal;
+      margin-bottom: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .album {
+      font-size: 1em;
+      color: #888888;
+      margin-bottom: 12px;
+    }
+    .category {
+      font-size: 0.8em;
+      color: #555555;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      overflow: hidden;
+    }
+    .sidebar-block {
+      background: #111111;
+      border-radius: 8px;
+      padding: 16px 18px;
+      border-left: 4px solid #ffffff;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar-block h3 {
+      font-size: 0.7em;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #555555;
+      margin-bottom: 12px;
+    }
+    .sidebar-content {
+      font-size: 0.9em;
+      color: #aaaaaa;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="station-name">THE POINT</div>
+    <div class="header-label">Now Playing</div>
+  </div>
+
+  <div class="main">
+
+    <div class="art-section">
+      <img class="album-art"
+           src="Album%20Art/Grizzly Bear-Painted Ruins.jpg"
+           alt=""
+           onerror="this.style.visibility='hidden'">
+    </div>
+
+    <div class="now-playing">
+      <div class="on-air">On Air</div>
+      <div class="artist">Grizzly Bear</div>
+      <div class="title">Three Rings</div>
+      <div class="album">Painted Ruins &bull; 2017</div>
+      <div class="category">AUDIO</div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-block">
+        <h3>Coming Up</h3>
+        <div class="sidebar-content">11:19 am - Shame - Fingers of Steel  (2023)<br>11:21 am - Lucid Express - Promise Me  (2026)<br>11:27 am - Westside Cowboy - The Wahs  (2026)<br>11:29 am - Liners - Liner<br>11:29 am - Tunde Adebimpe - Magnetic  (2025)<br></div>
+      </div>
+      <div class="sidebar-block">
+        <h3>Recently Played</h3>
+        <div class="sidebar-content">11:07 am - Romy - Enjoy Your Life  (2023)<br />11:11 am - Legal ID - Legal ID<br />11:12 am - BTYB - Liner<br />11:12 am - Sponsor - Sponsor<br />11:12 am - Khruangbin - Connaissais de Face  (2020)<br /></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
