@@ -779,7 +779,7 @@
             class="wcyt-station-btn${i === activeStation ? ' wcyt-station-btn--active' : ''}"
             onclick="WCYTPlaylist.switchStation(${i})"
             aria-pressed="${i === activeStation}"
-          >${esc(s.label)}</button>
+          >${i === activeStation ? `<span class="wcyt-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>` : ''}${esc(s.label)}</button>
         `).join('')}
       </div>
     `;
@@ -820,13 +820,6 @@
       <div class="wcyt-hero">
         ${dispArt ? backdropDiv(dispArt) : ''}
         <div class="wcyt-hero-inner">
-
-          <div class="wcyt-hero-eyebrow">
-            <span class="wcyt-bars" aria-hidden="true">
-              <span></span><span></span><span></span><span></span><span></span>
-            </span>
-            <span>${esc(isWCYT ? 'THE POINT 91 FM \u00b7 WCYT' : '2.0 \u00b7 THE NEXT LEVEL OF RADIO')}</span>
-          </div>
 
           ${stationSwitcher()}
 
