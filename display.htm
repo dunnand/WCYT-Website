@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Now Playing — WCYT</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Split ── */
+    .split {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+    .station {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .point { background: radial-gradient(ellipse at top left, #111 0%, #000 60%); }
+    .wcyt  { background: #f0f0f0; color: #000; }
+
+    .divider {
+      width: 4px;
+      background: linear-gradient(to bottom, transparent, #555 20%, #555 80%, transparent);
+      flex-shrink: 0;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .point .header { background: rgba(0,0,0,0.6);  border-bottom: 4px solid #fff; }
+    .wcyt  .header { background: #f0f0f0; border-bottom: 4px solid #111; color: #000; }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .station-name {
+      font-size: 2em;
+      font-weight: bold;
+      letter-spacing: 6px;
+      line-height: 1;
+    }
+    .tagline {
+      font-size: 1em;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+    .point .tagline { color: #aaa; }
+    .wcyt  .tagline { color: #888; }
+
+    /* ── Top section ── */
+    .top {
+      display: flex;
+      padding: 20px 24px 16px;
+      gap: 22px;
+      flex-shrink: 0;
+    }
+
+    /* Album art */
+    .art-wrap { position: relative; flex-shrink: 0; }
+    .album-art {
+      width: 420px;
+      height: 420px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #111;
+      display: block;
+      transition: opacity 0.6s ease;
+    }
+    .album-art.fading { opacity: 0; }
+    .point .album-art { border: 3px solid #2a2a2a; }
+    .wcyt  .album-art { border: 3px solid #ccc; }
+
+    .point .art-wrap::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 14px;
+      box-shadow: 0 0 40px 8px rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+    .wcyt .art-wrap::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 14px;
+      box-shadow: 0 0 40px 8px rgba(0,0,0,0.15);
+      pointer-events: none;
+    }
+
+    .channel-bug {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      height: 32px;
+      width: auto;
+      opacity: 0.7;
+      filter: drop-shadow(0 1px 4px rgba(0,0,0,0.9));
+    }
+
+    /* Song info */
+    .info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+      transition: opacity 0.5s ease;
+    }
+    .info.fading { opacity: 0; }
+
+    .on-air {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.6em;
+      font-weight: bold;
+      letter-spacing: 4px;
+      padding: 5px 14px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .wcyt  .on-air { background: #111; color: #fff; }
+    .point .on-air { background: #fff; color: #000; }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .wcyt  .live-dot { background: #fff; }
+    .point .live-dot { background: #000; }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.3; transform:scale(.7); }
+    }
+
+    .artist {
+      font-size: 2.4em;
+      font-weight: bold;
+      line-height: 1.1;
+      margin-bottom: 8px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .wcyt .artist { color: #000; }
+
+    .song-title {
+      font-size: 1.7em;
+      color: #ccc;
+      font-weight: normal;
+      margin-bottom: 10px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .wcyt .song-title { color: #333; }
+
+    .album-line { font-size: 1em; color: #666; margin-bottom: 10px; }
+    .category   { display: none; }
+
+    /* ── Bottom: recently played ── */
+    .bottom {
+      flex: 1;
+      padding: 16px 24px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-top: 1px solid #141414;
+      min-height: 0;
+    }
+    .wcyt .bottom { border-top: 1px solid #ddd; }
+
+    .panel-label {
+      font-size: 0.58em;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+    .point .panel-label { color: #444; }
+    .wcyt  .panel-label { color: #999; }
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0;
+      border-bottom: 1px solid #111;
+      flex-shrink: 0;
+    }
+    .wcyt .recent-item { border-bottom: 1px solid #e0e0e0; }
+    .recent-item:last-child { border-bottom: none; }
+
+    .ri-art {
+      width: 48px; height: 48px;
+      border-radius: 5px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #222;
+    }
+    .wcyt .ri-art { background: #ddd; }
+
+    .ri-info { flex: 1; min-width: 0; }
+    .ri-artist {
+      font-size: 0.9em;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .point .ri-artist { color: #ccc; }
+    .wcyt  .ri-artist { color: #222; }
+
+    .ri-title {
+      font-size: 0.78em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .point .ri-title { color: #666; }
+    .wcyt  .ri-title  { color: #888; }
+
+    .ri-time {
+      font-size: 0.72em;
+      flex-shrink: 0;
+    }
+    .point .ri-time { color: #444; }
+    .wcyt  .ri-time  { color: #aaa; }
+
+    /* ── Clock ── */
+    .clock-bar {
+      background: #030303;
+      border-top: 1px solid #0f0f0f;
+      padding: 7px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    #clock {
+      font-size: 1.6em;
+      letter-spacing: 8px;
+      color: #444;
+      text-transform: uppercase;
+    }
+
+    .loading { color: #2a2a2a; font-style: italic; }
+    .wcyt .loading { color: #ccc; }
+  </style>
+</head>
+<body>
+
+  <div class="split">
+
+    <!-- THE POINT (left) -->
+    <div class="station point">
+      <div class="header">
+        <div>
+          <div class="header-left">
+            <img src="/images/91fm.png" style="height:54px;width:auto;" onerror="this.style.display='none'">
+            <div class="station-name">THE POINT 91FM</div>
+          </div>
+          <div class="tagline">Where Music Is The Point</div>
+        </div>
+      </div>
+      <div class="top">
+        <div class="art-wrap">
+          <img id="point-art" class="album-art" alt=""
+               onerror="this.src='/images/91fm.png';this.style.objectFit='contain';this.style.padding='32px';this.onerror=null;">
+          <img class="channel-bug" src="/images/91fm.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="info" id="point-info">
+          <div class="on-air"><span class="live-dot"></span>On Air</div>
+          <div id="point-artist" class="artist loading">Loading...</div>
+          <div id="point-title"  class="song-title"></div>
+          <div id="point-album"  class="album-line"></div>
+        </div>
+      </div>
+      <div class="bottom">
+        <div class="panel-label">Recently Played</div>
+        <div id="point-recent"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 2.0 (right) -->
+    <div class="station wcyt">
+      <div class="header">
+        <div>
+          <div class="header-left">
+            <img src="/images/2.0 Logo 500x500.jpg" style="height:54px;width:auto;" onerror="this.style.display='none'">
+            <div class="station-name">2.0</div>
+          </div>
+          <div class="tagline">The Next Level of Radio</div>
+        </div>
+      </div>
+      <div class="top">
+        <div class="art-wrap">
+          <img id="wcyt-art" class="album-art" alt=""
+               onerror="this.src='/images/2.0 Logo 500x500.jpg';this.style.objectFit='contain';this.style.padding='32px';this.onerror=null;">
+          <img class="channel-bug" src="/images/2.0 Logo 500x500.jpg" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="info" id="wcyt-info">
+          <div class="on-air"><span class="live-dot"></span>On Air</div>
+          <div id="wcyt-artist" class="artist loading">Loading...</div>
+          <div id="wcyt-title"  class="song-title"></div>
+          <div id="wcyt-album"  class="album-line"></div>
+        </div>
+      </div>
+      <div class="bottom">
+        <div class="panel-label">Recently Played</div>
+        <div id="wcyt-recent"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="clock-bar"><span id="clock"></span></div>
+
+  <script>
+    // ── Clock ──────────────────────────────────────────────────────────────────
+    function updateClock() {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ── Config ─────────────────────────────────────────────────────────────────
+    const ICECAST_URL    = 'https://securestreams2.autopo.st:1069/status-json.xsl';
+    const SPINITRON_URL  = 'https://api.allorigins.win/get?url=' +
+      encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=10');
+    const FALLBACK_POINT = '/images/91fm.png';
+    const FALLBACK_2     = '/images/2.0 Logo 500x500.jpg';
+    const BLOCKED_TERMS  = ['liner','legal id','btyb','sponsor'];
+
+    // ── Art fetch (iTunes) ─────────────────────────────────────────────────────
+    const artCache = {};
+    function normArtist(s) {
+      return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .toLowerCase().replace(/\s*&\s*/g,'and').replace(/[^a-z0-9]/g,'');
+    }
+    async function fetchArt(artist, title) {
+      const key = (artist + '|' + title).toLowerCase();
+      if (key in artCache) return artCache[key];
+      try {
+        const term = encodeURIComponent(artist + ' ' + title);
+        const res  = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=10&country=US`);
+        const data = await res.json();
+        const na   = normArtist(artist);
+        const hit  = (data.results ?? []).find(r => normArtist(r.artistName).includes(na));
+        const url  = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
+        artCache[key] = url;
+        return url;
+      } catch { artCache[key] = null; return null; }
+    }
+
+    // ── Parse "Artist - Title" ──────────────────────────────────────────────────
+    function parseTitle(raw) {
+      if (!raw) return { artist: '', title: '' };
+      const idx = raw.indexOf(' - ');
+      if (idx < 0) return { artist: '', title: raw.trim() };
+      return { artist: raw.slice(0, idx).trim(), title: raw.slice(idx + 3).trim() };
+    }
+    function isBlocked(raw) {
+      const h = (raw ?? '').toLowerCase();
+      return BLOCKED_TERMS.some(t => h.includes(t));
+    }
+    function formatTime(d) {
+      return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+    }
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    const state = {
+      point: { current: null, history: [] },
+      wcyt:  { current: null, history: [] }
+    };
+
+    // ── Render recently played ─────────────────────────────────────────────────
+    function renderRecent(id, history, fallback) {
+      const el = document.getElementById(id);
+      if (!history.length) { el.innerHTML = ''; return; }
+      el.innerHTML = history.slice(0, 5).map(s => `
+        <div class="recent-item">
+          <img class="ri-art" src="${s.art || fallback}"
+               onerror="this.src='${fallback}';this.style.objectFit='contain';this.style.padding='6px';">
+          <div class="ri-info">
+            <div class="ri-artist">${s.artist}</div>
+            <div class="ri-title">${s.title}</div>
+          </div>
+          <div class="ri-time">${formatTime(s.endedAt)}</div>
+        </div>`).join('');
+    }
+
+    // ── Update a station ───────────────────────────────────────────────────────
+    async function updateStation(key, rawTitle) {
+      const s       = state[key];
+      const infoEl  = document.getElementById(key + '-info');
+      const artEl   = document.getElementById(key + '-art');
+      const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+
+      if (isBlocked(rawTitle)) return;
+      const parsed = parseTitle(rawTitle);
+      if (!parsed.artist && !parsed.title) return;
+
+      const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
+      const curKey  = s.current ? (s.current.artist + '|' + s.current.title).toLowerCase() : null;
+      if (songKey === curKey) return; // no change
+
+      // Fade out
+      infoEl.classList.add('fading');
+      artEl.classList.add('fading');
+
+      // Push old song to history
+      if (s.current) {
+        s.history.unshift({ ...s.current, endedAt: new Date() });
+        if (s.history.length > 10) s.history.pop();
+      }
+
+      // Fetch art
+      const art = await fetchArt(parsed.artist, parsed.title);
+      s.current = { ...parsed, art, startedAt: new Date() };
+
+      // Update DOM
+      const set = (id, text) => { const e = document.getElementById(id); if(e){ e.textContent = text; e.classList.remove('loading'); }};
+      set(key + '-artist', parsed.artist);
+      set(key + '-title',  parsed.title);
+      set(key + '-album',  '');
+      artEl.src = art || fallback;
+
+      renderRecent(key + '-recent', s.history, fallback);
+
+      // Fade in
+      infoEl.classList.remove('fading');
+      artEl.classList.remove('fading');
+    }
+
+    // ── Poll Icecast ───────────────────────────────────────────────────────────
+    async function poll() {
+      try {
+        const res  = await fetch(ICECAST_URL, { cache: 'no-store' });
+        const buf  = await res.arrayBuffer();
+        let text;
+        try   { text = new TextDecoder('utf-8', { fatal:true }).decode(buf); }
+        catch { text = new TextDecoder('latin1').decode(buf); }
+        const data    = JSON.parse(text);
+        let sources   = data?.icestats?.source ?? [];
+        if (!Array.isArray(sources)) sources = [sources];
+        const find    = mount => sources.find(s => (s.listenurl ?? '').toLowerCase().includes(mount));
+        const title1  = find('wcyt.mp3')?.title    ?? null;
+        const title2  = find('wcythd2.mp3')?.title ?? null;
+        await Promise.all([
+          updateStation('point', title1),
+          updateStation('wcyt',  title2)
+        ]);
+      } catch(e) { console.warn('Icecast poll failed:', e.message); }
+    }
+
+    // ── Seed recently played from Spinitron (The Point only) ───────────────────
+    async function seedSpintron() {
+      try {
+        const res   = await fetch(SPINITRON_URL);
+        const wrap  = await res.json();
+        const spins = JSON.parse(wrap.contents).items ?? [];
+        const s     = state.point;
+        for (const spin of spins.slice(0, 8)) {
+          if (!spin.artist || isBlocked(spin.artist + ' - ' + spin.song)) continue;
+          const art = spin.image || await fetchArt(spin.artist, spin.song || '');
+          s.history.push({ artist: spin.artist, title: spin.song || '', art, endedAt: new Date(spin.start) });
+        }
+        renderRecent('point-recent', s.history, FALLBACK_POINT);
+      } catch(e) { console.warn('Spinitron seed failed:', e.message); }
+    }
+
+    // ── Start ──────────────────────────────────────────────────────────────────
+    poll();
+    seedSpintron();
+    setInterval(poll, 10_000);
+  </script>
+
+</body>
+</html>
