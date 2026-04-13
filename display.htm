@@ -558,95 +558,74 @@
     }
 
     // ── State ──────────────────────────────────────────────────────────────────
-    const state = { point: { currentKey: null }, wcyt: { currentKey: null } };
+    const state = {
+      point: { currentKey: null, busy: false },
+      wcyt:  { currentKey: null, busy: false }
+    };
 
-    // ── Update a station ───────────────────────────────────────────────────────
-    // ── Fast BSI refresh — drives artist/title/album/recently played ─────────
+    // Preload an image URL, resolve with the URL once loaded (or fallback on error)
+    function preloadImg(url, fallback) {
+      return new Promise(resolve => {
+        if (!url) return resolve(fallback);
+        const img = new Image();
+        img.onload  = () => resolve(url);
+        img.onerror = () => resolve(fallback);
+        img.src = url;
+      });
+    }
+
+    // ── BSI refresh — sole driver of artist/title/album/art/recently played ──
     async function refreshBSI(key, bsiFile) {
-      const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
-      const bsi = await fetchBSI(bsiFile);
-      renderRecent(key + '-recent', bsi.recent, fallback);
+      if (state[key].busy) return;          // skip if previous fetch still running
+      state[key].busy = true;
+      try {
+        const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+        const bsi = await fetchBSI(bsiFile);
+        renderRecent(key + '-recent', bsi.recent, fallback);
 
-      const albumEl = document.getElementById(key + '-album');
-      if (albumEl && bsi.album) albumEl.textContent = bsi.album;
+        const albumEl = document.getElementById(key + '-album');
+        if (albumEl && bsi.album) albumEl.textContent = bsi.album;
 
-      // If BSI shows a different (non-blocked) song, wipe then fill once art loads
-      if (bsi.artist && !isBlocked(bsi.artist + ' - ' + bsi.title)) {
+        if (!bsi.artist || isBlocked(bsi.artist + ' - ' + bsi.title)) return;
+
         const songKey = (bsi.artist + '|' + bsi.title).toLowerCase();
-        if (songKey !== state[key].currentKey) {
-          state[key].currentKey = songKey;
+        if (songKey === state[key].currentKey) return;
+        state[key].currentKey = songKey;
 
-          const artEl  = document.getElementById(key + '-art');
+        const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
+        const artEl = document.getElementById(key + '-art');
 
-          const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
+        // Show text immediately
+        set(key + '-artist', bsi.artist);
+        set(key + '-title',  bsi.title);
+        set(key + '-album',  bsi.album);
 
-          // Wipe art immediately, show text right away
-          artEl.classList.add('fading');
-          artEl.src = '';
-          set(key + '-artist', bsi.artist);
-          set(key + '-title',  bsi.title);
-          set(key + '-album',  bsi.album);
-
-          // Swap in art once fetched (may already be cached from pre-fetch)
-          fetchArt(bsi.artist, bsi.title, bsi.album).then(art => {
-            if (artEl) artEl.src = art || (key === 'point' ? FALLBACK_POINT : FALLBACK_2);
-            artEl.classList.remove('fading');
-          });
-        }
+        // Fetch + preload art, then do one clean swap (no blank flash)
+        artEl.classList.add('fading');
+        const artUrl = await fetchArt(bsi.artist, bsi.title, bsi.album);
+        const loaded = await preloadImg(artUrl, fallback);
+        artEl.src = loaded;
+        artEl.classList.remove('fading');
+      } finally {
+        state[key].busy = false;
       }
     }
 
     async function updateStation(key, rawTitle, bsiFile) {
-      const fallback  = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
-      const infoEl    = document.getElementById(key + '-info');
-      const artEl     = document.getElementById(key + '-art');
+      // Song info is fully managed by refreshBSI.
+      // updateStation only handles the DJ panel show badge from here.
       const badgeEl   = document.getElementById(key + '-show-badge');
       const nameEl    = document.getElementById(key + '-show-name');
-
-      // BSI data handled by fast refresh interval — still fetch for song-change logic
-      const bsi = await fetchBSI(bsiFile);
-      renderRecent(key + '-recent', bsi.recent, fallback);
-
-      // Apply DJ panel show info
+      const artEl     = document.getElementById(key + '-art');
       const djKey     = key === 'point' ? 'wcyt' : '2pt0';
       const dj        = djPanel[djKey];
       const showActive = dj?.active && !dj?.onBreak && dj?.showName;
       if (badgeEl) badgeEl.classList.toggle('visible', !!showActive);
       if (nameEl)  nameEl.textContent = showActive ? dj.showName : '';
-
-      if (isBlocked(rawTitle)) return;
-      const parsed  = parseTitle(rawTitle);
-      if (!parsed.artist && !parsed.title) return;
-
-      const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
-
-      if (songKey === state[key].currentKey) {
-        const el = document.getElementById(key + '-album');
-        if (el && bsi.album) el.textContent = bsi.album;
-        // Keep show art fresh if DJ panel updated
-        if (showActive && dj.imageUrl) artEl.src = dj.imageUrl;
-        return;
+      // Override art with show image if a DJ is live
+      if (showActive && dj.imageUrl && artEl && artEl.src !== dj.imageUrl) {
+        artEl.src = dj.imageUrl;
       }
-      state[key].currentKey = songKey;
-
-      // Fade out
-      infoEl.classList.add('fading');
-      artEl.classList.add('fading');
-
-      const art = showActive && dj.imageUrl
-        ? dj.imageUrl
-        : (await fetchArt(parsed.artist, parsed.title) || fallback);
-
-      // Update DOM
-      const set = (id, text) => { const e = document.getElementById(id); if(e){ e.textContent = text; e.classList.remove('loading'); }};
-      set(key + '-artist', parsed.artist);
-      set(key + '-title',  parsed.title);
-      set(key + '-album',  bsi.album);
-      artEl.src = art;
-
-      // Fade in
-      infoEl.classList.remove('fading');
-      artEl.classList.remove('fading');
     }
 
     // ── Poll ───────────────────────────────────────────────────────────────────
