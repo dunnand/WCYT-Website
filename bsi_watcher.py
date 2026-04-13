@@ -12,8 +12,10 @@ import os
 import shutil
 import subprocess
 import time
+import sys
 
-REPO_DIR = r"C:\Users\DunnOffice\WCYT-Website"
+REPO_DIR      = r"C:\Users\DunnOffice\WCYT-Website"
+LOG_FILE      = r"C:\Users\DunnOffice\WCYT-Website\bsi_watcher.log"
 POLL_INTERVAL = 3    # seconds between checks
 DEBOUNCE      = 2    # seconds to wait after a change before pushing
 
@@ -28,11 +30,30 @@ NETWORK_FILES = [
     (r"\\Wcyt\bsi32\WCYT_out.html", "Point_Display_OUT.htm"),
 ]
 
+# ── Logging ───────────────────────────────────────────────────────────────────
+
+def log(msg):
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] {msg}"
+    print(line, flush=True)
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
 def get_mtime(path):
     try:
         return os.path.getmtime(path)
     except (FileNotFoundError, OSError):
         return 0
+
+# Hide the subprocess window without blocking credential helpers
+_si = subprocess.STARTUPINFO()
+_si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+_si.wShowWindow = 0  # SW_HIDE
 
 def git(*args):
     result = subprocess.run(
@@ -40,49 +61,45 @@ def git(*args):
         cwd=REPO_DIR,
         capture_output=True,
         text=True,
-        creationflags=subprocess.CREATE_NO_WINDOW
+        startupinfo=_si
     )
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 
 def push_changes(changed_files):
-    print(f"  Changed: {', '.join(changed_files)}")
+    log(f"Changed: {', '.join(changed_files)}")
 
     for f in changed_files:
         code, out, err = git("add", f)
         if code != 0:
-            print(f"  git add failed: {err}")
+            log(f"git add failed: {err}")
             return
 
     code, out, err = git("commit", "-m", "Update BSI now-playing output")
     if code != 0:
         if "nothing to commit" in err or "nothing to commit" in out:
-            print("  Nothing to commit.")
+            log("Nothing to commit.")
         else:
-            print(f"  git commit failed: {err}")
+            log(f"git commit failed: {err}")
         return
 
-    print("  Pushing...")
+    log("Pushing...")
     code, out, err = git("push")
     if code == 0:
-        print("  Pushed successfully.")
+        log("Pushed successfully.")
     else:
-        print(f"  git push failed: {err}")
+        log(f"git push failed: {err}")
 
 def main():
-    all_watch = LOCAL_FILES + [src for src, _ in NETWORK_FILES]
-    print("=" * 48)
-    print("  BSI Watcher running")
-    print(f"  Local:   {', '.join(LOCAL_FILES)}")
-    print(f"  Network: {', '.join(src for src, _ in NETWORK_FILES)}")
-    print("  Press Ctrl+C to stop.")
-    print("=" * 48)
+    log("=" * 44)
+    log("BSI Watcher running")
+    log(f"Local:   {', '.join(LOCAL_FILES)}")
+    log(f"Network: {', '.join(src for src, _ in NETWORK_FILES)}")
+    log("=" * 44)
 
-    # Track mtimes for local files
     local_mtimes = {f: get_mtime(os.path.join(REPO_DIR, f)) for f in LOCAL_FILES}
-    # Track mtimes for network source files
     net_mtimes   = {src: get_mtime(src) for src, _ in NETWORK_FILES}
 
-    pending    = set()
+    pending     = set()
     last_change = 0
 
     while True:
@@ -106,11 +123,11 @@ def main():
                 dest_path = os.path.join(REPO_DIR, dest)
                 try:
                     shutil.copy2(src, dest_path)
-                    print(f"  Copied {src} → {dest}")
+                    log(f"Copied {src} -> {dest}")
                     pending.add(dest)
                     last_change = now
                 except Exception as e:
-                    print(f"  Copy failed ({src}): {e}")
+                    log(f"Copy failed ({src}): {e}")
 
         if pending and (now - last_change) >= DEBOUNCE:
             push_changes(list(pending))
@@ -120,4 +137,4 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nWatcher stopped.")
+        log("Watcher stopped.")
