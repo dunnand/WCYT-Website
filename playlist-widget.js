@@ -624,16 +624,17 @@
       const albumLine = doc.querySelector('.album')?.textContent.trim() || '';
       const blocks = doc.querySelectorAll('.sidebar-content');
       const lines  = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
-      const recent = [];
+      const all = [];
       for (const line of lines) {
         const text = line.trim();
         if (!text) continue;
         if (BLOCKED_TERMS.some(b => text.toLowerCase().includes(b))) continue;
         const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
         if (!m) continue;
-        recent.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
-        if (recent.length >= 3) break;
+        all.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
       }
+      // BSI lists oldest first — reverse so most recent is at top
+      const recent = all.reverse().slice(0, 3);
       return { albumLine, recent };
     } catch { return { albumLine: '', recent: [] }; }
   }

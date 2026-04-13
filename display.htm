@@ -402,7 +402,8 @@
         const lines = (blocks[1]?.innerHTML || '')
           .split(/<br\s*\/?>/i)
           .map(l => l.trim())
-          .filter(l => l && !isBlocked(l));
+          .filter(l => l && !isBlocked(l))
+          .reverse();
 
         const recent = [];
         for (const line of lines.slice(0, 1)) {
