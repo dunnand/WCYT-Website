@@ -537,16 +537,33 @@
       const albumEl = document.getElementById(key + '-album');
       if (albumEl && bsi.album) albumEl.textContent = bsi.album;
 
-      // If BSI shows a different (non-blocked) song, update artist/title/art
+      // If BSI shows a different (non-blocked) song, wipe then fill once art loads
       if (bsi.artist && !isBlocked(bsi.artist + ' - ' + bsi.title)) {
         const songKey = (bsi.artist + '|' + bsi.title).toLowerCase();
         if (songKey !== state[key].currentKey) {
           state[key].currentKey = songKey;
+
+          const infoEl = document.getElementById(key + '-info');
+          const artEl  = document.getElementById(key + '-art');
+
+          // Wipe immediately
+          infoEl.classList.add('fading');
+          artEl.classList.add('fading');
           const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
-          set(key + '-artist', bsi.artist);
-          set(key + '-title',  bsi.title);
-          const artEl = document.getElementById(key + '-art');
-          fetchArt(bsi.artist, bsi.title).then(art => { if (art && artEl) artEl.src = art; });
+          set(key + '-artist', '');
+          set(key + '-title',  '');
+          set(key + '-album',  '');
+          artEl.src = '';
+
+          // Fill once art is resolved
+          fetchArt(bsi.artist, bsi.title).then(art => {
+            set(key + '-artist', bsi.artist);
+            set(key + '-title',  bsi.title);
+            set(key + '-album',  bsi.album);
+            if (artEl) artEl.src = art || (key === 'point' ? FALLBACK_POINT : FALLBACK_2);
+            infoEl.classList.remove('fading');
+            artEl.classList.remove('fading');
+          });
         }
       }
     }
