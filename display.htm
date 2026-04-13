@@ -576,6 +576,18 @@
       } catch(e) { console.warn('Poll failed:', e.message); }
     }
 
+    // ── Wake Lock — keep screen on ────────────────────────────────────────────
+    async function keepAwake() {
+      if (!('wakeLock' in navigator)) return;
+      try {
+        await navigator.wakeLock.request('screen');
+      } catch {}
+    }
+    keepAwake();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') keepAwake();
+    });
+
     fetchDJPanel();
     setInterval(fetchDJPanel, 30_000);
     poll();
