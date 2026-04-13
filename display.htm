@@ -404,7 +404,7 @@
           .filter(l => l && !isBlocked(l));
 
         const recent = [];
-        for (const line of lines.slice(0, 6)) {
+        for (const line of lines.slice(0, 1)) {
           const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
           if (!m) continue;
           const [, time, artist, title] = m;
