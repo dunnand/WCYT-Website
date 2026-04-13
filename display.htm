@@ -253,16 +253,20 @@
     .point .ri-time { color: #444; }
     .wcyt  .ri-time  { color: #aaa; }
 
-    /* ── Clock ── */
+    /* ── Clock / player bar ── */
     .clock-bar {
       background: #030303;
       border-top: 1px solid #0f0f0f;
-      padding: 7px;
-      text-align: center;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       flex-shrink: 0;
+      gap: 20px;
     }
     #clock {
-      font-size: 1.6em;
+      font-size: 1.4em;
       letter-spacing: 8px;
       color: #444;
       text-transform: uppercase;
@@ -270,6 +274,25 @@
 
     .loading { color: #2a2a2a; font-style: italic; }
     .wcyt .loading { color: #ccc; }
+
+    /* ── Player controls ── */
+    .player-controls { display: flex; align-items: center; gap: 10px; }
+    .player-play-btn {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: none; background: #c8102e; color: #fff;
+      font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s; flex-shrink: 0;
+    }
+    .player-play-btn:hover { background: #a00; }
+    .player-stn-btn {
+      background: transparent; border: 1px solid #333; color: #555;
+      font-size: 0.7em; font-weight: 700; letter-spacing: 2px;
+      padding: 6px 14px; border-radius: 4px; cursor: pointer;
+      font-family: inherit; transition: all .2s; white-space: nowrap;
+    }
+    .player-stn-btn.active { background: #1a1a1a; border-color: #555; color: #ccc; }
+    .player-stn-btn:hover  { border-color: #888; color: #fff; }
 
     /* ── Show badge ── */
     .show-badge {
@@ -386,7 +409,15 @@
 
   </div>
 
-  <div class="clock-bar"><span id="clock"></span></div>
+  <div class="clock-bar">
+    <div class="player-controls">
+      <button class="player-stn-btn active" id="btn-point" onclick="switchStream(0)">THE POINT 91FM</button>
+      <button class="player-play-btn" id="play-btn" onclick="togglePlay()">&#9654;</button>
+      <button class="player-stn-btn" id="btn-wcyt" onclick="switchStream(1)">2.0</button>
+    </div>
+    <span id="clock"></span>
+    <div style="width:200px"></div>
+  </div>
 
   <script>
     // ── Clock ──────────────────────────────────────────────────────────────────
@@ -575,6 +606,64 @@
         ]);
       } catch(e) { console.warn('Poll failed:', e.message); }
     }
+
+    // ── Audio player ──────────────────────────────────────────────────────────
+    const STREAMS = [
+      'https://securestreams2.autopo.st:1069/WCYT.mp3',   // 0 — The Point
+      'https://securestreams2.autopo.st:1069/wcythd2.mp3' // 1 — 2.0
+    ];
+    let audio        = new Audio();
+    let playing      = false;
+    let activeStream = 0;
+
+    function updatePlayBtn() {
+      document.getElementById('play-btn').innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
+    }
+
+    function updateStreamBtns() {
+      document.getElementById('btn-point').classList.toggle('active', activeStream === 0);
+      document.getElementById('btn-wcyt').classList.toggle('active',  activeStream === 1);
+    }
+
+    function loadStream(idx) {
+      audio.pause();
+      audio = new Audio(STREAMS[idx]);
+      audio.volume = 1;
+      if (playing) audio.play().catch(() => {});
+    }
+
+    function switchStream(idx) {
+      if (idx === activeStream && playing) return; // already on and playing
+      activeStream = idx;
+      updateStreamBtns();
+      loadStream(idx);
+      if (!playing) { playing = true; updatePlayBtn(); }
+    }
+
+    function togglePlay() {
+      if (playing) {
+        audio.pause();
+        playing = false;
+      } else {
+        if (!audio.src) loadStream(activeStream);
+        audio.play().catch(() => {});
+        playing = true;
+      }
+      updatePlayBtn();
+    }
+
+    // Autoplay The Point on load
+    (function autoplay() {
+      audio.src = STREAMS[0];
+      audio.play().then(() => {
+        playing = true;
+        updatePlayBtn();
+      }).catch(() => {
+        // Autoplay blocked — user must press play
+        playing = false;
+        updatePlayBtn();
+      });
+    })();
 
     // ── Wake Lock — keep screen on ────────────────────────────────────────────
     async function keepAwake() {
