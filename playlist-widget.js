@@ -822,6 +822,7 @@
               ${artImg(dispArt, 220, 'wcyt-hero-art')}
               <div class="wcyt-hero-artist">${esc(dispArtist || 'WCYT')}</div>
               <div class="wcyt-hero-title">${esc(dispTitle || 'On Air')}</div>
+              ${(songObj?.albumLine && !djP?.manualTitle) ? `<div class="wcyt-hero-album">${esc(songObj.albumLine)}</div>` : ''}
               <div class="wcyt-hero-controls">
                 ${(!djP?.onBreak && !djP?.manualTitle && song) ? `
                   <span class="wcyt-age wcyt-hero-age" data-started="${song.startedAt.toISOString()}">
