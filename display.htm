@@ -253,6 +253,30 @@
     .point .ri-time { color: #444; }
     .wcyt  .ri-time  { color: #aaa; }
 
+    /* ── Simian status badges ── */
+    .simian-badges {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+    .simian-badge {
+      font-size: 0.52em;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: #fff;
+      display: none;
+    }
+    .simian-badge.visible { display: inline-block; }
+    .badge-auto   { background: #27ae60; }
+    .badge-assist { background: #e67e22; }
+    .badge-off    { background: #444; }
+    .badge-log-yes { background: #1a6e3c; }
+    .badge-log-no  { background: #c0392b; }
+
     /* ── Clock / player bar ── */
     .clock-bar {
       background: #030303;
@@ -347,6 +371,10 @@
           </div>
           <div class="tagline">Where Music Is The Point</div>
         </div>
+        <div class="simian-badges">
+          <span id="badge-mode"    class="simian-badge"></span>
+          <span id="badge-log"     class="simian-badge"></span>
+        </div>
       </div>
       <div class="top">
         <div class="art-wrap">
@@ -383,6 +411,10 @@
             <div class="station-name">2.0</div>
           </div>
           <div class="tagline">The Next Level of Radio</div>
+        </div>
+        <div class="simian-badges">
+          <span id="badge2-mode" class="simian-badge"></span>
+          <span id="badge2-log"  class="simian-badge"></span>
         </div>
       </div>
       <div class="top">
@@ -771,6 +803,35 @@
       if (document.visibilityState === 'visible') keepAwake();
     });
 
+    // ── Simian status badges ───────────────────────────────────────────────────
+    function applyStatusBadges(s, modeId, logId) {
+      const modeEl = document.getElementById(modeId);
+      const logEl  = document.getElementById(logId);
+      if (!modeEl || !logEl) return;
+
+      modeEl.className = 'simian-badge visible';
+      if (s.mode === 'auto')        { modeEl.classList.add('badge-auto');   modeEl.textContent = 'AUTO'; }
+      else if (s.mode === 'assist') { modeEl.classList.add('badge-assist'); modeEl.textContent = 'ASSIST'; }
+      else                          { modeEl.classList.add('badge-off');    modeEl.textContent = 'OFF'; }
+
+      logEl.className = 'simian-badge visible';
+      if (s.logLoaded) { logEl.classList.add('badge-log-yes'); logEl.textContent = 'LOG'; }
+      else             { logEl.classList.add('badge-log-no');  logEl.textContent = 'NO LOG'; }
+    }
+
+    async function fetchStatus(jsonFile, modeId, logId) {
+      try {
+        const res = await fetch(RAW_BASE + '/' + jsonFile + '?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) return;
+        applyStatusBadges(await res.json(), modeId, logId);
+      } catch {}
+    }
+
+    function pollStatus() {
+      fetchStatus('point_status.json', 'badge-mode',  'badge-log');
+      fetchStatus('wcyt2_status.json', 'badge2-mode', 'badge2-log');
+    }
+
     fetchDJPanel();
     setInterval(fetchDJPanel, 30_000);
     poll();
@@ -780,6 +841,8 @@
       refreshBSI('point', '/Point_Display_OUT.htm');
       refreshBSI('wcyt',  '/2_Display_OUT.htm');
     }, 3_000);
+    pollStatus();
+    setInterval(pollStatus, 10_000);
   </script>
 
 </body>

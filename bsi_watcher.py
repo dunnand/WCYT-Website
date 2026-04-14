@@ -13,6 +13,9 @@ import shutil
 import subprocess
 import time
 import sys
+import json
+import configparser
+import io
 
 REPO_DIR      = r"C:\Users\DunnOffice\WCYT-Website"
 LOG_FILE      = r"C:\Users\DunnOffice\WCYT-Website\bsi_watcher.log"
@@ -29,6 +32,49 @@ LOCAL_FILES = [
 NETWORK_FILES = [
     (r"\\Wcyt\bsi32\WCYT_out.html", "Point_Display_OUT.htm"),
 ]
+
+# Backup.ini files to parse → status JSON files
+# AutoStep values: 0=off, 1=assist, 2=auto
+STATUS_SOURCES = [
+    (r"\\Wcyt\bsi32\Backup.ini",          "point_status.json"),
+    (r"\\10.20.255.61\bsi32\Backup.ini",  "wcyt2_status.json"),
+]
+
+
+def parse_backup_ini(path):
+    """Read Backup.ini and return a status dict."""
+    try:
+        raw = open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return None
+    # configparser needs a valid key=value on every line; strip bare keys like "AutoStep" (no =)
+    lines = [l for l in raw.splitlines() if "=" in l or l.strip().startswith("[")]
+    cfg = configparser.RawConfigParser()
+    cfg.read_string("\n".join(lines))
+
+    def get(section, key, default=""):
+        try:    return cfg.get(section, key)
+        except: return default
+
+    log_name  = get("LogStatus",   "LogName").strip()
+    playing   = get("LogStatus",   "Playing").strip().lower() == "true"
+    row       = get("LogStatus",   "Row").strip()
+    log_time  = get("LogStatus",   "LogTime").strip()
+    auto_step_raw = get("SystemStatus", "AutoStep").strip()
+    try:    auto_step = int(auto_step_raw)
+    except: auto_step = 0
+
+    mode_map = {0: "off", 1: "assist", 2: "auto"}
+    return {
+        "logLoaded": bool(log_name),
+        "logFile":   os.path.basename(log_name) if log_name else "",
+        "playing":   playing,
+        "mode":      mode_map.get(auto_step, "off"),
+        "autoStep":  auto_step,
+        "row":       row,
+        "logTime":   log_time,
+        "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -94,10 +140,13 @@ def main():
     log("BSI Watcher running")
     log(f"Local:   {', '.join(LOCAL_FILES)}")
     log(f"Network: {', '.join(src for src, _ in NETWORK_FILES)}")
+    for src, dest in STATUS_SOURCES:
+        log(f"Status:  {src} -> {dest}")
     log("=" * 44)
 
-    local_mtimes = {f: get_mtime(os.path.join(REPO_DIR, f)) for f in LOCAL_FILES}
-    net_mtimes   = {src: get_mtime(src) for src, _ in NETWORK_FILES}
+    local_mtimes  = {f: get_mtime(os.path.join(REPO_DIR, f)) for f in LOCAL_FILES}
+    net_mtimes    = {src: get_mtime(src) for src, _ in NETWORK_FILES}
+    status_mtimes = {src: get_mtime(src) for src, _ in STATUS_SOURCES}
 
     pending     = set()
     last_change = 0
@@ -128,6 +177,23 @@ def main():
                     last_change = now
                 except Exception as e:
                     log(f"Copy failed ({src}): {e}")
+
+        # Check Backup.ini files — parse and write status JSON if changed
+        for src, dest in STATUS_SOURCES:
+            new_mtime = get_mtime(src)
+            if new_mtime != status_mtimes[src]:
+                status_mtimes[src] = new_mtime
+                status = parse_backup_ini(src)
+                if status:
+                    dest_path = os.path.join(REPO_DIR, dest)
+                    try:
+                        with open(dest_path, "w", encoding="utf-8") as f:
+                            json.dump(status, f, indent=2)
+                        log(f"[{dest}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
+                        pending.add(dest)
+                        last_change = now
+                    except Exception as e:
+                        log(f"Status write failed ({dest}): {e}")
 
         if pending and (now - last_change) >= DEBOUNCE:
             push_changes(list(pending))
