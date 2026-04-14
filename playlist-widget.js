@@ -900,7 +900,7 @@
                 <ul class="wcyt-hero-recent-list">
                   ${bsiRecent1.map(s => `
                     <li>
-                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 72, 'wcyt-hero-recent-art')}
+                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
                         <span class="wcyt-hero-recent-artist">${esc(s.artist)}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
@@ -935,7 +935,7 @@
                 <ul class="wcyt-hero-recent-list">
                   ${bsiRecent2.map(s => `
                     <li>
-                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 72, 'wcyt-hero-recent-art')}
+                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
                         <span class="wcyt-hero-recent-artist">${esc(s.artist)}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
