@@ -559,8 +559,8 @@
 
     // ── State ──────────────────────────────────────────────────────────────────
     const state = {
-      point: { currentKey: null, busy: false },
-      wcyt:  { currentKey: null, busy: false }
+      point: { currentKey: null, pendingKey: null, busy: false },
+      wcyt:  { currentKey: null, pendingKey: null, busy: false }
     };
 
     // Preload an image URL, resolve with the URL once loaded (or fallback on error)
@@ -589,8 +589,23 @@
         if (!bsi.artist || isBlocked(bsi.artist + ' - ' + bsi.title)) return;
 
         const songKey = (bsi.artist + '|' + bsi.title).toLowerCase();
-        if (songKey === state[key].currentKey) return;
+
+        // Already showing this song — clear any pending candidate
+        if (songKey === state[key].currentKey) {
+          state[key].pendingKey = null;
+          return;
+        }
+
+        // Require two consecutive polls with the same new key before committing.
+        // This prevents CDN edge-node inconsistency from causing false transitions.
+        if (songKey !== state[key].pendingKey) {
+          state[key].pendingKey = songKey;
+          return;  // wait for next poll to confirm
+        }
+
+        // Confirmed — commit the change
         state[key].currentKey = songKey;
+        state[key].pendingKey = null;
 
         const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
         const artEl = document.getElementById(key + '-art');
