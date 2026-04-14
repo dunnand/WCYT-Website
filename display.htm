@@ -558,74 +558,62 @@
     }
 
     // ── State ──────────────────────────────────────────────────────────────────
-    const state = {
-      point: { currentKey: null, busy: false },
-      wcyt:  { currentKey: null, busy: false }
-    };
+    const state = { point: { currentKey: null }, wcyt: { currentKey: null } };
 
-    // Preload an image URL, resolve with the URL once loaded (or fallback on error)
-    function preloadImg(url, fallback) {
-      return new Promise(resolve => {
-        if (!url) return resolve(fallback);
-        const img = new Image();
-        img.onload  = () => resolve(url);
-        img.onerror = () => resolve(fallback);
-        img.src = url;
-      });
-    }
-
-    // ── BSI refresh — sole driver of artist/title/album/art/recently played ──
+    // ── BSI refresh — album/year + recently played only ───────────────────────
     async function refreshBSI(key, bsiFile) {
-      if (state[key].busy) return;          // skip if previous fetch still running
-      state[key].busy = true;
-      try {
-        const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
-        const bsi = await fetchBSI(bsiFile);
-        renderRecent(key + '-recent', bsi.recent, fallback);
-
-        const albumEl = document.getElementById(key + '-album');
-        if (albumEl && bsi.album) albumEl.textContent = bsi.album;
-
-        if (!bsi.artist || isBlocked(bsi.artist + ' - ' + bsi.title)) return;
-
-        const songKey = (bsi.artist + '|' + bsi.title).toLowerCase();
-        if (songKey === state[key].currentKey) return;
-        state[key].currentKey = songKey;
-
-        const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
-        const artEl = document.getElementById(key + '-art');
-
-        // Show text immediately
-        set(key + '-artist', bsi.artist);
-        set(key + '-title',  bsi.title);
-        set(key + '-album',  bsi.album);
-
-        // Fetch + preload art, then do one clean swap (no blank flash)
-        artEl.classList.add('fading');
-        const artUrl = await fetchArt(bsi.artist, bsi.title, bsi.album);
-        const loaded = await preloadImg(artUrl, fallback);
-        artEl.src = loaded;
-        artEl.classList.remove('fading');
-      } finally {
-        state[key].busy = false;
-      }
+      const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+      const bsi = await fetchBSI(bsiFile);
+      renderRecent(key + '-recent', bsi.recent, fallback);
+      const el = document.getElementById(key + '-album');
+      if (el && bsi.album) el.textContent = bsi.album;
     }
 
+    // ── Update station — driven by Icecast title ───────────────────────────────
     async function updateStation(key, rawTitle, bsiFile) {
-      // Song info is fully managed by refreshBSI.
-      // updateStation only handles the DJ panel show badge from here.
+      const fallback  = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+      const infoEl    = document.getElementById(key + '-info');
+      const artEl     = document.getElementById(key + '-art');
       const badgeEl   = document.getElementById(key + '-show-badge');
       const nameEl    = document.getElementById(key + '-show-name');
-      const artEl     = document.getElementById(key + '-art');
-      const djKey     = key === 'point' ? 'wcyt' : '2pt0';
-      const dj        = djPanel[djKey];
+
+      const bsi = await fetchBSI(bsiFile);
+      renderRecent(key + '-recent', bsi.recent, fallback);
+
+      const djKey      = key === 'point' ? 'wcyt' : '2pt0';
+      const dj         = djPanel[djKey];
       const showActive = dj?.active && !dj?.onBreak && dj?.showName;
       if (badgeEl) badgeEl.classList.toggle('visible', !!showActive);
       if (nameEl)  nameEl.textContent = showActive ? dj.showName : '';
-      // Override art with show image if a DJ is live
-      if (showActive && dj.imageUrl && artEl && artEl.src !== dj.imageUrl) {
-        artEl.src = dj.imageUrl;
+
+      if (isBlocked(rawTitle)) return;
+      const parsed = parseTitle(rawTitle);
+      if (!parsed.artist && !parsed.title) return;
+
+      const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
+      if (songKey === state[key].currentKey) {
+        const el = document.getElementById(key + '-album');
+        if (el && bsi.album) el.textContent = bsi.album;
+        if (showActive && dj.imageUrl) artEl.src = dj.imageUrl;
+        return;
       }
+      state[key].currentKey = songKey;
+
+      infoEl.classList.add('fading');
+      artEl.classList.add('fading');
+
+      const art = showActive && dj.imageUrl
+        ? dj.imageUrl
+        : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
+
+      const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
+      set(key + '-artist', parsed.artist);
+      set(key + '-title',  parsed.title);
+      set(key + '-album',  bsi.album);
+      artEl.src = art;
+
+      infoEl.classList.remove('fading');
+      artEl.classList.remove('fading');
     }
 
     // ── Poll ───────────────────────────────────────────────────────────────────
