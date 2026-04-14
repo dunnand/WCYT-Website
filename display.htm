@@ -612,13 +612,16 @@
       artEl.src = '';
 
       // Populate once art resolves, then reveal
+      const bsiKey = (bsi.artist + '|' + bsi.title).toLowerCase();
       const art = showActive && dj.imageUrl
         ? dj.imageUrl
         : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
 
       set(key + '-artist', parsed.artist);
       set(key + '-title',  parsed.title);
-      set(key + '-album',  bsi.album);
+      // Only write album if BSI has already updated to the new song; otherwise
+      // leave blank — refreshBSI will fill it in once BSI catches up
+      if (bsiKey === songKey) set(key + '-album', bsi.album);
       artEl.src = art;
       artEl.classList.remove('fading');
     }
