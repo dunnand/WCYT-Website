@@ -821,18 +821,18 @@
       else             { logEl.classList.add('badge-log-no');  logEl.textContent = 'NO LOG'; }
     }
 
-    async function fetchStatus(jsonFile, modeId, logId) {
+    async function fetchStatus() {
       try {
-        const res = await fetch(RAW_BASE + '/' + jsonFile + '?t=' + Date.now(), { cache: 'no-store' });
+        const res = await fetch('https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest', { cache: 'no-store' });
         if (!res.ok) return;
-        applyStatusBadges(await res.json(), modeId, logId);
+        const s = (await res.json()).record?.simianStatus;
+        if (!s) return;
+        if (s.point) applyStatusBadges(s.point, 'badge-mode',  'badge-log');
+        if (s.wcyt2) applyStatusBadges(s.wcyt2, 'badge2-mode', 'badge2-log');
       } catch {}
     }
 
-    function pollStatus() {
-      fetchStatus('point_status.json', 'badge-mode',  'badge-log');
-      fetchStatus('wcyt2_status.json', 'badge2-mode', 'badge2-log');
-    }
+    function pollStatus() { fetchStatus(); }
 
     fetchDJPanel();
     setInterval(fetchDJPanel, 30_000);

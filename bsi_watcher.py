@@ -16,6 +16,7 @@ import sys
 import json
 import configparser
 import io
+import urllib.request
 
 REPO_DIR      = r"C:\Users\DunnOffice\WCYT-Website"
 LOG_FILE      = r"C:\Users\DunnOffice\WCYT-Website\bsi_watcher.log"
@@ -36,9 +37,34 @@ NETWORK_FILES = [
 # Backup.ini files to parse → status JSON files
 # AutoStep values: 0=off, 1=assist, 2=auto
 STATUS_SOURCES = [
-    (r"\\Wcyt\bsi32\Backup.ini",          "point_status.json"),
-    (r"\\10.20.255.61\bsi32\Backup.ini",  "wcyt2_status.json"),
+    (r"\\Wcyt\bsi32\Backup.ini",          "point_status.json", "point"),
+    (r"\\10.20.255.61\bsi32\Backup.ini",  "wcyt2_status.json", "wcyt2"),
 ]
+
+# JSONBin — stores simian status so display page gets instant updates (no CDN cache)
+JSONBIN_URL = 'https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c'
+JSONBIN_KEY = '$2a$10$s2EAQ4fmcOv4Z3qirUkUA.IzIm6h6s2THmXDWhxGbcFhVAytzJFrK'
+_simian_status = {}
+
+def push_status_to_jsonbin(station_key, status):
+    _simian_status[station_key] = {k: v for k, v in status.items() if k != 'updatedAt'}
+    try:
+        payload = json.dumps({'simianStatus': _simian_status}).encode('utf-8')
+        req = urllib.request.Request(
+            JSONBIN_URL,
+            data=payload,
+            headers={
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_KEY,
+                'X-Merge':      'shallow',
+            },
+            method='PATCH'
+        )
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        log(f"[JSONBin] {station_key}={status['mode']}")
+    except Exception as e:
+        log(f"[JSONBin] push failed: {e}")
 
 
 def parse_backup_ini(path):
@@ -140,13 +166,13 @@ def main():
     log("BSI Watcher running")
     log(f"Local:   {', '.join(LOCAL_FILES)}")
     log(f"Network: {', '.join(src for src, _ in NETWORK_FILES)}")
-    for src, dest in STATUS_SOURCES:
-        log(f"Status:  {src} -> {dest}")
+    for src, dest, key in STATUS_SOURCES:
+        log(f"Status:  {src} -> JSONBin[{key}]")
     log("=" * 44)
 
     local_mtimes  = {f: get_mtime(os.path.join(REPO_DIR, f)) for f in LOCAL_FILES}
     net_mtimes    = {src: get_mtime(src) for src, _ in NETWORK_FILES}
-    status_mtimes = {src: get_mtime(src) for src, _ in STATUS_SOURCES}
+    status_mtimes = {src: get_mtime(src) for src, _, _k in STATUS_SOURCES}
 
     pending     = set()
     last_change = 0
@@ -178,22 +204,15 @@ def main():
                 except Exception as e:
                     log(f"Copy failed ({src}): {e}")
 
-        # Check Backup.ini files — parse and write status JSON if changed
-        for src, dest in STATUS_SOURCES:
+        # Check Backup.ini files — parse and push to JSONBin if changed
+        for src, dest, station_key in STATUS_SOURCES:
             new_mtime = get_mtime(src)
             if new_mtime != status_mtimes[src]:
                 status_mtimes[src] = new_mtime
                 status = parse_backup_ini(src)
                 if status:
-                    dest_path = os.path.join(REPO_DIR, dest)
-                    try:
-                        with open(dest_path, "w", encoding="utf-8") as f:
-                            json.dump(status, f, indent=2)
-                        log(f"[{dest}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
-                        pending.add(dest)
-                        last_change = now
-                    except Exception as e:
-                        log(f"Status write failed ({dest}): {e}")
+                    log(f"[{station_key}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
+                    push_status_to_jsonbin(station_key, status)
 
         if pending and (now - last_change) >= DEBOUNCE:
             push_changes(list(pending))
