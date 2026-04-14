@@ -2,9 +2,9 @@
   "logLoaded": true,
   "logFile": "041426.bsi",
   "playing": true,
-  "mode": "assist",
-  "autoStep": 1,
+  "mode": "auto",
+  "autoStep": 2,
   "row": "64",
-  "logTime": "4/14/2026 1:08:34 PM",
-  "updatedAt": "2026-04-14T13:08:34"
+  "logTime": "4/14/2026 1:08:44 PM",
+  "updatedAt": "2026-04-14T13:08:45"
 }
