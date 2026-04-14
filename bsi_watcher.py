@@ -49,18 +49,27 @@ _simian_status = {}
 def push_status_to_jsonbin(station_key, status):
     _simian_status[station_key] = {k: v for k, v in status.items() if k != 'updatedAt'}
     try:
-        payload = json.dumps({'simianStatus': _simian_status}).encode('utf-8')
-        req = urllib.request.Request(
+        # GET current bin so we don't overwrite DJ panel keys
+        get_req = urllib.request.Request(
+            JSONBIN_URL + '/latest',
+            headers={'X-Master-Key': JSONBIN_KEY},
+            method='GET'
+        )
+        with urllib.request.urlopen(get_req, timeout=10) as resp:
+            record = json.loads(resp.read()).get('record', {})
+
+        # Merge in latest simian status and PUT back
+        record['simianStatus'] = _simian_status.copy()
+        put_req = urllib.request.Request(
             JSONBIN_URL,
-            data=payload,
+            data=json.dumps(record).encode('utf-8'),
             headers={
                 'Content-Type': 'application/json',
                 'X-Master-Key': JSONBIN_KEY,
-                'X-Merge':      'shallow',
             },
-            method='PATCH'
+            method='PUT'
         )
-        with urllib.request.urlopen(req, timeout=10):
+        with urllib.request.urlopen(put_req, timeout=10):
             pass
         log(f"[JSONBin] {station_key}={status['mode']}")
     except Exception as e:
