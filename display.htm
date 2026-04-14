@@ -644,7 +644,7 @@
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
       if (songKey === state[key].currentKey) {
         const el = document.getElementById(key + '-album');
-        if (el && bsi.album) el.textContent = bsi.album;
+        if (el && bsi.album && normStr(bsi.title) === normStr(parsed.title)) el.textContent = bsi.album;
         if (showActive && dj.imageUrl) artEl.src = dj.imageUrl;
         return;
       }
