@@ -565,11 +565,12 @@
       const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
       const bsi = await fetchBSI(bsiFile);
       renderRecent(key + '-recent', bsi.recent, fallback);
-      // Only write album text if the BSI file still matches the current song
+      // Only write album if BSI title matches the currently displayed song title
       // (prevents overwriting a blank that was just cleared on song change)
-      const bsiKey = (bsi.artist + '|' + bsi.title).toLowerCase();
+      // Match on title only — BSI and Icecast artist names can differ
+      const currentTitle = (state[key].currentKey || '').split('|')[1] || '';
       const el = document.getElementById(key + '-album');
-      if (el && bsi.album && bsiKey === state[key].currentKey) el.textContent = bsi.album;
+      if (el && bsi.album && bsi.title.toLowerCase() === currentTitle) el.textContent = bsi.album;
     }
 
     // ── Update station — driven by Icecast title ───────────────────────────────
@@ -611,17 +612,20 @@
       artEl.classList.add('fading');
       artEl.src = '';
 
+      // BSI may have a fuller artist name (e.g. "The Jimi Hendrix Experience"
+      // vs Icecast's "Jimi Hendrix") — prefer BSI artist when titles match
+      const bsiTitleMatch = bsi.title && bsi.title.toLowerCase() === parsed.title.toLowerCase();
+      const displayArtist = bsiTitleMatch && bsi.artist ? bsi.artist : parsed.artist;
+
       // Populate once art resolves, then reveal
-      const bsiKey = (bsi.artist + '|' + bsi.title).toLowerCase();
       const art = showActive && dj.imageUrl
         ? dj.imageUrl
-        : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
+        : (await fetchArt(displayArtist, parsed.title, bsi.album) || fallback);
 
-      set(key + '-artist', parsed.artist);
+      set(key + '-artist', displayArtist);
       set(key + '-title',  parsed.title);
-      // Only write album if BSI has already updated to the new song; otherwise
-      // leave blank — refreshBSI will fill it in once BSI catches up
-      if (bsiKey === songKey) set(key + '-album', bsi.album);
+      // Only write album if BSI title matches — leave blank otherwise until BSI catches up
+      if (bsiTitleMatch) set(key + '-album', bsi.album);
       artEl.src = art;
       artEl.classList.remove('fading');
     }
