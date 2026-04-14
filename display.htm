@@ -605,10 +605,13 @@
 
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
 
-      // Clear text, fade art — old art stays visible until new one loads
+      // Clear text and blank art using a transparent pixel (avoids triggering onerror)
       set(key + '-artist', '');
       set(key + '-title',  '');
       set(key + '-album',  '');
+      artEl.style.objectFit = '';
+      artEl.style.padding   = '';
+      artEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
       artEl.classList.add('fading');
 
       const bsiTitleMatch = bsi.title && bsi.title.toLowerCase() === parsed.title.toLowerCase();
