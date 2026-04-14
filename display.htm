@@ -462,6 +462,41 @@
       return (s ?? '').replace(/\s*[•·]\s*.*$/, '').trim();
     }
 
+    // Albums whose iTunes art should not be shown on air
+    const BLOCKED_ART = [
+      ['pixies',            'surfer rosa'],
+      ['janes addiction',   'nothings shocking'],
+      ['janes addiction',   'ritual de lo habitual'],
+      ['nirvana',           'nevermind'],
+      ['nirvana',           'in utero'],
+      ['red hot chili peppers', 'mothers milk'],
+      ['blind faith',       'blind faith'],
+      ['the slits',         'cut'],
+      ['pulp',              'this is hardcore'],
+      ['pulp',              'this'],
+      ['sky ferreira',      'night time my time'],
+      ['lorde',             'solar power'],
+      ['the strokes',       'is this it'],
+      ['the black crowes',  'amorica'],
+      ['guns n roses',      'appetite for destruction'],
+      ['lucius',            'wildewoman'],
+      ['methyl ethel',      'everything is forgotten'],
+      ['of montreal',       'skeletal lamping'],
+      ['of montreal',       'innocence reaches'],
+      ['sigur ros',         'med sud i eyrum vid spilum endalaust'],
+      ['sufjan stevens',    'a beginners mind'],
+      ['the damned',        'machine gun etiquette'],
+      ['the damned',        'damned damned damned'],
+      ['the drums',         'jonny'],
+      ['tv girl',           'death of a party girl'],
+      ['avalon emerson',    'perpetual emotion machine'],
+      ['arctic monkeys',    'help'],
+    ];
+    function artIsBlocked(artist, collection) {
+      const a = normStr(artist), b = normStr(collection);
+      return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
+    }
+
     async function fetchArt(artist, title, album) {
       const albumClean = cleanAlbum(album);
       const key = (artist + '|' + title + '|' + albumClean).toLowerCase();
@@ -471,7 +506,9 @@
         const res  = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=25&country=US`);
         const data = await res.json();
         const na   = normStr(artist);
-        const hits = (data.results ?? []).filter(r => normStr(r.artistName).includes(na));
+        const hits = (data.results ?? []).filter(r =>
+          normStr(r.artistName).includes(na) && !artIsBlocked(r.artistName, r.collectionName ?? '')
+        );
 
         let hit = null;
         // Prefer a result whose collectionName matches the BSI album
