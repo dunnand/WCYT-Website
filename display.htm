@@ -457,9 +457,11 @@
     }
     const normArtist = normStr;
 
-    // album text from BSI looks like "The Temptin' Temptations • 1965" — strip bullet + year
-    function cleanAlbum(s) {
-      return (s ?? '').replace(/\s*[•·]\s*.*$/, '').trim();
+    // album text from BSI looks like "Weezer • 1994" — extract name and year separately
+    function parseAlbum(s) {
+      const m = (s ?? '').match(/^(.+?)\s*[•·]\s*(\d{4})\s*$/);
+      if (m) return { name: m[1].trim(), year: m[2] };
+      return { name: (s ?? '').trim(), year: '' };
     }
 
     // Albums whose iTunes art should not be shown on air
@@ -498,8 +500,8 @@
     }
 
     async function fetchArt(artist, title, album) {
-      const albumClean = cleanAlbum(album);
-      const key = (artist + '|' + title + '|' + albumClean).toLowerCase();
+      const { name: albumName, year: albumYear } = parseAlbum(album);
+      const key = (artist + '|' + title + '|' + albumName).toLowerCase();
       if (key in artCache) return artCache[key];
       try {
         const term = encodeURIComponent(artist + ' ' + title);
@@ -511,15 +513,24 @@
         );
 
         let hit = null;
-        // Prefer a result whose collectionName matches the BSI album
-        if (albumClean) {
-          const na_album = normStr(albumClean);
+        // 1. Prefer result matching album name AND year (disambiguates self-titled albums e.g. Weezer)
+        if (albumName && albumYear) {
+          const na_album = normStr(albumName);
+          hit = hits.find(r => {
+            const rc = normStr(r.collectionName);
+            const ry = (r.releaseDate ?? '').slice(0, 4);
+            return (rc.includes(na_album) || na_album.includes(rc)) && ry === albumYear;
+          });
+        }
+        // 2. Prefer result matching album name only
+        if (!hit && albumName) {
+          const na_album = normStr(albumName);
           hit = hits.find(r => {
             const rc = normStr(r.collectionName);
             return rc.includes(na_album) || na_album.includes(rc);
           });
         }
-        // Fall back to first artist match
+        // 3. Fall back to first artist match
         if (!hit) hit = hits[0];
 
         const url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;

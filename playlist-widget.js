@@ -499,9 +499,14 @@
       .replace(/[^a-z0-9]/g, '');
   }
 
-  async function fetchArtFromiTunes(artist, title) {
+  async function fetchArtFromiTunes(artist, title, albumLine) {
     const na = normArtist(artist);
     const nt = stripDiacritics(title).toLowerCase();
+
+    // Parse album name and year from BSI album line (e.g. "Weezer • 1994")
+    const albumMatch = (albumLine ?? '').match(/^(.+?)\s*[•·]\s*(\d{4})\s*$/);
+    const albumName  = albumMatch ? albumMatch[1].trim() : (albumLine ?? '').trim();
+    const albumYear  = albumMatch ? albumMatch[2] : '';
 
     const isSecondary = r => { const col = (r.collectionName ?? '').toLowerCase(); return ITUNES_SECONDARY.some(t => col.includes(t)); };
 
@@ -517,9 +522,29 @@
       return true;
     });
 
-    const pickMatch = candidates =>
-      candidates.find(r => !isSecondary(r)) ??
-      candidates.find(r =>  isSecondary(r));
+    const pickMatch = candidates => {
+      // 1. Album name + year match (disambiguates self-titled albums e.g. Weezer)
+      if (albumName && albumYear) {
+        const na_album = normArtist(albumName);
+        const byBoth = candidates.find(r => {
+          const rc = normArtist(r.collectionName ?? '');
+          const ry = (r.releaseDate ?? '').slice(0, 4);
+          return (rc.includes(na_album) || na_album.includes(rc)) && ry === albumYear;
+        });
+        if (byBoth) return byBoth;
+      }
+      // 2. Album name match only
+      if (albumName) {
+        const na_album = normArtist(albumName);
+        const byAlbum = candidates.find(r => {
+          const rc = normArtist(r.collectionName ?? '');
+          return rc.includes(na_album) || na_album.includes(rc);
+        });
+        if (byAlbum) return byAlbum;
+      }
+      // 3. Non-secondary first, then secondary
+      return candidates.find(r => !isSecondary(r)) ?? candidates.find(r => isSecondary(r));
+    };
 
     const toArtUrl = match => match?.artworkUrl100
       ? match.artworkUrl100.replace('100x100bb', '500x500bb')
@@ -542,13 +567,13 @@
     return toArtUrl(pickMatch(byTitle));
   }
 
-  async function fetchArt(artist, title) {
+  async function fetchArt(artist, title, albumLine = '') {
     const key = artCacheKey(artist, title);
     if (key in artCache) return artCache[key];
     const override = artOverride(artist);
     if (override) { artCache[key] = override; return override; }
     artCache[key] = null;
-    try { artCache[key] = await fetchArtFromiTunes(artist, title); } catch {}
+    try { artCache[key] = await fetchArtFromiTunes(artist, title, albumLine); } catch {}
     return artCache[key];
   }
 
@@ -707,7 +732,7 @@
             songHistory2.unshift({ ...currentSong2, endedAt: new Date() });
             if (songHistory2.length > MAX_HISTORY) songHistory2.pop();
           }
-          const artUrl = parsed2.artist ? await fetchArt(parsed2.artist, parsed2.title) : null;
+          const artUrl = parsed2.artist ? await fetchArt(parsed2.artist, parsed2.title, album2) : null;
           currentSong2 = { ...parsed2, startedAt: new Date(), artUrl, albumLine: album2 };
           if (activeStation === 1) lfmOnSongStart(parsed2.artist, parsed2.title);
           if (activeStation === 1) render();
@@ -738,7 +763,7 @@
     if (isBlocked(raw, parsed)) return;
 
     if (!currentSong) {
-      const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
+      const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title, albumLine) : null;
       currentSong = { ...parsed, startedAt: new Date(), artUrl, albumLine };
       if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
       render();
@@ -764,7 +789,7 @@
     currentSong = { ...parsed, startedAt: new Date(), artUrl: null, albumLine: '' };
     if (activeStation === 0) render();
 
-    const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
+    const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title, albumLine) : null;
     currentSong = { ...parsed, startedAt: new Date(), artUrl, albumLine };
     if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);
     render();
