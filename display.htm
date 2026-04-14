@@ -741,8 +741,10 @@
     let playing      = false;
     let activeStream = 0;
 
+    const PAUSE_ICON = '<svg width="10" height="14" viewBox="0 0 12 16" fill="currentColor"><rect x="0" y="0" width="3.5" height="16" rx="1.5"/><rect x="8.5" y="0" width="3.5" height="16" rx="1.5"/></svg>';
+    const PLAY_ICON  = '&#9654;';
     function updatePlayBtn() {
-      document.getElementById('play-btn').innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
+      document.getElementById('play-btn').innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
       document.querySelector('.player-controls').classList.toggle('playing', playing);
     }
 
