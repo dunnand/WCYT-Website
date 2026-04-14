@@ -605,12 +605,11 @@
 
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
 
-      // Clear text and hide art immediately
+      // Clear text and fade art — don't blank src (triggers onerror inline styles)
       set(key + '-artist', '');
       set(key + '-title',  '');
       set(key + '-album',  '');
       artEl.classList.add('fading');
-      artEl.src = '';
 
       const bsiTitleMatch = bsi.title && bsi.title.toLowerCase() === parsed.title.toLowerCase();
 
@@ -623,6 +622,9 @@
       set(key + '-title',  parsed.title);
       // Only write album if BSI title matches — leave blank otherwise until BSI catches up
       if (bsiTitleMatch) set(key + '-album', bsi.album);
+      // Reset any inline styles onerror may have set, then swap art
+      artEl.style.objectFit = '';
+      artEl.style.padding = '';
       artEl.src = art;
       artEl.classList.remove('fading');
     }
