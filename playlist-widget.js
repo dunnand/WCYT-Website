@@ -746,6 +746,10 @@
     songHistory.unshift({ ...currentSong, endedAt: new Date() });
     if (songHistory.length > MAX_HISTORY) songHistory.pop();
 
+    // Clear immediately, render blank while art loads
+    currentSong = { ...parsed, startedAt: new Date(), artUrl: null, albumLine: '' };
+    if (activeStation === 0) render();
+
     const artUrl = parsed.artist ? await fetchArt(parsed.artist, parsed.title) : null;
     currentSong = { ...parsed, startedAt: new Date(), artUrl, albumLine };
     if (activeStation === 0) lfmOnSongStart(parsed.artist, parsed.title);

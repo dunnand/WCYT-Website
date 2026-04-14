@@ -599,21 +599,27 @@
       }
       state[key].currentKey = songKey;
 
+      const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
+
+      // Clear immediately
       infoEl.classList.add('fading');
       artEl.classList.add('fading');
+      set(key + '-artist', '');
+      set(key + '-title',  '');
+      set(key + '-album',  '');
+      artEl.src = '';
+      infoEl.classList.remove('fading');
+      artEl.classList.remove('fading');
 
+      // Populate once art resolves
       const art = showActive && dj.imageUrl
         ? dj.imageUrl
         : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
 
-      const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
       set(key + '-artist', parsed.artist);
       set(key + '-title',  parsed.title);
       set(key + '-album',  bsi.album);
       artEl.src = art;
-
-      infoEl.classList.remove('fading');
-      artEl.classList.remove('fading');
     }
 
     // ── Poll ───────────────────────────────────────────────────────────────────
