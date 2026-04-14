@@ -602,12 +602,11 @@
       const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
       const bsi = await fetchBSI(bsiFile);
       renderRecent(key + '-recent', bsi.recent, fallback);
-      // Only write album if BSI title matches the currently displayed song title
-      // (prevents overwriting a blank that was just cleared on song change)
-      // Match on title only — BSI and Icecast artist names can differ
-      const currentTitle = (state[key].currentKey || '').split('|')[1] || '';
+      // Only write album if BSI title matches the currently displayed song title.
+      // Use normStr on both sides so apostrophes/accents/punctuation don't break the match.
+      const currentTitle = normStr((state[key].currentKey || '').split('|')[1] || '');
       const el = document.getElementById(key + '-album');
-      if (el && bsi.album && bsi.title.toLowerCase() === currentTitle) el.textContent = bsi.album;
+      if (el && bsi.album && currentTitle && normStr(bsi.title) === currentTitle) el.textContent = bsi.album;
     }
 
     // ── Update station — driven by Icecast title ───────────────────────────────
@@ -651,7 +650,7 @@
       artEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
       artEl.classList.add('fading');
 
-      const bsiTitleMatch = bsi.title && bsi.title.toLowerCase() === parsed.title.toLowerCase();
+      const bsiTitleMatch = bsi.title && normStr(bsi.title) === normStr(parsed.title);
 
       // Populate once art resolves, then reveal
       const art = showActive && dj.imageUrl
