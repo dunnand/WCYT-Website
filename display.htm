@@ -560,76 +560,71 @@
     // ── State ──────────────────────────────────────────────────────────────────
     const state = { point: { currentKey: null }, wcyt: { currentKey: null } };
 
-    // ── BSI refresh — album/year + recently played only ───────────────────────
+    const BLANK_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+    // ── BSI refresh — fills display when blank, updates album when song matches ─
     async function refreshBSI(key, bsiFile) {
       const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
       const bsi = await fetchBSI(bsiFile);
       renderRecent(key + '-recent', bsi.recent, fallback);
-      // Only write album if BSI title matches the currently displayed song title
-      // (prevents overwriting a blank that was just cleared on song change)
-      // Match on title only — BSI and Icecast artist names can differ
-      const currentTitle = (state[key].currentKey || '').split('|')[1] || '';
-      const el = document.getElementById(key + '-album');
-      if (el && bsi.album && bsi.title.toLowerCase() === currentTitle) el.textContent = bsi.album;
+
+      if (!bsi.artist || isBlocked(bsi.artist + ' - ' + bsi.title)) return;
+
+      const artistEl = document.getElementById(key + '-artist');
+      const isBlank  = !artistEl || !artistEl.textContent.trim() || artistEl.classList.contains('loading');
+
+      const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
+
+      if (isBlank) {
+        // Display was cleared — fill everything from BSI
+        set(key + '-artist', bsi.artist);
+        set(key + '-title',  bsi.title);
+        state[key].currentKey = (bsi.artist + '|' + bsi.title).toLowerCase();
+        const artEl = document.getElementById(key + '-art');
+        const artUrl = await fetchArt(bsi.artist, bsi.title, bsi.album);
+        artEl.style.objectFit = '';
+        artEl.style.padding   = '';
+        artEl.src = artUrl || fallback;
+        artEl.classList.remove('fading');
+        if (bsi.album) set(key + '-album', bsi.album);
+      } else {
+        // Display already populated — only update album if title matches
+        const currentTitle = (state[key].currentKey || '').split('|')[1] || '';
+        const albumEl = document.getElementById(key + '-album');
+        if (albumEl && bsi.album && bsi.title.toLowerCase() === currentTitle) albumEl.textContent = bsi.album;
+      }
     }
 
-    // ── Update station — driven by Icecast title ───────────────────────────────
+    // ── Update station — Icecast detects song change, clears display ───────────
     async function updateStation(key, rawTitle, bsiFile) {
-      const fallback  = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
-      const infoEl    = document.getElementById(key + '-info');
-      const artEl     = document.getElementById(key + '-art');
-      const badgeEl   = document.getElementById(key + '-show-badge');
-      const nameEl    = document.getElementById(key + '-show-name');
-
-      const bsi = await fetchBSI(bsiFile);
-      renderRecent(key + '-recent', bsi.recent, fallback);
+      const badgeEl = document.getElementById(key + '-show-badge');
+      const nameEl  = document.getElementById(key + '-show-name');
+      const artEl   = document.getElementById(key + '-art');
 
       const djKey      = key === 'point' ? 'wcyt' : '2pt0';
       const dj         = djPanel[djKey];
       const showActive = dj?.active && !dj?.onBreak && dj?.showName;
       if (badgeEl) badgeEl.classList.toggle('visible', !!showActive);
       if (nameEl)  nameEl.textContent = showActive ? dj.showName : '';
+      if (showActive && dj.imageUrl && artEl) artEl.src = dj.imageUrl;
 
       if (isBlocked(rawTitle)) return;
       const parsed = parseTitle(rawTitle);
       if (!parsed.artist && !parsed.title) return;
 
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
-      if (songKey === state[key].currentKey) {
-        const el = document.getElementById(key + '-album');
-        if (el && bsi.album) el.textContent = bsi.album;
-        if (showActive && dj.imageUrl) artEl.src = dj.imageUrl;
-        return;
-      }
+      if (songKey === state[key].currentKey) return;
+
+      // New song — clear display; refreshBSI will fill it within 3 seconds
       state[key].currentKey = songKey;
-
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
-
-      // Clear text and blank art using a transparent pixel (avoids triggering onerror)
       set(key + '-artist', '');
       set(key + '-title',  '');
       set(key + '-album',  '');
       artEl.style.objectFit = '';
       artEl.style.padding   = '';
-      artEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      artEl.src = BLANK_PIXEL;
       artEl.classList.add('fading');
-
-      const bsiTitleMatch = bsi.title && bsi.title.toLowerCase() === parsed.title.toLowerCase();
-
-      // Populate once art resolves, then reveal
-      const art = showActive && dj.imageUrl
-        ? dj.imageUrl
-        : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
-
-      set(key + '-artist', parsed.artist);
-      set(key + '-title',  parsed.title);
-      // Only write album if BSI title matches — leave blank otherwise until BSI catches up
-      if (bsiTitleMatch) set(key + '-album', bsi.album);
-      // Reset any inline styles onerror may have set, then swap art
-      artEl.style.objectFit = '';
-      artEl.style.padding = '';
-      artEl.src = art;
-      artEl.classList.remove('fading');
     }
 
     // ── Poll ───────────────────────────────────────────────────────────────────
