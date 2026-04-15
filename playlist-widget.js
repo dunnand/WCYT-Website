@@ -1259,7 +1259,7 @@
       fetchCurrentShow();
       fetchDJPanel();
       pollTimer = setInterval(() => { fetchNowPlaying(); fetchCurrentShow(); }, POLL_MS);
-      setInterval(fetchDJPanel, 120_000); // DJ panel changes infrequently — poll every 2 min
+      setInterval(fetchDJPanel, 30_000); // DJ panel — poll every 30s for timely on-air updates
       tickTimer = setInterval(tickAges, 30_000);
     },
     togglePlay()       { togglePlay(); },

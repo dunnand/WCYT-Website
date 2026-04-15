@@ -907,7 +907,7 @@
     function pollStatus() { fetchStatus(); }
 
     fetchDJPanel();
-    setInterval(fetchDJPanel, 120_000);
+    setInterval(fetchDJPanel, 30_000);
     poll();
     setInterval(poll, 10_000);
     // Refresh BSI album/year independently every 10 seconds
