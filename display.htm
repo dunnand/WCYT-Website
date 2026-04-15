@@ -678,7 +678,7 @@
     }
 
     // ── State ──────────────────────────────────────────────────────────────────
-    const state = { point: { currentKey: null }, wcyt: { currentKey: null } };
+    const state = { point: { currentKey: null, djActive: false }, wcyt: { currentKey: null, djActive: false } };
 
     // ── BSI refresh — album/year + recently played only ───────────────────────
     async function refreshBSI(key, bsiFile) {
@@ -717,10 +717,21 @@
       if (songKey === state[key].currentKey) {
         const el = document.getElementById(key + '-album');
         if (el && bsi.album && normStr(bsi.title) === normStr(parsed.title)) el.textContent = bsi.album;
-        if (showActive && dj.imageUrl) artEl.src = dj.imageUrl;
+        if (showActive && dj.imageUrl) {
+          artEl.src = dj.imageUrl;
+        } else if (!showActive && state[key].djActive) {
+          // DJ just went on break — restore album art
+          fetchArt(parsed.artist, parsed.title, bsi.album).then(url => {
+            artEl.style.objectFit = '';
+            artEl.style.padding   = '';
+            artEl.src = url || fallback;
+          });
+        }
+        state[key].djActive = !!showActive;
         return;
       }
       state[key].currentKey = songKey;
+      state[key].djActive   = !!showActive;
 
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
       const fitArtist = (id) => {
