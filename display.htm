@@ -567,7 +567,15 @@
             return rc.includes(na_album) || na_album.includes(rc);
           });
         }
-        // 3. First non-compilation artist match, then any as last resort
+        // 3. Match by song title (iTunes knows which album a track belongs to)
+        if (!hit) {
+          const nt = normStr(title);
+          hit = hits.find(r => {
+            const rt = normStr(r.trackName ?? '');
+            return rt === nt || rt.includes(nt) || nt.includes(rt);
+          });
+        }
+        // 4. First non-compilation artist match, then any as last resort
         if (!hit) hit = hits[0] ?? fallback[0];
 
         const url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
