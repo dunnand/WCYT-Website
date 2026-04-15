@@ -531,6 +531,27 @@
       return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
     }
 
+    async function fetchArtMusicBrainz(artist, title) {
+      try {
+        const q    = encodeURIComponent(`recording:"${title}" AND artist:"${artist}"`);
+        const res  = await fetch(`https://musicbrainz.org/ws/2/recording/?query=${q}&limit=5&fmt=json`, {
+          headers: { 'User-Agent': 'WCYTDisplay/1.0 (dunnand@gmail.com)' }
+        });
+        const data = await res.json();
+        const recordings = data.recordings ?? [];
+        for (const rec of recordings) {
+          for (const rel of (rec.releases ?? [])) {
+            const mbid = rel.id;
+            const url  = `https://coverartarchive.org/release/${mbid}/front-500.jpg`;
+            // HEAD check — CAA returns 307 redirect if art exists, 404 if not
+            const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+            if (head.ok) return url;
+          }
+        }
+      } catch {}
+      return null;
+    }
+
     async function fetchArt(artist, title, album) {
       const { name: albumName, year: albumYear } = parseAlbum(album);
       const key = (artist + '|' + title + '|' + albumName).toLowerCase();
@@ -542,15 +563,15 @@
         const COMP_TERMS = ['greatest hits','best of','collection','anthology','the very best','essential','platinum','gold','singles','retrospective','kompilation','compilation'];
         const isComp = r => COMP_TERMS.some(t => normStr(r.collectionName ?? '').includes(t));
 
-        const na   = normStr(artist);
-        const allHits  = (data.results ?? []).filter(r =>
+        const na      = normStr(artist);
+        const allHits = (data.results ?? []).filter(r =>
           normStr(r.artistName).includes(na) && !artIsBlocked(r.artistName, r.collectionName ?? '')
         );
-        const hits     = allHits.filter(r => !isComp(r));  // non-compilations preferred
-        const fallback = allHits;                            // compilations only if nothing else
+        const hits     = allHits.filter(r => !isComp(r));
+        const fallback = allHits;
 
         let hit = null;
-        // 1. Prefer result matching album name AND year (disambiguates self-titled albums e.g. Weezer)
+        // 1. Match album name AND year
         if (albumName && albumYear) {
           const na_album = normStr(albumName);
           hit = hits.find(r => {
@@ -559,7 +580,7 @@
             return (rc.includes(na_album) || na_album.includes(rc)) && ry === albumYear;
           });
         }
-        // 2. Prefer result matching album name only
+        // 2. Match album name only
         if (!hit && albumName) {
           const na_album = normStr(albumName);
           hit = hits.find(r => {
@@ -567,7 +588,7 @@
             return rc.includes(na_album) || na_album.includes(rc);
           });
         }
-        // 3. Match by song title (iTunes knows which album a track belongs to)
+        // 3. Match by song title
         if (!hit) {
           const nt = normStr(title);
           hit = hits.find(r => {
@@ -575,10 +596,16 @@
             return rt === nt || rt.includes(nt) || nt.includes(rt);
           });
         }
-        // 4. First non-compilation artist match, then any as last resort
-        if (!hit) hit = hits[0] ?? fallback[0];
 
-        const url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
+        let url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
+
+        // 4. No iTunes album/title match — try MusicBrainz before grabbing a random iTunes result
+        if (!hit) {
+          url = await fetchArtMusicBrainz(artist, title)
+             ?? (hits[0] ?? fallback[0])?.artworkUrl100?.replace('100x100bb','600x600bb')
+             ?? null;
+        }
+
         artCache[key] = url;
         return url;
       } catch { artCache[key] = null; return null; }
