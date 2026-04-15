@@ -47,6 +47,7 @@ JSONBIN_KEY = '$2a$10$3JxMllL6YGZtbEqwOQTbFeww2P.sNZ.b.aPWPreit5UwyM1pFHxie'
 _simian_status = {}
 
 def push_status_to_jsonbin(station_key, status):
+    """Returns True on success, False on failure (so caller can retry next cycle)."""
     _simian_status[station_key] = {k: v for k, v in status.items() if k != 'updatedAt'}
     try:
         _UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
@@ -75,8 +76,10 @@ def push_status_to_jsonbin(station_key, status):
         with urllib.request.urlopen(put_req, timeout=10):
             pass
         log(f"[JSONBin] {station_key}={status['mode']}")
+        return True
     except Exception as e:
         log(f"[JSONBin] push failed: {e}")
+        return False
 
 
 def parse_backup_ini(path):
@@ -226,9 +229,10 @@ def main():
                 if status:
                     sig = (status['mode'], status['logLoaded'], status['playing'])
                     if last_status.get(station_key) != sig:
-                        last_status[station_key] = sig
                         log(f"[{station_key}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
-                        push_status_to_jsonbin(station_key, status)
+                        if push_status_to_jsonbin(station_key, status):
+                            last_status[station_key] = sig
+                        # if push failed, last_status stays old so we retry next cycle
 
         if pending and (now - last_change) >= DEBOUNCE:
             push_changes(list(pending))
