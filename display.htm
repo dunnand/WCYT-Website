@@ -588,22 +588,19 @@
             return rc.includes(na_album) || na_album.includes(rc);
           });
         }
-        // 3. Match by song title
-        if (!hit) {
+        let url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
+
+        // 3. No album match — try MusicBrainz (accurate, full catalog incl. indie/Bandcamp)
+        if (!hit) url = await fetchArtMusicBrainz(artist, title);
+
+        // 4. MusicBrainz also failed — match by song title in iTunes as last resort
+        if (!url) {
           const nt = normStr(title);
           hit = hits.find(r => {
             const rt = normStr(r.trackName ?? '');
             return rt === nt || rt.includes(nt) || nt.includes(rt);
-          });
-        }
-
-        let url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
-
-        // 4. No iTunes album/title match — try MusicBrainz before grabbing a random iTunes result
-        if (!hit) {
-          url = await fetchArtMusicBrainz(artist, title)
-             ?? (hits[0] ?? fallback[0])?.artworkUrl100?.replace('100x100bb','600x600bb')
-             ?? null;
+          }) ?? hits[0] ?? fallback[0];
+          url = hit?.artworkUrl100?.replace('100x100bb','600x600bb') ?? null;
         }
 
         artCache[key] = url;
