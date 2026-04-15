@@ -49,10 +49,12 @@ _simian_status = {}
 def push_status_to_jsonbin(station_key, status):
     _simian_status[station_key] = {k: v for k, v in status.items() if k != 'updatedAt'}
     try:
+        _UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
         # GET current bin so we don't overwrite DJ panel keys
         get_req = urllib.request.Request(
             JSONBIN_URL + '/latest',
-            headers={'X-Master-Key': JSONBIN_KEY},
+            headers={'X-Master-Key': JSONBIN_KEY, 'User-Agent': _UA},
             method='GET'
         )
         with urllib.request.urlopen(get_req, timeout=10) as resp:
@@ -66,6 +68,7 @@ def push_status_to_jsonbin(station_key, status):
             headers={
                 'Content-Type': 'application/json',
                 'X-Master-Key': JSONBIN_KEY,
+                'User-Agent': _UA,
             },
             method='PUT'
         )

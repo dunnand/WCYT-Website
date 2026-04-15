@@ -663,6 +663,7 @@
       const html   = await res.text();
       const doc    = new DOMParser().parseFromString(html, 'text/html');
       const albumLine = doc.querySelector('.album')?.textContent.trim() || '';
+      const bsiTitle  = doc.querySelector('.title')?.textContent.trim()  || '';
       const blocks = doc.querySelectorAll('.sidebar-content');
       const lines  = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
       const all = [];
@@ -676,8 +677,8 @@
       }
       // BSI lists oldest first — reverse so most recent is at top
       const recent = all.reverse().slice(0, 3);
-      return { albumLine, recent };
-    } catch { return { albumLine: '', recent: [] }; }
+      return { albumLine, bsiTitle, recent };
+    } catch { return { albumLine: '', bsiTitle: '', recent: [] }; }
   }
 
   // ── Fetch stream metadata ─────────────────────────────────────────────────
