@@ -539,10 +539,15 @@
         const term = encodeURIComponent(artist + ' ' + title);
         const res  = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=25&country=US`);
         const data = await res.json();
+        const COMP_TERMS = ['greatest hits','best of','collection','anthology','the very best','essential','platinum','gold','singles','retrospective','kompilation','compilation'];
+        const isComp = r => COMP_TERMS.some(t => normStr(r.collectionName ?? '').includes(t));
+
         const na   = normStr(artist);
-        const hits = (data.results ?? []).filter(r =>
+        const allHits  = (data.results ?? []).filter(r =>
           normStr(r.artistName).includes(na) && !artIsBlocked(r.artistName, r.collectionName ?? '')
         );
+        const hits     = allHits.filter(r => !isComp(r));  // non-compilations preferred
+        const fallback = allHits;                            // compilations only if nothing else
 
         let hit = null;
         // 1. Prefer result matching album name AND year (disambiguates self-titled albums e.g. Weezer)
@@ -562,10 +567,8 @@
             return rc.includes(na_album) || na_album.includes(rc);
           });
         }
-        // 3. Fall back to first non-compilation artist match, then any
-        const COMP_TERMS = ['greatest hits','best of','collection','anthology','the very best','essential','platinum','gold','singles','retrospective','kompilation','compilation'];
-        if (!hit) hit = hits.find(r => !COMP_TERMS.some(t => normStr(r.collectionName ?? '').includes(t)));
-        if (!hit) hit = hits[0];
+        // 3. First non-compilation artist match, then any as last resort
+        if (!hit) hit = hits[0] ?? fallback[0];
 
         const url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
         artCache[key] = url;
