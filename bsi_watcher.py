@@ -188,7 +188,9 @@ def main():
     local_mtimes  = {f: get_mtime(os.path.join(REPO_DIR, f)) for f in LOCAL_FILES}
     net_mtimes    = {src: get_mtime(src) for src, _ in NETWORK_FILES}
     status_mtimes = {src: get_mtime(src) for src, _, _k in STATUS_SOURCES}
-    last_status   = {}  # station_key -> last pushed status dict (to skip unchanged)
+    last_status   = {}  # station_key -> last successfully pushed sig
+    last_failed   = {}  # station_key -> time.time() of last failed push
+    RETRY_DELAY   = 30  # seconds to wait before retrying a failed push
 
     pending     = set()
     last_change = 0
@@ -229,10 +231,16 @@ def main():
                 if status:
                     sig = (status['mode'], status['logLoaded'], status['playing'])
                     if last_status.get(station_key) != sig:
-                        log(f"[{station_key}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
-                        if push_status_to_jsonbin(station_key, status):
-                            last_status[station_key] = sig
-                        # if push failed, last_status stays old so we retry next cycle
+                        failed_at = last_failed.get(station_key, 0)
+                        if now - failed_at < RETRY_DELAY:
+                            pass  # still in back-off window, skip
+                        else:
+                            log(f"[{station_key}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
+                            if push_status_to_jsonbin(station_key, status):
+                                last_status[station_key] = sig
+                                last_failed.pop(station_key, None)
+                            else:
+                                last_failed[station_key] = now  # retry after RETRY_DELAY
 
         if pending and (now - last_change) >= DEBOUNCE:
             push_changes(list(pending))
