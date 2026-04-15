@@ -406,7 +406,7 @@
       const sel = document.getElementById('show-image');
       if (s.imageUrl) sel.value = s.imageUrl;
       previewImage();
-      setStatusUI(s.active ? (s.manualTitle === 'On Break' ? 'on-break' : 'on-air') : 'idle');
+      setStatusUI(s.active ? (s.onBreak ? 'on-break' : 'on-air') : 'idle');
     } catch(e) {
       console.warn('Could not load state:', e);
     }
@@ -482,24 +482,32 @@
     const showName = document.getElementById('show-name').value.trim();
     if (!showName) { showMsg('Enter a show name first.', 'error'); return; }
 
-    // Auto-fill override fields so the site shows the break message
-    document.getElementById('manual-artist').value = showName;
-    document.getElementById('manual-title').value  = 'On Break';
+    // Use whatever is in the description field, or default to 'On Break'
+    const customTitle = document.getElementById('manual-title').value.trim();
+    const breakTitle  = customTitle || 'On Break';
+
+    // Only fill artist if it's empty
+    if (!document.getElementById('manual-artist').value.trim()) {
+      document.getElementById('manual-artist').value = showName;
+    }
+    document.getElementById('manual-title').value = breakTitle;
+
+    const manualArtist = document.getElementById('manual-artist').value.trim();
 
     disableButtons(true);
     const ok = await saveState({
-      active: true,
-      onBreak: false,
-      onBreakAt: '',
-      manualArtist: showName,
-      manualTitle:  'On Break',
-      manualSetAt:  new Date().toISOString(),
+      active:      true,
+      onBreak:     true,
+      onBreakAt:   new Date().toISOString(),
+      manualArtist,
+      manualTitle: breakTitle,
+      manualSetAt: new Date().toISOString(),
     });
     disableButtons(false);
 
     if (ok) {
       setStatusUI('on-break');
-      showMsg('On break. Override fields filled.', 'ok');
+      showMsg(customTitle ? `On break: "${breakTitle}"` : 'On break.', 'ok');
     } else {
       showMsg('Save failed.', 'error');
     }
