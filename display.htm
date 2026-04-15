@@ -562,7 +562,9 @@
             return rc.includes(na_album) || na_album.includes(rc);
           });
         }
-        // 3. Fall back to first artist match
+        // 3. Fall back to first non-compilation artist match, then any
+        const COMP_TERMS = ['greatest hits','best of','collection','anthology','the very best','essential','platinum','gold','singles','retrospective','kompilation','compilation'];
+        if (!hit) hit = hits.find(r => !COMP_TERMS.some(t => normStr(r.collectionName ?? '').includes(t)));
         if (!hit) hit = hits[0];
 
         const url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
