@@ -463,7 +463,7 @@
 
     // ── Config ─────────────────────────────────────────────────────────────────
     const ICECAST_URL    = 'https://securestreams2.autopo.st:1069/status-json.xsl';
-    const DJPANEL_URL    = 'https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest';
+    const DJPANEL_URL    = 'https://api.jsonbin.io/v3/b/69dfdf65856a6821893a19f8/latest';
     const FALLBACK_POINT = '/images/91fm.png';
     const FALLBACK_2     = '/images/shows/2.0%20Logo.png';
     const BLOCKED_TERMS  = ['liner','legal id','btyb','sponsor'];
@@ -893,7 +893,7 @@
 
     async function fetchStatus() {
       try {
-        const res = await fetch('https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c/latest', { cache: 'no-store' });
+        const res = await fetch('https://api.jsonbin.io/v3/b/69dfdf65856a6821893a19f8/latest', { cache: 'no-store' });
         if (!res.ok) return;
         const s = (await res.json()).record?.simianStatus;
         if (!s) return;

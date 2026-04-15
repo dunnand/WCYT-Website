@@ -42,8 +42,8 @@ STATUS_SOURCES = [
 ]
 
 # JSONBin — stores simian status so display page gets instant updates (no CDN cache)
-JSONBIN_URL = 'https://api.jsonbin.io/v3/b/69d6461336566621a88e9c7c'
-JSONBIN_KEY = '$2a$10$s2EAQ4fmcOv4Z3qirUkUA.IzIm6h6s2THmXDWhxGbcFhVAytzJFrK'
+JSONBIN_URL = 'https://api.jsonbin.io/v3/b/69dfdf65856a6821893a19f8'
+JSONBIN_KEY = '$2a$10$3JxMllL6YGZtbEqwOQTbFeww2P.sNZ.b.aPWPreit5UwyM1pFHxie'
 _simian_status = {}
 
 def push_status_to_jsonbin(station_key, status):
@@ -185,6 +185,7 @@ def main():
     local_mtimes  = {f: get_mtime(os.path.join(REPO_DIR, f)) for f in LOCAL_FILES}
     net_mtimes    = {src: get_mtime(src) for src, _ in NETWORK_FILES}
     status_mtimes = {src: get_mtime(src) for src, _, _k in STATUS_SOURCES}
+    last_status   = {}  # station_key -> last pushed status dict (to skip unchanged)
 
     pending     = set()
     last_change = 0
@@ -216,15 +217,18 @@ def main():
                 except Exception as e:
                     log(f"Copy failed ({src}): {e}")
 
-        # Check Backup.ini files — parse and push to JSONBin if changed
+        # Check Backup.ini files — push to JSONBin only when values actually change
         for src, dest, station_key in STATUS_SOURCES:
             new_mtime = get_mtime(src)
             if new_mtime != status_mtimes[src]:
                 status_mtimes[src] = new_mtime
                 status = parse_backup_ini(src)
                 if status:
-                    log(f"[{station_key}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
-                    push_status_to_jsonbin(station_key, status)
+                    sig = (status['mode'], status['logLoaded'], status['playing'])
+                    if last_status.get(station_key) != sig:
+                        last_status[station_key] = sig
+                        log(f"[{station_key}] mode={status['mode']}, logLoaded={status['logLoaded']}, playing={status['playing']}")
+                        push_status_to_jsonbin(station_key, status)
 
         if pending and (now - last_change) >= DEBOUNCE:
             push_changes(list(pending))

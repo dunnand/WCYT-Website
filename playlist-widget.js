@@ -29,7 +29,7 @@
 
   // ── DJ Panel (JSONBin) ────────────────────────────────────────────
   // After setting up JSONBin, paste your Bin ID here.
-  const DJPANEL_BIN_ID  = '69d6461336566621a88e9c7c'; // e.g. '6613abc123def456'
+  const DJPANEL_BIN_ID  = '69dfdf65856a6821893a19f8'; // e.g. '6613abc123def456'
   const DJPANEL_URL     = DJPANEL_BIN_ID
     ? `https://api.jsonbin.io/v3/b/${DJPANEL_BIN_ID}/latest`
     : '';
