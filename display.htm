@@ -481,7 +481,22 @@
     }
 
     // ── iTunes art ─────────────────────────────────────────────────────────────
-    const artCache = {};
+    const ART_CACHE_KEY = 'wcyt-display-art-cache';
+    const ART_CACHE_MAX = 500;
+    let artCache = (() => {
+      try { return JSON.parse(localStorage.getItem(ART_CACHE_KEY) || '{}'); } catch { return {}; }
+    })();
+    function saveArtCache() {
+      try {
+        const keys = Object.keys(artCache);
+        if (keys.length > ART_CACHE_MAX) {
+          const trimmed = {};
+          keys.slice(-ART_CACHE_MAX).forEach(k => { trimmed[k] = artCache[k]; });
+          artCache = trimmed;
+        }
+        localStorage.setItem(ART_CACHE_KEY, JSON.stringify(artCache));
+      } catch {}
+    }
     function normStr(s) {
       return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
         .toLowerCase().replace(/\s*&\s*/g,'and').replace(/[^a-z0-9]/g,'');
@@ -605,8 +620,9 @@
         }
 
         artCache[key] = url;
+        saveArtCache();
         return url;
-      } catch { artCache[key] = null; return null; }
+      } catch { artCache[key] = null; saveArtCache(); return null; }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────

@@ -77,7 +77,22 @@
   let songHistory2   = [];     // recent plays for station 2
   let bsiRecent1     = [];     // recently played from BSI file, station 0
   let bsiRecent2     = [];     // recently played from BSI file, station 1
-  let artCache       = {};
+  const ART_CACHE_KEY = 'wcyt-art-cache';
+  const ART_CACHE_MAX = 500;
+  let artCache = (() => {
+    try { return JSON.parse(localStorage.getItem(ART_CACHE_KEY) || '{}'); } catch { return {}; }
+  })();
+  function saveArtCache() {
+    try {
+      const keys = Object.keys(artCache);
+      if (keys.length > ART_CACHE_MAX) {
+        const trimmed = {};
+        keys.slice(-ART_CACHE_MAX).forEach(k => { trimmed[k] = artCache[k]; });
+        artCache = trimmed;
+      }
+      localStorage.setItem(ART_CACHE_KEY, JSON.stringify(artCache));
+    } catch {}
+  }
   let currentShowWCYT = null;  // { name: string, expiresAt: Date } | null  (The Point)
   let currentShow2    = null;  // { name: string, expiresAt: Date } | null  (2.0)
   let heroEl            = null;
@@ -571,9 +586,10 @@
     const key = artCacheKey(artist, title);
     if (key in artCache) return artCache[key];
     const override = artOverride(artist);
-    if (override) { artCache[key] = override; return override; }
+    if (override) { artCache[key] = override; saveArtCache(); return override; }
     artCache[key] = null;
     try { artCache[key] = await fetchArtFromiTunes(artist, title, albumLine); } catch {}
+    saveArtCache();
     return artCache[key];
   }
 
