@@ -134,14 +134,14 @@
       font-size: 0.6em;
       font-weight: bold;
       letter-spacing: 4px;
-      padding: 5px 14px;
-      border-radius: 4px;
+      padding: 5px 16px;
+      border-radius: 999px;
       margin-bottom: 14px;
       text-transform: uppercase;
       width: fit-content;
     }
-    .wcyt  .on-air { background: #111; color: #fff; }
-    .point .on-air { background: #fff; color: #000; }
+    .wcyt  .on-air { background: #111; color: #fff; border: 1px solid #444; }
+    .point .on-air { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.5); }
 
     .live-dot {
       width: 7px; height: 7px;
@@ -382,10 +382,10 @@
           <img class="channel-bug" src="/images/91fm.png" alt="" onerror="this.style.display='none'">
         </div>
         <div class="info" id="point-info">
-          <div class="on-air"><span class="live-dot"></span>On Air</div>
+          <div class="on-air"><span class="live-dot"></span>On Air Now</div>
           <div id="point-show-badge" class="show-badge">
             <span class="show-dot"></span>
-            <span class="show-label">On Air</span>
+            <span class="show-label">On Air Now</span>
             <span id="point-show-name" class="show-name"></span>
           </div>
           <div id="point-artist" class="artist loading">Loading...</div>
@@ -423,10 +423,10 @@
           <img class="channel-bug" src="/images/shows/2.0%20Logo.png" alt="" onerror="this.style.display='none'">
         </div>
         <div class="info" id="wcyt-info">
-          <div class="on-air"><span class="live-dot"></span>On Air</div>
+          <div class="on-air"><span class="live-dot"></span>On Air Now</div>
           <div id="wcyt-show-badge" class="show-badge">
             <span class="show-dot"></span>
-            <span class="show-label">On Air</span>
+            <span class="show-label">On Air Now</span>
             <span id="wcyt-show-name" class="show-name"></span>
           </div>
           <div id="wcyt-artist" class="artist loading">Loading...</div>
