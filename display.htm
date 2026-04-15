@@ -688,6 +688,26 @@
       state[key].currentKey = songKey;
 
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
+      const fitArtist = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.fontSize = '';
+        el.style.webkitLineClamp = 'unset';
+        el.style.display = 'block';
+        const lh = parseFloat(getComputedStyle(el).lineHeight) || 36;
+        const maxH = lh * 2 + 6;
+        if (el.scrollHeight > maxH) {
+          let lo = 12, hi = parseFloat(getComputedStyle(el).fontSize);
+          for (let i = 0; i < 12; i++) {
+            const mid = (lo + hi) / 2;
+            el.style.fontSize = mid + 'px';
+            if (el.scrollHeight <= maxH) lo = mid; else hi = mid;
+          }
+          el.style.fontSize = lo + 'px';
+        }
+        el.style.webkitLineClamp = '';
+        el.style.display = '';
+      };
 
       // Clear text and blank art using a transparent pixel (avoids triggering onerror)
       set(key + '-artist', '');
@@ -706,6 +726,7 @@
         : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
 
       set(key + '-artist', parsed.artist);
+      fitArtist(key + '-artist');
       set(key + '-title',  parsed.title);
       // Only write album if BSI title matches — leave blank otherwise until BSI catches up
       if (bsiTitleMatch) set(key + '-album', bsi.album);
