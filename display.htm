@@ -906,6 +906,8 @@
 
     function pollStatus() { fetchStatus(); }
 
+    const BADGES_ON = new URLSearchParams(window.location.search).has('badges');
+
     fetchDJPanel();
     setInterval(fetchDJPanel, 30_000);
     poll();
@@ -915,8 +917,10 @@
       refreshBSI('point', '/Point_Display_OUT.htm');
       refreshBSI('wcyt',  '/2_Display_OUT.htm');
     }, 10_000);
-    pollStatus();
-    setInterval(pollStatus, 60_000);
+    if (BADGES_ON) {
+      pollStatus();
+      setInterval(pollStatus, 60_000);
+    }
   </script>
 
 </body>
