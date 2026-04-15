@@ -709,8 +709,6 @@
         fetchBSIData(BSI_FILES[0]),
         fetchBSIData(BSI_FILES[1]),
       ]);
-      const album1 = bsi1.albumLine;
-      const album2 = bsi2.albumLine;
       bsiRecent1 = bsi1.recent;
       bsiRecent2 = bsi2.recent;
       // Prefetch art for recent items into cache so next render has them
@@ -719,11 +717,16 @@
       // Station 1 — WCYT (drives history + full playlist page)
       const rawTitle1 = findSource(STATIONS[0].mount)?.title ?? null;
       console.log('[WCYTPlaylist] raw title WCYT:', rawTitle1);
+      const parsed1tmp  = parseTitle(rawTitle1);
+      const bsiMatch1   = bsi1.bsiTitle && bsi1.bsiTitle.trim().toLowerCase() === parsed1tmp.title.trim().toLowerCase();
+      const album1      = bsiMatch1 ? bsi1.albumLine : '';
       handleNewTitle(rawTitle1, album1);
 
       // Station 2 — track current song + history
       const raw2    = findSource(STATIONS[1].mount)?.title ?? null;
       const parsed2 = parseTitle(raw2);
+      const bsiMatch2 = bsi2.bsiTitle && bsi2.bsiTitle.trim().toLowerCase() === parsed2.title.trim().toLowerCase();
+      const album2    = bsiMatch2 ? bsi2.albumLine : '';
       if (!isBlocked(raw2, parsed2) && (parsed2.artist || parsed2.title !== 'On Air')) {
         const key2 = artCacheKey(parsed2.artist, parsed2.title);
         const cur2  = currentSong2 ? artCacheKey(currentSong2.artist, currentSong2.title) : null;
