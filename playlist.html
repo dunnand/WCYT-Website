@@ -417,8 +417,7 @@
 
     <!-- Recently Played -->
     <div class="recent-shows-header">Recently Played</div>
-    <div id="recent-shows-nav"></div>
-    <div class="recent-shows-list" id="recent-shows-list">
+<div class="recent-shows-list" id="recent-shows-list">
       <div class="wcyt-loading">Loading recently played&hellip;</div>
     </div>
   </main>
@@ -454,156 +453,64 @@
   </script>
 
   <style>
-    .hour-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .hour-nav-label {
-      font-size: 14px;
-      font-weight: 700;
-      color: #ccc;
-    }
-    .hour-nav-sub {
-      font-size: 11px;
-      color: #555;
-      margin-top: 2px;
-    }
-    .hour-nav-arrows {
-      display: flex;
-      gap: 8px;
-    }
-    .hour-arrow {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      border: 1px solid #2a2a2a;
-      background: #161616;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background .15s, border-color .15s;
-    }
-    .hour-arrow:hover:not(:disabled) { background: #222; border-color: #c8102e; }
-    .hour-arrow:disabled { opacity: .25; cursor: not-allowed; }
   </style>
 
   <script>
-    // ── Recently Played (Spinitron + iTunes art, grouped by hour) ─────
-    const SPINITRON_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://spinitron.com/api/spins?access-token=ag1eWuFDy-aqMiQ0CAoDibBW&count=50');
-    const FALLBACK_IMG  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+    // ── Recently Played (BSI output file) ────────────────────────────────────
+    const FALLBACK_IMG = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+    const BSI_RAW_URL  = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main/Point_Display_OUT.htm';
+    const BLOCKED      = ['liner', 'legal id', 'btyb', 'sponsor'];
 
-    let hourGroups  = [];  // [{ label, sublabel, spins[] }, ...]
-    let currentHour = 0;  // index into hourGroups (0 = most recent)
+    async function loadRecentFromBSI() {
+      const el = document.getElementById('recent-shows-list');
+      try {
+        const res  = await fetch(BSI_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        const html = await res.text();
+        const doc  = new DOMParser().parseFromString(html, 'text/html');
+        const blocks = doc.querySelectorAll('.sidebar-content');
+        const lines  = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
+        const spins  = [];
+        for (const line of lines) {
+          const text = line.trim();
+          if (!text) continue;
+          if (BLOCKED.some(b => text.toLowerCase().includes(b))) continue;
+          const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
+          if (!m) continue;
+          spins.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
+        }
+        spins.reverse(); // BSI lists oldest first
 
-    function hourKey(isoString) {
-      const d = new Date(isoString);
-      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
-    }
-
-    function hourLabel(isoString) {
-      const d = new Date(isoString);
-      return d.toLocaleTimeString([], { hour: 'numeric', hour12: true });
-    }
-
-    function hourSublabel(isoString) {
-      const d   = new Date(isoString);
-      const now = new Date();
-      if (d.toDateString() === now.toDateString()) return 'Today';
-      return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-    }
-
-    function spinTime(isoString) {
-      return new Date(isoString).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-    }
-
-    function groupByHour(spins) {
-      const map = new Map();
-      spins.forEach(spin => {
-        if (!spin.start) return;
-        const key = hourKey(spin.start);
-        if (!map.has(key)) map.set(key, { label: hourLabel(spin.start), sublabel: hourSublabel(spin.start), spins: [] });
-        map.get(key).spins.push(spin);
-      });
-      return [...map.values()]; // newest first (Spinitron returns newest first)
-    }
-
-    function renderHour(idx) {
-      const group = hourGroups[idx];
-      const el    = document.getElementById('recent-shows-list');
-
-      // Update nav
-      document.getElementById('hour-label').textContent    = group.label;
-      document.getElementById('hour-sublabel').textContent = group.sublabel;
-      document.getElementById('hour-prev').disabled = idx >= hourGroups.length - 1;
-      document.getElementById('hour-next').disabled = idx <= 0;
-
-      // Render spins
-      el.innerHTML = group.spins.map((spin, i) => {
-        const artist = spin.artist || '';
-        const title  = spin.song   || '';
-        const time   = spin.start  ? spinTime(spin.start) : '';
-        const img    = spin.image  || FALLBACK_IMG;
-        const uid    = `spin-art-${idx}-${i}`;
-        return `
-          <div class="recent-show-item">
-            <img id="${uid}" class="recent-show-img" src="${img}" alt="${artist}"
-                 onerror="this.src='${FALLBACK_IMG}'; this.classList.add('fallback');">
-            <div class="recent-show-info">
-              <div class="recent-show-name">${artist}</div>
-              <div class="recent-show-meta">${title}${time ? `<span class="recent-show-station">${time}</span>` : ''}</div>
-            </div>
-          </div>`;
-      }).join('');
-
-      // Backfill iTunes art
-      group.spins.forEach((spin, i) => {
-        if (spin.image || !spin.artist) return;
-        WCYTPlaylist.fetchArt(spin.artist, spin.song || '').then(url => {
-          if (!url) return;
-          const img = document.getElementById(`spin-art-${idx}-${i}`);
-          if (img) img.src = url;
-        });
-      });
-    }
-
-    function navigate(dir) {
-      currentHour = Math.max(0, Math.min(hourGroups.length - 1, currentHour + dir));
-      renderHour(currentHour);
-    }
-
-    fetch(SPINITRON_URL)
-      .then(r => r.json())
-      .then(wrapper => {
-        const spins = JSON.parse(wrapper.contents).items || [];
         if (!spins.length) {
-          document.getElementById('recent-shows-list').innerHTML =
-            '<div class="wcyt-loading" style="color:#555">No spins logged yet.</div>';
+          el.innerHTML = '<div class="wcyt-loading" style="color:#555">No recent plays logged yet.</div>';
           return;
         }
-        hourGroups = groupByHour(spins);
-        // Inject nav controls above the list
-        document.getElementById('recent-shows-nav').innerHTML = `
-          <div class="hour-nav">
-            <div>
-              <div class="hour-nav-label" id="hour-label"></div>
-              <div class="hour-nav-sub"   id="hour-sublabel"></div>
+
+        el.innerHTML = spins.map((s, i) => `
+          <div class="recent-show-item">
+            <img id="bsi-art-${i}" class="recent-show-img" src="${FALLBACK_IMG}" alt="${s.artist}">
+            <div class="recent-show-info">
+              <div class="recent-show-name">${s.artist}</div>
+              <div class="recent-show-meta">${s.title}<span class="recent-show-station">${s.time}</span></div>
             </div>
-            <div class="hour-nav-arrows">
-              <button class="hour-arrow" id="hour-prev" onclick="navigate(1)" title="Earlier">&#8592;</button>
-              <button class="hour-arrow" id="hour-next" onclick="navigate(-1)" title="Later">&#8594;</button>
-            </div>
-          </div>`;
-        renderHour(0);
-      })
-      .catch(() => {
-        document.getElementById('recent-shows-list').innerHTML =
-          '<div class="wcyt-loading" style="color:#555">Could not load recently played.</div>';
-      });
+          </div>`).join('');
+
+        // Backfill album art via iTunes
+        spins.forEach((s, i) => {
+          WCYTPlaylist.fetchArt(s.artist, s.title).then(url => {
+            const img = document.getElementById(`bsi-art-${i}`);
+            if (img && url) img.src = url;
+          });
+        });
+      } catch {
+        el.innerHTML = '<div class="wcyt-loading" style="color:#555">Could not load recently played.</div>';
+      }
+    }
+
+    // Load on page ready and refresh every 30 seconds
+    document.addEventListener('DOMContentLoaded', () => {
+      loadRecentFromBSI();
+      setInterval(loadRecentFromBSI, 30_000);
+    });
   </script>
 
 </body>
