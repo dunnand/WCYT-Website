@@ -533,17 +533,20 @@
 
     async function fetchArtMusicBrainz(artist, title) {
       try {
-        const q    = encodeURIComponent(`recording:"${title}" AND artist:"${artist}"`);
-        const res  = await fetch(`https://musicbrainz.org/ws/2/recording/?query=${q}&limit=5&fmt=json`, {
+        const q   = encodeURIComponent(`recording:"${title}" AND artist:"${artist}"`);
+        const res = await fetch(`https://musicbrainz.org/ws/2/recording/?query=${q}&limit=5&fmt=json&inc=release-groups`, {
           headers: { 'User-Agent': 'WCYTDisplay/1.0 (dunnand@gmail.com)' }
         });
         const data = await res.json();
         const recordings = data.recordings ?? [];
+        const rgidsSeen = new Set();
         for (const rec of recordings) {
           for (const rel of (rec.releases ?? [])) {
-            const mbid = rel.id;
-            const url  = `https://coverartarchive.org/release/${mbid}/front-500.jpg`;
-            // HEAD check — CAA returns 307 redirect if art exists, 404 if not
+            const rgid = rel['release-group']?.id;
+            if (!rgid || rgidsSeen.has(rgid)) continue;
+            rgidsSeen.add(rgid);
+            // Prefer release-group art — canonical, consistent across all editions
+            const url  = `https://coverartarchive.org/release-group/${rgid}/front-500.jpg`;
             const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
             if (head.ok) return url;
           }
