@@ -30,6 +30,7 @@
   // ── DJ Panel (JSONBin) ────────────────────────────────────────────
   // After setting up JSONBin, paste your Bin ID here.
   const DJPANEL_BIN_ID  = '69dfdf65856a6821893a19f8'; // e.g. '6613abc123def456'
+  const DJPANEL_KEY     = '$2a$10$3JxMllL6YGZtbEqwOQTbFeww2P.sNZ.b.aPWPreit5UwyM1pFHxie';
   const DJPANEL_URL     = DJPANEL_BIN_ID
     ? `https://api.jsonbin.io/v3/b/${DJPANEL_BIN_ID}/latest`
     : '';
@@ -96,7 +97,7 @@
   async function fetchDJPanel() {
     if (!DJPANEL_URL) return;
     try {
-      const res  = await fetch(DJPANEL_URL, { cache: 'no-store' });
+      const res  = await fetch(DJPANEL_URL, { cache: 'no-store', headers: { 'X-Master-Key': DJPANEL_KEY } });
       const data = await res.json();
       const rec  = data.record || {};
       djPanel['wcyt'] = rec['wcyt']  || null;
