@@ -623,11 +623,9 @@
         if (url) saveArtCache();
         return url;
       } catch {
-        // iTunes down — fall back to MusicBrainz directly
-        const url = await fetchArtMusicBrainz(artist, title);
-        artCache[key] = url;
-        if (url) saveArtCache();
-        return url;
+        // iTunes down — show logo fallback, don't try MusicBrainz
+        artCache[key] = null;
+        return null;
       }
     }
 

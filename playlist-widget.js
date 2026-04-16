@@ -613,8 +613,7 @@
     try {
       artCache[key] = await fetchArtFromiTunes(artist, title, albumLine);
     } catch {
-      // iTunes down — fall back to MusicBrainz
-      artCache[key] = await fetchArtMusicBrainz(artist, title);
+      // iTunes down — show logo fallback, don't try MusicBrainz
     }
     if (artCache[key]) saveArtCache(); // only persist successes
     return artCache[key];
