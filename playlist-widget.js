@@ -582,13 +582,40 @@
     return toArtUrl(pickMatch(byTitle));
   }
 
+  async function fetchArtMusicBrainz(artist, title) {
+    try {
+      const q   = encodeURIComponent(`recording:"${title}" AND artist:"${artist}"`);
+      const res = await fetch(`https://musicbrainz.org/ws/2/recording/?query=${q}&limit=5&fmt=json&inc=release-groups`, {
+        headers: { 'User-Agent': 'WCYTDisplay/1.0 (dunnand@gmail.com)' }
+      });
+      const data = await res.json();
+      const rgidsSeen = new Set();
+      for (const rec of (data.recordings ?? [])) {
+        for (const rel of (rec.releases ?? [])) {
+          const rgid = rel['release-group']?.id;
+          if (!rgid || rgidsSeen.has(rgid)) continue;
+          rgidsSeen.add(rgid);
+          const url  = `https://coverartarchive.org/release-group/${rgid}/front-500.jpg`;
+          const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+          if (head.ok) return url;
+        }
+      }
+    } catch {}
+    return null;
+  }
+
   async function fetchArt(artist, title, albumLine = '') {
     const key = artCacheKey(artist, title);
     if (key in artCache) return artCache[key];
     const override = artOverride(artist);
     if (override) { artCache[key] = override; saveArtCache(); return override; }
     artCache[key] = null; // in-memory null so we don't double-fetch this session
-    try { artCache[key] = await fetchArtFromiTunes(artist, title, albumLine); } catch {}
+    try {
+      artCache[key] = await fetchArtFromiTunes(artist, title, albumLine);
+    } catch {
+      // iTunes down — fall back to MusicBrainz
+      artCache[key] = await fetchArtMusicBrainz(artist, title);
+    }
     if (artCache[key]) saveArtCache(); // only persist successes
     return artCache[key];
   }

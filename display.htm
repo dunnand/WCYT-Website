@@ -620,9 +620,15 @@
         }
 
         artCache[key] = url;
-        if (url) saveArtCache(); // only persist successes
+        if (url) saveArtCache();
         return url;
-      } catch { artCache[key] = null; return null; } // don't cache failures to localStorage
+      } catch {
+        // iTunes down — fall back to MusicBrainz directly
+        const url = await fetchArtMusicBrainz(artist, title);
+        artCache[key] = url;
+        if (url) saveArtCache();
+        return url;
+      }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
