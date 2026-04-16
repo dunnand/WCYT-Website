@@ -587,9 +587,9 @@
     if (key in artCache) return artCache[key];
     const override = artOverride(artist);
     if (override) { artCache[key] = override; saveArtCache(); return override; }
-    artCache[key] = null;
+    artCache[key] = null; // in-memory null so we don't double-fetch this session
     try { artCache[key] = await fetchArtFromiTunes(artist, title, albumLine); } catch {}
-    saveArtCache();
+    if (artCache[key]) saveArtCache(); // only persist successes
     return artCache[key];
   }
 

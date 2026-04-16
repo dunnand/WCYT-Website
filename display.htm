@@ -620,9 +620,9 @@
         }
 
         artCache[key] = url;
-        saveArtCache();
+        if (url) saveArtCache(); // only persist successes
         return url;
-      } catch { artCache[key] = null; saveArtCache(); return null; }
+      } catch { artCache[key] = null; return null; } // don't cache failures to localStorage
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
