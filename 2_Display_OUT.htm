@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="10">
+  <title>WCYT Now Playing</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0d0d;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #111130;
+      padding: 14px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 4px solid #cc0000;
+      flex-shrink: 0;
+    }
+    .station-name {
+      font-size: 2.2em;
+      font-weight: bold;
+      letter-spacing: 6px;
+    }
+    .header-label {
+      font-size: 0.85em;
+      color: #aaaaaa;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    /* ── Main layout ── */
+    .main {
+      display: flex;
+      flex: 1;
+      padding: 28px 36px;
+      gap: 32px;
+      min-height: 0;
+    }
+
+    /* ── Album art ── */
+    .art-section {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .album-art {
+      width: 280px;
+      height: 280px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 3px solid #2a2a2a;
+      background: #1a1a1a;
+    }
+
+    /* ── Now playing centre ── */
+    .now-playing {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .on-air {
+      display: inline-block;
+      background: #cc0000;
+      color: #ffffff;
+      font-size: 0.7em;
+      font-weight: bold;
+      letter-spacing: 4px;
+      padding: 5px 14px;
+      border-radius: 4px;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .artist {
+      font-size: 2.8em;
+      font-weight: bold;
+      line-height: 1.15;
+      margin-bottom: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .title {
+      font-size: 1.9em;
+      color: #cccccc;
+      font-weight: normal;
+      margin-bottom: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .album {
+      font-size: 1em;
+      color: #999999;
+      margin-bottom: 12px;
+    }
+    .category {
+      font-size: 0.8em;
+      color: #777777;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      overflow: hidden;
+    }
+    .sidebar-block {
+      background: #111122;
+      border-radius: 8px;
+      padding: 16px 18px;
+      border-left: 4px solid #cc0000;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar-block h3 {
+      font-size: 0.7em;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #777777;
+      margin-bottom: 12px;
+    }
+    .sidebar-content {
+      font-size: 0.9em;
+      color: #cccccc;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="station-name">WCYT</div>
+    <div class="header-label">Now Playing</div>
+  </div>
+
+  <div class="main">
+
+    <div class="art-section">
+      <img class="album-art"
+           src="Album%20Art/Bleachers-Bleachers.jpg"
+           alt=""
+           onerror="this.style.visibility='hidden'">
+    </div>
+
+    <div class="now-playing">
+      <div class="on-air">On Air</div>
+      <div class="artist">Bleachers</div>
+      <div class="title">Alma Mater (feat. Lana Del Ray, Bartees Strange, Clairo)</div>
+      <div class="album">Bleachers &bull; 2024</div>
+      <div class="category">AUDIO</div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-block">
+        <h3>Coming Up</h3>
+        <div class="sidebar-content">8:02 pm - Liner - Liner<br>8:02 pm - Charles Wright & The Watts 103rd Street Rhythm Ban - Express Yourself  (1970)<br>8:06 pm - The Byrds - I'll Feel a Whole Lot Better  (1965)<br>8:08 pm - Liner - Liner<br>8:08 pm - Led Zeppelin - Houses of the Holy  (1975)<br></div>
+      </div>
+      <div class="sidebar-block">
+        <h3>Recently Played</h3>
+        <div class="sidebar-content">7:39 pm - Neutral Milk Hotel - Naomi  (1996)<br />7:44 pm - Weezer - Undone - The Sweater Song  (1994)<br />7:49 pm - The Pogues - A Rainy Night in Soho  (1986)<br />7:54 pm - Liner - Liner<br />7:54 pm - Poison - Every Rose Has It's Thorn  (1989)<br /></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
