@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="10">
+  <title>WCYT Now Playing</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0d0d;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #111130;
+      padding: 14px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 4px solid #cc0000;
+      flex-shrink: 0;
+    }
+    .station-name {
+      font-size: 2.2em;
+      font-weight: bold;
+      letter-spacing: 6px;
+    }
+    .header-label {
+      font-size: 0.85em;
+      color: #aaaaaa;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    /* ── Main layout ── */
+    .main {
+      display: flex;
+      flex: 1;
+      padding: 28px 36px;
+      gap: 32px;
+      min-height: 0;
+    }
+
+    /* ── Album art ── */
+    .art-section {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .album-art {
+      width: 280px;
+      height: 280px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 3px solid #2a2a2a;
+      background: #1a1a1a;
+    }
+
+    /* ── Now playing centre ── */
+    .now-playing {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .on-air {
+      display: inline-block;
+      background: #cc0000;
+      color: #ffffff;
+      font-size: 0.7em;
+      font-weight: bold;
+      letter-spacing: 4px;
+      padding: 5px 14px;
+      border-radius: 4px;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .artist {
+      font-size: 2.8em;
+      font-weight: bold;
+      line-height: 1.15;
+      margin-bottom: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .title {
+      font-size: 1.9em;
+      color: #cccccc;
+      font-weight: normal;
+      margin-bottom: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .album {
+      font-size: 1em;
+      color: #999999;
+      margin-bottom: 12px;
+    }
+    .category {
+      font-size: 0.8em;
+      color: #777777;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      overflow: hidden;
+    }
+    .sidebar-block {
+      background: #111122;
+      border-radius: 8px;
+      padding: 16px 18px;
+      border-left: 4px solid #cc0000;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar-block h3 {
+      font-size: 0.7em;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #777777;
+      margin-bottom: 12px;
+    }
+    .sidebar-content {
+      font-size: 0.9em;
+      color: #cccccc;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="station-name">WCYT</div>
+    <div class="header-label">Now Playing</div>
+  </div>
+
+  <div class="main">
+
+    <div class="art-section">
+      <img class="album-art"
+           src="Album%20Art/The Flaming Lips-The Soft Bulletin.jpg"
+           alt=""
+           onerror="this.style.visibility='hidden'">
+    </div>
+
+    <div class="now-playing">
+      <div class="on-air">On Air</div>
+      <div class="artist">The Flaming Lips</div>
+      <div class="title">Slow Motion</div>
+      <div class="album">The Soft Bulletin &bull; 1999</div>
+      <div class="category">TUNES</div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-block">
+        <h3>Coming Up</h3>
+        <div class="sidebar-content">3:10 am - Liner - Liner<br>3:10 am - Scorpions - No One Like You  (1982)<br>3:14 am - Sheila E. - A Love Bizarre  (1985)<br>3:17 am - Bleachers - Goodmorning<br>3:21 am - Liner - Liner<br></div>
+      </div>
+      <div class="sidebar-block">
+        <h3>Recently Played</h3>
+        <div class="sidebar-content">2:56 am - Liner - Liner<br />2:56 am - The Beatles - The Inner Light  (1968)<br />2:59 am - AVICII - Levels  (2011)<br />3:02 am - Liner - Liner<br />3:02 am - Pavement - Rattled By The Rush  (1995)<br /></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
