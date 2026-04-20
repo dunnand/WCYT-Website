@@ -729,7 +729,11 @@
 
       if (isBlocked(rawTitle)) return;
       const parsed = parseTitle(rawTitle);
-      if (!parsed.artist && !parsed.title) return;
+      // Fall back to BSI file data when Icecast has no stream title
+      if (!parsed.artist && !parsed.title) {
+        if (bsi.artist) { parsed.artist = bsi.artist; parsed.title = bsi.title; }
+        else return;
+      }
 
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
       if (songKey === state[key].currentKey) {
