@@ -471,7 +471,14 @@
     const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main';
 
     // ── DJ Panel ───────────────────────────────────────────────────────────────
+    const DJ_EXPIRE_MS = 30 * 60 * 1000;
     let djPanel = {};
+    function getActiveDJ(key) {
+      const p = djPanel[key === 'point' ? 'wcyt' : '2pt0'];
+      if (!p || !p.active) return null;
+      if (p.updatedAt && Date.now() - new Date(p.updatedAt).getTime() > DJ_EXPIRE_MS) return null;
+      return p;
+    }
     async function fetchDJPanel() {
       try {
         const res  = await fetch(DJPANEL_URL, { cache: 'no-store', headers: { 'X-Master-Key': JSONBIN_KEY } });
@@ -721,9 +728,8 @@
       const bsi = await fetchBSI(bsiFile);
       renderRecent(key + '-recent', bsi.recent, fallback);
 
-      const djKey      = key === 'point' ? 'wcyt' : '2pt0';
-      const dj         = djPanel[djKey];
-      const showActive = dj?.active && !dj?.onBreak && dj?.showName;
+      const dj         = getActiveDJ(key);
+      const showActive = dj && !dj.onBreak && dj.showName;
       if (badgeEl) badgeEl.classList.toggle('visible', !!showActive);
       if (nameEl)  nameEl.textContent = showActive ? dj.showName : '';
 
