@@ -25,13 +25,13 @@ DEBOUNCE      = 1    # seconds to wait after a change before pushing
 
 # Local files already written to this PC by Simian
 LOCAL_FILES = [
-    "2_Display_OUT.htm",
 ]
 
 # Network files: (network_source_path, local_dest_filename)
 # When the source changes, it gets copied locally then committed.
 NETWORK_FILES = [
-    (r"\\Wcyt\bsi32\WCYT_out.html", "Point_Display_OUT.htm"),
+    (r"\\Wcyt\bsi32\WCYT_out.html",          "Point_Display_OUT.htm"),
+    (r"\\10.20.255.61\bsi32\2_Display_OUT.htm", "2_Display_OUT.htm"),
 ]
 
 # Backup.ini files to parse → status JSON files
@@ -152,29 +152,65 @@ def git(*args):
     )
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 
+_GIT_LOCK = os.path.join(REPO_DIR, ".git", "index.lock")
+_GIT_HEAD = os.path.join(REPO_DIR, ".git", "HEAD")
+
+def _clear_git_lock():
+    if os.path.exists(_GIT_LOCK):
+        try:
+            os.remove(_GIT_LOCK)
+            log("Removed stale git index.lock")
+        except Exception as e:
+            log(f"Could not remove index.lock: {e}")
+
+def _repair_broken_ref():
+    """Fix a blank/corrupted branch ref by restoring the last hash from the reflog."""
+    try:
+        head = open(_GIT_HEAD).read().strip()
+        if not head.startswith("ref: "):
+            return False
+        ref_rel = head[5:]  # e.g. refs/heads/main
+        ref_file = os.path.join(REPO_DIR, ".git", ref_rel)
+        if open(ref_file).read().strip():
+            return False  # ref is fine
+        reflog = os.path.join(REPO_DIR, ".git", "logs", ref_rel)
+        last_line = open(reflog).readlines()[-1]
+        commit_hash = last_line.split()[1]
+        open(ref_file, "w").write(commit_hash + "\n")
+        log(f"Repaired broken ref {ref_rel} -> {commit_hash[:12]}")
+        return True
+    except Exception as e:
+        log(f"Could not repair broken ref: {e}")
+        return False
+
 def push_changes(changed_files):
+    """Returns True on success, False on failure (caller keeps pending for retry)."""
     log(f"Changed: {', '.join(changed_files)}")
+    _clear_git_lock()
+    _repair_broken_ref()
 
     for f in changed_files:
         code, out, err = git("add", f)
         if code != 0:
             log(f"git add failed: {err}")
-            return
+            return False
 
     code, out, err = git("commit", "-m", "Update BSI now-playing output")
     if code != 0:
-        if "nothing to commit" in err or "nothing to commit" in out:
+        if "nothing to commit" in err or "nothing to commit" in out \
+                or "no changes added to commit" in err or "no changes added to commit" in out:
             log("Nothing to commit.")
-        else:
-            log(f"git commit failed: {err}")
-        return
+            return True
+        log(f"git commit failed: {err or out}")
+        return False
 
     log("Pushing...")
     code, out, err = git("push")
     if code == 0:
         log("Pushed successfully.")
-    else:
-        log(f"git push failed: {err}")
+        return True
+    log(f"git push failed: {err}")
+    return False
 
 def main():
     log("=" * 44)
@@ -243,8 +279,8 @@ def main():
                                 last_failed[station_key] = now  # retry after RETRY_DELAY
 
         if pending and (now - last_change) >= DEBOUNCE:
-            push_changes(list(pending))
-            pending.clear()
+            if push_changes(list(pending)):
+                pending.clear()
 
 if __name__ == "__main__":
     try:
