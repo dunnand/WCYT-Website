@@ -494,13 +494,20 @@
 
   // Album types that are never the original release — hard reject
   const ITUNES_REJECT = [
-    'lullaby', 'karaoke', 'tribute', 'cover version',
+    'lullaby', 'karaoke', 'tribute', 'cover version', 'covers',
     'instrumental version', 'made famous', 'originally performed',
+    // Workout / fitness compilations
+    'running', 'workout', 'fitness', 'gym', 'cardio', 'yoga', 'meditation',
+    // Generic filler compilations
+    "now that's what i call", 'hits of', 'music of', 'sounds of', 'songs of',
+    'lounge', 'chillout', 'chill out',
   ];
   // Secondary releases — prefer originals over these, but fall back if nothing else
   const ITUNES_SECONDARY = [
     'soundtrack', 'motion picture', 'original score', 'compilation',
     'greatest hits', 'best of', 'collection', 'anthology',
+    'the very best', 'essential', 'platinum', 'gold', 'singles',
+    'retrospective', 'kompilation',
   ];
 
   // Strip accents/diacritics so "Björk" → "Bjork" for search/matching

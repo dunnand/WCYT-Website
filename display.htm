@@ -583,7 +583,20 @@
         const term = encodeURIComponent(artist + ' ' + title);
         const res  = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=25&country=US`);
         const data = await res.json();
-        const COMP_TERMS = ['greatest hits','best of','collection','anthology','the very best','essential','platinum','gold','singles','retrospective','kompilation','compilation'];
+        const COMP_TERMS = [
+          // Compilations / non-original releases
+          'greatest hits','best of','collection','anthology','the very best','essential',
+          'platinum','gold','singles','retrospective','kompilation','compilation',
+          'soundtrack','motion picture','original score',
+          // Cover / tribute / karaoke
+          'karaoke','tribute','cover version','covers','instrumental version',
+          'made famous','originally performed','lullaby',
+          // Workout / fitness compilations
+          'running','workout','fitness','gym','cardio','yoga','meditation',
+          // Generic filler compilations
+          "now that's what i call",'hits of','music of','sounds of','songs of',
+          'lounge','chillout','chill out',
+        ];
         const isComp = r => COMP_TERMS.some(t => normStr(r.collectionName ?? '').includes(t));
 
         const na      = normStr(artist);
