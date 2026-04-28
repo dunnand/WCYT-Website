@@ -18,8 +18,8 @@ import configparser
 import io
 import urllib.request
 
-REPO_DIR      = r"C:\Users\DunnOffice\WCYT-Website"
-LOG_FILE      = r"C:\Users\DunnOffice\WCYT-Website\bsi_watcher.log"
+REPO_DIR      = r"C:\Users\Andy\WCYT-Website"
+LOG_FILE      = r"C:\Users\Andy\WCYT-Website\bsi_watcher.log"
 POLL_INTERVAL = 2    # seconds between checks
 DEBOUNCE      = 5    # seconds to wait after a change before pushing (matches stream delay)
 
