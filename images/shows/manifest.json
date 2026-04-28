@@ -1,14 +1,15 @@
 {
   "shows": [
     { "name": "2.0 Default", "url": "/images/shows/2.0 Logo.png" },
-	{ "name": "The Point Default", "url": "/images/shows/91fm.png" },
-	{ "name": "The Last Dance", "url": "/images/shows/LastDance.png" },
-	{ "name": "Off The Theories", "url": "/images/shows/OffTheTheories-1.png" },
-	{ "name": "The Davon & Vaughn Show", "url": "/images/shows/DavonVaughnShow.png" },
-	{ "name": "Stage Clear", "url": "/images/shows/StageClear.png" },
-	{ "name": "Grand Gear", "url": "/images/shows/GrandGear.png" },
-	{ "name": "Reel Talk", "url": "/images/shows/ReelTalk.png" },
+    { "name": "The Point Default", "url": "/images/shows/91fm.png" },
+    { "name": "The Last Dance", "url": "/images/shows/The Last Dance.png" },
+    { "name": "Off The Theories", "url": "/images/shows/OffTheTheories-1.png" },
+    { "name": "Off The Theories (Alt)", "url": "/images/shows/OffTheTheories.PNG" },
+    { "name": "The Davon & Vaughn Show", "url": "/images/shows/DavonVaughnShow.png" },
+    { "name": "Grand Gear", "url": "/images/shows/GrandGear.png" },
+    { "name": "Reel Talk", "url": "/images/shows/ReelTalk.png" },
     { "name": "If I'm Being Honest Podcast", "url": "/images/shows/If I'm Being Honest Podcast.png" },
-    { "name": "Spartan Sports", "url": "/images/shows/Spartan Sports WCYT 911.png" }
+    { "name": "Spartan Sports", "url": "/images/shows/Spartan Sports WCYT 911.png" },
+    { "name": "Out of the Huddle", "url": "/images/shows/Out of the Huddle.png" }
   ]
 }
