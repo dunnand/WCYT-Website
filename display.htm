@@ -605,7 +605,7 @@
 
     async function fetchArt(artist, title, album) {
       const { name: albumName, year: albumYear } = parseAlbum(album);
-      const key = (artist + '|' + title + '|' + albumName).toLowerCase();
+      const key = (artist + '|' + title).toLowerCase();
       if (key in artCache) return artCache[key];
       try {
         const term = encodeURIComponent(artist + ' ' + title);
