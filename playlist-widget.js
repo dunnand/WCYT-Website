@@ -483,6 +483,7 @@
     ['slayer',                    'christ illusion'],
     ['ween',                      'chocolate cheese'],
 	['the strokes',				  'is this it'],
+	['suki waterhour',			  'good looking'],
   ];
 
   function artIsBlocked(artist, album) {

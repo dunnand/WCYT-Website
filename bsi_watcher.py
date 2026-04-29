@@ -18,10 +18,13 @@ import configparser
 import io
 import urllib.request
 
-REPO_DIR      = r"C:\Users\Andy\WCYT-Website"
-LOG_FILE      = r"C:\Users\Andy\WCYT-Website\bsi_watcher.log"
-POLL_INTERVAL = 2    # seconds between checks
-DEBOUNCE      = 5    # seconds to wait after a change before pushing (matches stream delay)
+REPO_DIR        = r"C:\Users\Andy\WCYT-Website"
+LOG_FILE        = r"C:\Users\Andy\WCYT-Website\bsi_watcher.log"
+POLL_INTERVAL   = 2    # seconds between checks
+DEBOUNCE        = 5    # seconds to wait after a change before pushing (matches stream delay)
+SHOW_IMAGES_DIR = os.path.join(REPO_DIR, "images", "shows")
+MANIFEST_FILE   = os.path.join(SHOW_IMAGES_DIR, "manifest.json")
+IMAGE_EXTS      = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 
 # Local files already written to this PC by Simian
 LOCAL_FILES = [
@@ -31,14 +34,14 @@ LOCAL_FILES = [
 # When the source changes, it gets copied locally then committed.
 NETWORK_FILES = [
     (r"\\Wcyt\bsi32\WCYT_out.html",          "Point_Display_OUT.htm"),
-    (r"\\10.20.255.61\bsi32\2_Display_OUT.htm", "2_Display_OUT.htm"),
+    (r"\\2point0\bsi32\2_Display_OUT.htm", "2_Display_OUT.htm"),
 ]
 
 # Backup.ini files to parse → status JSON files
 # AutoStep values: 0=off, 1=assist, 2=auto
 STATUS_SOURCES = [
     (r"\\Wcyt\bsi32\Backup.ini",          "point_status.json", "point"),
-    (r"\\10.20.255.61\bsi32\Backup.ini",  "wcyt2_status.json", "wcyt2"),
+    (r"\\2point0\bsi32\Backup.ini",  "wcyt2_status.json", "wcyt2"),
 ]
 
 # JSONBin — stores simian status so display page gets instant updates (no CDN cache)
@@ -61,8 +64,10 @@ def push_status_to_jsonbin(station_key, status):
         with urllib.request.urlopen(get_req, timeout=10) as resp:
             record = json.loads(resp.read()).get('record', {})
 
-        # Merge in latest simian status and PUT back
-        record['simianStatus'] = _simian_status.copy()
+        # Merge in latest simian status and PUT back (preserve keys from other stations)
+        existing_status = record.get('simianStatus', {})
+        existing_status.update(_simian_status)
+        record['simianStatus'] = existing_status
         put_req = urllib.request.Request(
             JSONBIN_URL,
             data=json.dumps(record).encode('utf-8'),
@@ -142,9 +147,11 @@ _si = subprocess.STARTUPINFO()
 _si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 _si.wShowWindow = 0  # SW_HIDE
 
+_GIT_EXE = r"C:\Program Files\Git\mingw64\bin\git.exe"
+
 def git(*args):
     result = subprocess.run(
-        ["git"] + list(args),
+        [_GIT_EXE] + list(args),
         cwd=REPO_DIR,
         capture_output=True,
         text=True,
@@ -212,6 +219,33 @@ def push_changes(changed_files):
     log(f"git push failed: {err}")
     return False
 
+def scan_show_images():
+    """Return sorted list of image filenames in SHOW_IMAGES_DIR (excluding manifest)."""
+    try:
+        return sorted(
+            f for f in os.listdir(SHOW_IMAGES_DIR)
+            if os.path.splitext(f)[1].lower() in IMAGE_EXTS
+        )
+    except OSError:
+        return []
+
+def rebuild_manifest(image_files):
+    """Rewrite manifest.json from the current image file list, preserving existing names."""
+    try:
+        existing = json.loads(open(MANIFEST_FILE, encoding='utf-8').read())
+        name_map = {os.path.basename(e['url']): e['name'] for e in existing.get('shows', [])}
+    except Exception:
+        name_map = {}
+
+    shows = []
+    for f in image_files:
+        name = name_map.get(f) or os.path.splitext(f)[0]
+        shows.append({"name": name, "url": f"/images/shows/{f}"})
+
+    with open(MANIFEST_FILE, 'w', encoding='utf-8') as fh:
+        json.dump({"shows": shows}, fh, indent=2, ensure_ascii=False)
+    log(f"[manifest] Rebuilt with {len(shows)} images")
+
 def main():
     log("=" * 44)
     log("BSI Watcher running")
@@ -227,6 +261,8 @@ def main():
     last_status   = {}  # station_key -> last successfully pushed sig
     last_failed   = {}  # station_key -> time.time() of last failed push
     RETRY_DELAY   = 30  # seconds to wait before retrying a failed push
+
+    known_images = set(scan_show_images())
 
     pending     = set()
     last_change = 0
@@ -258,6 +294,18 @@ def main():
                 except Exception as e:
                     log(f"Copy failed ({src}): {e}")
 
+        # Check for new show images — rebuild manifest and stage both if changed
+        current_images = set(scan_show_images())
+        if current_images != known_images:
+            new_files = current_images - known_images
+            known_images = current_images
+            rebuild_manifest(sorted(current_images))
+            for f in new_files:
+                git("add", os.path.join("images", "shows", f))
+                log(f"[manifest] Staged new image: {f}")
+            pending.add(os.path.join("images", "shows", "manifest.json"))
+            last_change = now
+
         # Check Backup.ini files — push to JSONBin only when values actually change
         for src, dest, station_key in STATUS_SOURCES:
             new_mtime = get_mtime(src)
@@ -283,7 +331,12 @@ def main():
                 pending.clear()
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        log("Watcher stopped.")
+    while True:
+        try:
+            main()
+        except KeyboardInterrupt:
+            log("Watcher stopped.")
+            break
+        except Exception as e:
+            log(f"CRASH: {e} — restarting in 10s")
+            time.sleep(10)
