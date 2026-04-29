@@ -681,7 +681,7 @@
         // Recently played (block[1]) — reversed so newest first
         const recentLines = parseLines(blocks[1]?.innerHTML).reverse();
         const recent = [];
-        for (const line of recentLines.slice(0, 1)) {
+        for (const line of recentLines.slice(0, RECENT_LIMIT)) {
           const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
           if (!m) continue;
           const [, time, a, t] = m;
@@ -950,7 +950,17 @@
 
     function pollStatus() { fetchStatus(); }
 
-    const BADGES_ON = new URLSearchParams(window.location.search).has('badges');
+    const BADGES_ON    = new URLSearchParams(window.location.search).has('badges');
+    const STATION      = new URLSearchParams(window.location.search).get('station'); // 'point', 'wcyt', or null
+    const RECENT_LIMIT = STATION ? 5 : 1;
+
+    if (STATION === 'point') {
+      document.querySelector('.station.wcyt').style.display = 'none';
+      document.querySelector('.divider').style.display = 'none';
+    } else if (STATION === 'wcyt') {
+      document.querySelector('.station.point').style.display = 'none';
+      document.querySelector('.divider').style.display = 'none';
+    }
 
     fetchDJPanel();
     setInterval(fetchDJPanel, 30_000);
