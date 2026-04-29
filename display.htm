@@ -186,22 +186,33 @@
     /* ── Station-mode overrides (point.html / 2point0.html) ── */
     .station-mode .station .top {
       flex: 1;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
+      gap: 18px;
     }
     .station-mode .album-art {
-      width:  min(480px, 46vh);
-      height: min(480px, 46vh);
+      width:  min(300px, 28vh);
+      height: min(300px, 28vh);
+    }
+    .station-mode .info {
+      width: 100%;
+      text-align: center;
+      justify-content: flex-start;
+    }
+    .station-mode .on-air {
+      margin: 0 auto 14px;
     }
     .station-mode .artist {
-      font-size: 2.6em;
-      -webkit-line-clamp: 3;
+      font-size: 2.2em;
+      -webkit-line-clamp: 2;
     }
     .station-mode .song-title {
-      font-size: 1.9em;
-      -webkit-line-clamp: 3;
+      font-size: 1.5em;
+      -webkit-line-clamp: 2;
     }
     .station-mode .album-line {
-      font-size: 1em;
+      font-size: 0.95em;
     }
 
     /* ── Bottom: recently played ── */
