@@ -954,12 +954,14 @@
     const STATION      = new URLSearchParams(window.location.search).get('station'); // 'point', 'wcyt', or null
     const RECENT_LIMIT = STATION ? 5 : 1;
 
-    if (STATION === 'point') {
-      document.querySelector('.station.wcyt').style.display = 'none';
-      document.querySelector('.divider').style.display = 'none';
-    } else if (STATION === 'wcyt') {
-      document.querySelector('.station.point').style.display = 'none';
-      document.querySelector('.divider').style.display = 'none';
+    if (STATION) {
+      const isPoint  = STATION === 'point';
+      const activeEl = document.querySelector(isPoint ? '.station.point' : '.station.wcyt');
+      const sideEl   = document.querySelector(isPoint ? '.station.wcyt' : '.station.point');
+      const bottom   = activeEl.querySelector('.bottom');
+      sideEl.innerHTML = '';
+      sideEl.className = activeEl.className;
+      sideEl.appendChild(bottom);
     }
 
     fetchDJPanel();
