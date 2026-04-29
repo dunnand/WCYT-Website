@@ -952,7 +952,7 @@
 
     const BADGES_ON    = new URLSearchParams(window.location.search).has('badges');
     const STATION      = new URLSearchParams(window.location.search).get('station'); // 'point', 'wcyt', or null
-    const RECENT_LIMIT = STATION ? 5 : 1;
+    const RECENT_LIMIT = STATION ? 8 : 1;
 
     if (STATION) {
       const isPoint  = STATION === 'point';
@@ -962,6 +962,7 @@
       sideEl.innerHTML = '';
       sideEl.className = activeEl.className;
       sideEl.appendChild(bottom);
+      bottom.querySelector('.panel-label').style.color = isPoint ? '#aaa' : '#666';
     }
 
     fetchDJPanel();
