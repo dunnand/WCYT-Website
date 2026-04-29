@@ -183,6 +183,27 @@
     .album-line { font-size: 0.85em; color: #666; margin-bottom: 8px; }
     .category   { display: none; }
 
+    /* ── Station-mode overrides (point.html / 2point0.html) ── */
+    .station-mode .station .top {
+      flex: 1;
+      align-items: center;
+    }
+    .station-mode .album-art {
+      width:  min(480px, 46vh);
+      height: min(480px, 46vh);
+    }
+    .station-mode .artist {
+      font-size: 2.6em;
+      -webkit-line-clamp: 3;
+    }
+    .station-mode .song-title {
+      font-size: 1.9em;
+      -webkit-line-clamp: 3;
+    }
+    .station-mode .album-line {
+      font-size: 1em;
+    }
+
     /* ── Bottom: recently played ── */
     .bottom {
       flex: 1;
@@ -955,6 +976,7 @@
     const RECENT_LIMIT = STATION ? 8 : 1;
 
     if (STATION) {
+      document.body.classList.add('station-mode');
       const isPoint  = STATION === 'point';
       const activeEl = document.querySelector(isPoint ? '.station.point' : '.station.wcyt');
       const sideEl   = document.querySelector(isPoint ? '.station.wcyt' : '.station.point');
