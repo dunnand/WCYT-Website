@@ -192,19 +192,19 @@
       gap: 16px;
     }
     .station-mode .album-art {
-      width:  min(340px, 32vh);
-      height: min(340px, 32vh);
+      width:  min(300px, 28vh);
+      height: min(300px, 28vh);
     }
     .station-mode .info {
       justify-content: flex-start;
     }
     .station-mode .artist {
       font-size: 2.2em;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 3;
     }
     .station-mode .song-title {
       font-size: 1.55em;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 3;
     }
     .station-mode .album-line {
       font-size: 0.95em;
@@ -803,14 +803,15 @@
       state[key].djActive   = !!showActive;
 
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
-      const fitArtist = (id) => {
+      const maxLines = STATION ? 3 : 2;
+      const fitText = (id) => {
         const el = document.getElementById(id);
         if (!el) return;
         el.style.fontSize = '';
         el.style.webkitLineClamp = 'unset';
         el.style.display = 'block';
         const lh = parseFloat(getComputedStyle(el).lineHeight) || 36;
-        const maxH = lh * 2 + 6;
+        const maxH = lh * maxLines + 6;
         if (el.scrollHeight > maxH) {
           let lo = 12, hi = parseFloat(getComputedStyle(el).fontSize);
           for (let i = 0; i < 12; i++) {
@@ -823,6 +824,7 @@
         el.style.webkitLineClamp = '';
         el.style.display = '';
       };
+      const fitArtist = fitText;
 
       // Clear text and blank art using a transparent pixel (avoids triggering onerror)
       set(key + '-artist', '');
@@ -843,6 +845,7 @@
       set(key + '-artist', parsed.artist);
       fitArtist(key + '-artist');
       set(key + '-title',  parsed.title);
+      fitText(key + '-title');
       // Only write album if BSI title matches — leave blank otherwise until BSI catches up
       if (bsiTitleMatch) set(key + '-album', bsi.album);
       // Reset any inline styles onerror may have set, then swap art
