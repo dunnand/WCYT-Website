@@ -254,7 +254,7 @@ def rebuild_manifest(image_files):
 WAV_DIR            = r'W:\\'
 ART_OVERRIDES_FILE = os.path.join(REPO_DIR, 'images', 'art_overrides.json')
 WAV_PROGRESS_FILE  = os.path.join(REPO_DIR, 'images', 'wav_art_progress.json')
-WAV_SCAN_INTERVAL  = 60    # seconds between W:\ scans
+WAV_SCAN_INTERVAL  = 86400  # once per day
 WAV_FETCH_DELAY    = 1.5   # seconds between iTunes requests
 MAX_WAV_PER_SCAN   = 20    # max new files processed per cycle
 
@@ -328,6 +328,69 @@ def fetch_wav_art_url(artist, title):
         return url.replace('100x100bb', '500x500bb') if url else None
     return None
 
+ART_REVIEW_FILE = r'C:\Users\Andy\Desktop\New Art Review.html'
+
+def write_art_review(new_items):
+    """Write an HTML page showing newly fetched art and open it in the browser."""
+    if not new_items:
+        return
+    overrides_path = ART_OVERRIDES_FILE.replace('\\', '\\\\')
+    cards = ''
+    for artist, title, key, url in new_items:
+        img_url = url.replace('500x500bb', '300x300bb') if url else ''
+        cards += f'''
+        <div class="card">
+          <img src="{img_url}" onerror="this.style.background='#333';this.removeAttribute('src')">
+          <div class="info">
+            <div class="artist">{artist}</div>
+            <div class="title">{title}</div>
+            <div class="key">{key}</div>
+          </div>
+        </div>'''
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>New Art Review — {time.strftime('%Y-%m-%d')}</title>
+<style>
+  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+       background:#1a1d23;color:#e8eaf0;padding:20px;margin:0}}
+  h1{{font-size:18px;margin-bottom:6px}}
+  .note{{background:#2a2f3a;border:1px solid #363c4a;border-radius:8px;
+         padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.7;color:#aab}}
+  .note code{{background:#1a1d23;padding:2px 6px;border-radius:4px;font-size:12px;color:#7aabf0}}
+  .grid{{display:flex;flex-wrap:wrap;gap:14px}}
+  .card{{background:#22262f;border:1px solid #363c4a;border-radius:10px;
+         overflow:hidden;width:220px}}
+  .card img{{width:220px;height:220px;object-fit:cover;display:block;background:#2a2f3a}}
+  .info{{padding:10px 12px}}
+  .artist{{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+  .title{{font-size:12px;color:#aab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}}
+  .key{{font-size:10px;color:#5a6a7a;margin-top:6px;word-break:break-all;
+        background:#1a1d23;padding:4px 6px;border-radius:4px}}
+</style>
+</head>
+<body>
+<h1>New Album Art — {time.strftime('%B %d, %Y')} ({len(new_items)} songs)</h1>
+<div class="note">
+  To <strong>remove</strong> art you don't want on the displays:<br>
+  1. Open <code>{overrides_path}</code><br>
+  2. Find the line containing the <strong>key</strong> shown on the card (grey box)<br>
+  3. Delete that entire line and save — the watcher will push the change automatically
+</div>
+<div class="grid">{cards}
+</div>
+</body>
+</html>"""
+    try:
+        with open(ART_REVIEW_FILE, 'w', encoding='utf-8') as f:
+            f.write(html)
+        os.startfile(ART_REVIEW_FILE)
+        log(f'[WAV-art] Review page opened: {ART_REVIEW_FILE}')
+    except Exception as e:
+        log(f'[WAV-art] Could not open review page: {e}')
+
 def scan_and_fetch_new_wav_art():
     """Scan W:\\ for new WAV files and fetch iTunes art for any not yet processed."""
     try:
@@ -364,7 +427,8 @@ def scan_and_fetch_new_wav_art():
 
     batch = pending[:MAX_WAV_PER_SCAN]
     log(f'[WAV-art] {len(pending)} unprocessed WAVs — scanning {len(batch)}')
-    updated = False
+    updated   = False
+    new_items = []  # (artist, title, key, url) for the review page
 
     for _, fname, src in batch:
         path   = os.path.join(WAV_DIR, fname)
@@ -383,6 +447,7 @@ def scan_and_fetch_new_wav_art():
                 progress[src] = url
                 if url:
                     overrides[key] = url
+                    new_items.append((artist, title, key, url))
                     updated = True
                     log(f'[WAV-art]   ok')
                 else:
@@ -399,9 +464,10 @@ def scan_and_fetch_new_wav_art():
         try:
             open(ART_OVERRIDES_FILE, 'w', encoding='utf-8').write(
                 json.dumps(ov_data, indent=2, ensure_ascii=False))
-            log(f'[WAV-art] art_overrides.json updated')
+            log(f'[WAV-art] art_overrides.json updated ({len(new_items)} new)')
         except Exception as e:
             log(f'[WAV-art] Write error: {e}')
+        write_art_review(new_items)
 
 def main():
     log("=" * 44)
