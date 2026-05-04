@@ -508,6 +508,20 @@
       } catch {}
     }
 
+    // ── Art overrides (gallery-curated URLs) ──────────────────────────────────
+    let artOverrides = {};
+    async function loadArtOverrides() {
+      try {
+        const res  = await fetch('/images/art_overrides.json?t=' + Date.now(), { cache: 'no-store' });
+        const data = await res.json();
+        const raw  = data.overrides || {};
+        // Upsize from 500×500 to 600×600 for the display
+        artOverrides = Object.fromEntries(
+          Object.entries(raw).map(([k, v]) => [k, v ? v.replace('500x500bb', '600x600bb') : v])
+        );
+      } catch {}
+    }
+
     // ── iTunes art ─────────────────────────────────────────────────────────────
     const ART_CACHE_KEY = 'wcyt-display-art-cache';
     const ART_CACHE_MAX = 500;
@@ -600,6 +614,8 @@
     async function fetchArt(artist, title, album) {
       const { name: albumName, year: albumYear } = parseAlbum(album);
       const key = (artist + '|' + title).toLowerCase();
+      // Gallery-curated override takes priority over live lookup and local cache
+      if (key in artOverrides) return artOverrides[key];
       if (key in artCache) return artCache[key];
       try {
         const term = encodeURIComponent(artist + ' ' + title);
@@ -990,6 +1006,8 @@
       bottom.querySelector('.panel-label').style.color = isPoint ? '#aaa' : '#666';
     }
 
+    loadArtOverrides();
+    setInterval(loadArtOverrides, 10 * 60_000); // refresh overrides every 10 min
     fetchDJPanel();
     setInterval(fetchDJPanel, 30_000);
     poll();
