@@ -16,7 +16,10 @@ import sys
 import json
 import configparser
 import io
+import struct
+import re
 import urllib.request
+import urllib.parse
 
 REPO_DIR        = r"C:\Users\Andy\WCYT-Website"
 LOG_FILE        = r"C:\Users\Andy\WCYT-Website\bsi_watcher.log"
@@ -247,6 +250,159 @@ def rebuild_manifest(image_files):
         json.dump({"shows": shows}, fh, indent=2, ensure_ascii=False)
     log(f"[manifest] Rebuilt with {len(shows)} images")
 
+# ── WAV art auto-fetch ────────────────────────────────────────────────────────
+WAV_DIR            = r'W:\\'
+ART_OVERRIDES_FILE = os.path.join(REPO_DIR, 'images', 'art_overrides.json')
+WAV_PROGRESS_FILE  = os.path.join(REPO_DIR, 'images', 'wav_art_progress.json')
+WAV_SCAN_INTERVAL  = 60    # seconds between W:\ scans
+WAV_FETCH_DELAY    = 1.5   # seconds between iTunes requests
+MAX_WAV_PER_SCAN   = 20    # max new files processed per cycle
+
+_BROWSER_UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+               'AppleWebKit/537.36 (KHTML, like Gecko) '
+               'Chrome/124.0.0.0 Safari/537.36')
+_ITUNES_REJECT = [
+    'lullaby','karaoke','tribute','cover version','covers',
+    'instrumental version','made famous','originally performed',
+    'running','workout','fitness','gym','cardio','yoga','meditation',
+    "now that's what i call",'hits of','music of','sounds of','songs of',
+    'lounge','chillout','chill out',
+]
+
+def _strip_diacritics(s):
+    import unicodedata
+    return unicodedata.normalize('NFD', s or '').encode('ascii', 'ignore').decode('ascii')
+
+def _norm_artist(s):
+    return re.sub(r'[^a-z0-9]', '', re.sub(r'\s*&\s*', 'and', _strip_diacritics(s).lower()))
+
+def _norm(s):
+    return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9 ]', '', _strip_diacritics(s).lower())).strip()
+
+def read_wav_xmp(path):
+    """Return (artist, title) from WAV XMP metadata, or (None, None)."""
+    try:
+        with open(path, 'rb') as f:
+            data = f.read(1024 * 1024)  # first 1 MB covers all metadata chunks
+        idx = data.find(b'_PMX')
+        if idx < 0:
+            return None, None
+        size = struct.unpack_from('<I', data, idx + 4)[0]
+        xmp  = data[idx + 8: idx + 8 + min(size, 32768)].decode('utf-8', errors='replace')
+        artist_m = re.search(r'<xmpDM:artist>([^<]+)</xmpDM:artist>', xmp)
+        title_m  = re.search(r'<dc:title>.*?<rdf:li[^>]*>([^<]+)</rdf:li>', xmp, re.DOTALL)
+        artist = artist_m.group(1).strip() if artist_m else None
+        title  = title_m.group(1).strip()  if title_m  else None
+        return artist, title
+    except Exception:
+        return None, None
+
+def fetch_wav_art_url(artist, title):
+    """Return iTunes art URL (500x500bb) for artist+title, or None."""
+    na   = _norm_artist(artist)
+    term = urllib.parse.quote(_strip_diacritics(f'{artist} {title}'))
+    try:
+        req = urllib.request.Request(
+            f'https://itunes.apple.com/search?term={term}&entity=song&limit=25&country=US',
+            headers={'User-Agent': _BROWSER_UA, 'Accept': 'application/json'})
+        with urllib.request.urlopen(req, timeout=12) as r:
+            results = json.loads(r.read().decode('utf-8')).get('results', [])
+    except Exception as e:
+        log(f'[WAV-art] iTunes error: {e}')
+        return None
+
+    nt   = _norm(title)
+    hits = []
+    for r in results:
+        if na not in _norm_artist(r.get('artistName', '')):
+            continue
+        col = (r.get('collectionName') or '').lower()
+        if any(t in col for t in _ITUNES_REJECT):
+            continue
+        hits.append(r)
+
+    match = next((r for r in hits if _norm(r.get('trackName', '')) == nt), None) \
+            or (hits[0] if hits else None)
+    if match:
+        url = match.get('artworkUrl100', '')
+        return url.replace('100x100bb', '500x500bb') if url else None
+    return None
+
+def scan_and_fetch_new_wav_art():
+    """Scan W:\\ for new WAV files and fetch iTunes art for any not yet processed."""
+    try:
+        progress = json.loads(open(WAV_PROGRESS_FILE, encoding='utf-8').read())
+    except Exception:
+        progress = {}
+
+    try:
+        ov_data   = json.loads(open(ART_OVERRIDES_FILE, encoding='utf-8').read())
+    except Exception:
+        ov_data   = {'overrides': {}, 'newBlockedArt': []}
+    overrides = ov_data.get('overrides', {})
+
+    try:
+        all_wavs = [f for f in os.listdir(WAV_DIR) if f.lower().endswith('.wav')]
+    except Exception as e:
+        log(f'[WAV-art] Cannot scan {WAV_DIR}: {e}')
+        return
+
+    # Collect unprocessed files, sort newest-created first so recent additions are handled first
+    pending = []
+    for fname in all_wavs:
+        src = fname[:-4]
+        if src not in progress:
+            try:
+                ct = os.path.getctime(os.path.join(WAV_DIR, fname))
+            except Exception:
+                ct = 0
+            pending.append((ct, fname, src))
+    pending.sort(reverse=True)
+
+    if not pending:
+        return
+
+    batch = pending[:MAX_WAV_PER_SCAN]
+    log(f'[WAV-art] {len(pending)} unprocessed WAVs — scanning {len(batch)}')
+    updated = False
+
+    for _, fname, src in batch:
+        path   = os.path.join(WAV_DIR, fname)
+        artist, title = read_wav_xmp(path)
+
+        if not artist or not title:
+            progress[src] = None
+        else:
+            key = (artist + '|' + title).lower()
+            if key in overrides:
+                progress[src] = overrides[key]  # already have art — mark done
+            else:
+                log(f'[WAV-art] {artist} – {title}')
+                time.sleep(WAV_FETCH_DELAY)
+                url = fetch_wav_art_url(artist, title)
+                progress[src] = url
+                if url:
+                    overrides[key] = url
+                    updated = True
+                    log(f'[WAV-art]   ok')
+                else:
+                    log(f'[WAV-art]   no art found')
+
+        # Save progress after every file so a crash doesn't lose work
+        try:
+            open(WAV_PROGRESS_FILE, 'w', encoding='utf-8').write(json.dumps(progress))
+        except Exception as e:
+            log(f'[WAV-art] Progress save error: {e}')
+
+    if updated:
+        ov_data['overrides'] = overrides
+        try:
+            open(ART_OVERRIDES_FILE, 'w', encoding='utf-8').write(
+                json.dumps(ov_data, indent=2, ensure_ascii=False))
+            log(f'[WAV-art] art_overrides.json updated')
+        except Exception as e:
+            log(f'[WAV-art] Write error: {e}')
+
 def main():
     log("=" * 44)
     log("BSI Watcher running")
@@ -265,8 +421,9 @@ def main():
 
     known_images = set(scan_show_images())
 
-    pending     = set()
-    last_change = 0
+    pending        = set()
+    last_change    = 0
+    last_wav_scan  = 0
 
     while True:
         time.sleep(POLL_INTERVAL)
@@ -330,6 +487,18 @@ def main():
         if pending and (now - last_change) >= DEBOUNCE:
             if push_changes(list(pending)):
                 pending.clear()
+
+        # Scan W:\ for new WAV files and fetch art for them
+        if now - last_wav_scan >= WAV_SCAN_INTERVAL:
+            last_wav_scan = now
+            scan_and_fetch_new_wav_art()
+            # If art_overrides.json was updated, stage it for push
+            ao_rel = os.path.join('images', 'art_overrides.json')
+            new_mtime = get_mtime(os.path.join(REPO_DIR, ao_rel))
+            if ao_rel not in local_mtimes or new_mtime != local_mtimes.get(ao_rel, 0):
+                local_mtimes[ao_rel] = new_mtime
+                pending.add(ao_rel)
+                last_change = now
 
 if __name__ == "__main__":
     while True:
