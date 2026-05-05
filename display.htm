@@ -519,6 +519,10 @@
         artOverrides = Object.fromEntries(
           Object.entries(raw).map(([k, v]) => [k, v ? v.replace('500x500bb', '600x600bb') : v])
         );
+        // Merge albums blocked via the review tool into the runtime block list
+        for (const entry of (data.newBlockedArt || [])) {
+          BLOCKED_ART.push(entry);
+        }
       } catch {}
     }
 
@@ -584,7 +588,7 @@
     ];
     function artIsBlocked(artist, collection) {
       const a = normStr(artist), b = normStr(collection);
-      return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
+      return BLOCKED_ART.some(([ba, bb]) => a.includes(normStr(ba)) && (bb === '' || b.includes(normStr(bb))));
     }
 
     async function fetchArtMusicBrainz(artist, title) {
@@ -612,79 +616,11 @@
     }
 
     async function fetchArt(artist, title, album) {
-      const { name: albumName, year: albumYear } = parseAlbum(album);
       const key = (artist + '|' + title).toLowerCase();
-      // Gallery-curated override takes priority over live lookup and local cache
+      // Only use art that has been approved in the review tool.
+      // Anything without an explicit entry shows the station logo.
       if (key in artOverrides) return artOverrides[key];
-      if (key in artCache) return artCache[key];
-      try {
-        const term = encodeURIComponent(artist + ' ' + title);
-        const res  = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=25&country=US`);
-        const data = await res.json();
-        const COMP_TERMS = [
-          // Compilations / non-original releases
-          'greatest hits','best of','collection','anthology','the very best','essential',
-          'platinum','gold','singles','retrospective','kompilation','compilation',
-          'soundtrack','motion picture','original score',
-          // Cover / tribute / karaoke
-          'karaoke','tribute','cover version','covers','instrumental version',
-          'made famous','originally performed','lullaby',
-          // Workout / fitness compilations
-          'running','workout','fitness','gym','cardio','yoga','meditation',
-          // Generic filler compilations
-          "now that's what i call",'hits of','music of','sounds of','songs of',
-          'lounge','chillout','chill out',
-        ];
-        const isComp = r => COMP_TERMS.some(t => normStr(r.collectionName ?? '').includes(t));
-
-        const na      = normStr(artist);
-        const allHits = (data.results ?? []).filter(r =>
-          normStr(r.artistName).includes(na) && !artIsBlocked(r.artistName, r.collectionName ?? '')
-        );
-        const hits     = allHits.filter(r => !isComp(r));
-        const fallback = allHits;
-
-        let hit = null;
-        // 1. Match album name AND year
-        if (albumName && albumYear) {
-          const na_album = normStr(albumName);
-          hit = hits.find(r => {
-            const rc = normStr(r.collectionName);
-            const ry = (r.releaseDate ?? '').slice(0, 4);
-            return (rc.includes(na_album) || na_album.includes(rc)) && ry === albumYear;
-          });
-        }
-        // 2. Match album name only
-        if (!hit && albumName) {
-          const na_album = normStr(albumName);
-          hit = hits.find(r => {
-            const rc = normStr(r.collectionName);
-            return rc.includes(na_album) || na_album.includes(rc);
-          });
-        }
-        let url = hit ? hit.artworkUrl100.replace('100x100bb','600x600bb') : null;
-
-        // 3. No album match — try MusicBrainz (accurate, full catalog incl. indie/Bandcamp)
-        if (!hit) url = await fetchArtMusicBrainz(artist, title);
-
-        // 4. MusicBrainz also failed — match by song title in iTunes as last resort
-        if (!url) {
-          const nt = normStr(title);
-          hit = hits.find(r => {
-            const rt = normStr(r.trackName ?? '');
-            return rt === nt || rt.includes(nt) || nt.includes(rt);
-          }) ?? hits[0] ?? fallback[0];
-          url = hit?.artworkUrl100?.replace('100x100bb','600x600bb') ?? null;
-        }
-
-        artCache[key] = url;
-        if (url) saveArtCache();
-        return url;
-      } catch {
-        // iTunes down — show logo fallback, don't try MusicBrainz
-        artCache[key] = null;
-        return null;
-      }
+      return null;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
