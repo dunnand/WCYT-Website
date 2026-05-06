@@ -690,15 +690,22 @@
     }
 
     // ── State ──────────────────────────────────────────────────────────────────
-    const state = { point: { currentKey: null, djActive: false }, wcyt: { currentKey: null, djActive: false } };
+    const state = {
+      point: { currentKey: null, djActive: false, lastArt: null, lastTime: null },
+      wcyt:  { currentKey: null, djActive: false, lastArt: null, lastTime: null }
+    };
+    // Live recently-played history built from Icecast polls — always real-time.
+    // BSI files are only used as a seed on first load, then this takes over.
+    const liveHistory = { point: [], wcyt: [] };
 
-    // ── BSI refresh — album/year + recently played only ───────────────────────
+    // ── BSI refresh — album name only (recently played now comes from liveHistory) ──
     async function refreshBSI(key, bsiFile) {
       const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
       const bsi = await fetchBSI(bsiFile);
-      renderRecent(key + '-recent', bsi.recent, fallback);
-      // Only write album if BSI title matches the currently displayed song title.
-      // Use normStr on both sides so apostrophes/accents/punctuation don't break the match.
+      // Use live history if we have any entries; fall back to BSI on first load
+      renderRecent(key + '-recent',
+        liveHistory[key].length > 0 ? liveHistory[key] : bsi.recent,
+        fallback);
       const currentTitle = normStr((state[key].currentKey || '').split('|')[1] || '');
       const el = document.getElementById(key + '-album');
       if (el && bsi.album && currentTitle && normStr(bsi.title) === currentTitle) el.textContent = bsi.album;
@@ -713,7 +720,9 @@
       const nameEl    = document.getElementById(key + '-show-name');
 
       const bsi = await fetchBSI(bsiFile);
-      renderRecent(key + '-recent', bsi.recent, fallback);
+      renderRecent(key + '-recent',
+        liveHistory[key].length > 0 ? liveHistory[key] : bsi.recent,
+        fallback);
 
       const dj         = getActiveDJ(key);
       const showActive = dj && !dj.onBreak && dj.showName;
@@ -729,6 +738,17 @@
       }
 
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
+      if (songKey !== state[key].currentKey && state[key].currentKey) {
+        // Song changed — push the outgoing song into live history
+        const [prevArtist, prevTitle] = state[key].currentKey.split('|');
+        liveHistory[key].unshift({
+          time:   state[key].lastTime || '',
+          artist: prevArtist || '',
+          title:  prevTitle  || '',
+          art:    state[key].lastArt  || null,
+        });
+        if (liveHistory[key].length > RECENT_LIMIT) liveHistory[key].length = RECENT_LIMIT;
+      }
       if (songKey === state[key].currentKey) {
         const el = document.getElementById(key + '-album');
         if (el && bsi.album && normStr(bsi.title) === normStr(parsed.title)) el.textContent = bsi.album;
@@ -747,6 +767,9 @@
       }
       state[key].currentKey = songKey;
       state[key].djActive   = !!showActive;
+      state[key].lastTime   = new Date().toLocaleTimeString('en-US',
+        { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+      state[key].lastArt    = null;
 
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
       const maxLines = STATION ? 3 : 2;
@@ -787,6 +810,7 @@
       const art = showActive && dj.imageUrl
         ? dj.imageUrl
         : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
+      state[key].lastArt = (art !== fallback) ? art : null;
 
       set(key + '-artist', parsed.artist);
       fitArtist(key + '-artist');
