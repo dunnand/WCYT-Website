@@ -526,23 +526,6 @@
       } catch {}
     }
 
-    // ── iTunes art ─────────────────────────────────────────────────────────────
-    const ART_CACHE_KEY = 'wcyt-display-art-cache';
-    const ART_CACHE_MAX = 500;
-    let artCache = (() => {
-      try { return JSON.parse(localStorage.getItem(ART_CACHE_KEY) || '{}'); } catch { return {}; }
-    })();
-    function saveArtCache() {
-      try {
-        const keys = Object.keys(artCache);
-        if (keys.length > ART_CACHE_MAX) {
-          const trimmed = {};
-          keys.slice(-ART_CACHE_MAX).forEach(k => { trimmed[k] = artCache[k]; });
-          artCache = trimmed;
-        }
-        localStorage.setItem(ART_CACHE_KEY, JSON.stringify(artCache));
-      } catch {}
-    }
     function normStr(s) {
       return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
         .toLowerCase().replace(/\s*&\s*/g,'and').replace(/[^a-z0-9]/g,'');
@@ -586,35 +569,6 @@
       ['arctic monkeys',    'help'],
       ['ween',              'chocolate and cheese'],
     ];
-    function artIsBlocked(artist, collection) {
-      const a = normStr(artist), b = normStr(collection);
-      return BLOCKED_ART.some(([ba, bb]) => a.includes(normStr(ba)) && (bb === '' || b.includes(normStr(bb))));
-    }
-
-    async function fetchArtMusicBrainz(artist, title) {
-      try {
-        const q   = encodeURIComponent(`recording:"${title}" AND artist:"${artist}"`);
-        const res = await fetch(`https://musicbrainz.org/ws/2/recording/?query=${q}&limit=5&fmt=json&inc=release-groups`, {
-          headers: { 'User-Agent': 'WCYTDisplay/1.0 (dunnand@gmail.com)' }
-        });
-        const data = await res.json();
-        const recordings = data.recordings ?? [];
-        const rgidsSeen = new Set();
-        for (const rec of recordings) {
-          for (const rel of (rec.releases ?? [])) {
-            const rgid = rel['release-group']?.id;
-            if (!rgid || rgidsSeen.has(rgid)) continue;
-            rgidsSeen.add(rgid);
-            // Prefer release-group art — canonical, consistent across all editions
-            const url  = `https://coverartarchive.org/release-group/${rgid}/front-500.jpg`;
-            const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
-            if (head.ok) return url;
-          }
-        }
-      } catch {}
-      return null;
-    }
-
     async function fetchArt(artist, title, album) {
       const key = (artist + '|' + title).toLowerCase();
       // Only use art that has been approved in the review tool.

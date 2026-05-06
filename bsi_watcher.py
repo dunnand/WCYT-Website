@@ -557,13 +557,7 @@ def main():
         if now - last_wav_scan >= WAV_SCAN_INTERVAL:
             last_wav_scan = now
             scan_and_fetch_new_wav_art()
-            # If art_overrides.json was updated, stage it for push
-            ao_rel = os.path.join('images', 'art_overrides.json')
-            new_mtime = get_mtime(os.path.join(REPO_DIR, ao_rel))
-            if ao_rel not in local_mtimes or new_mtime != local_mtimes.get(ao_rel, 0):
-                local_mtimes[ao_rel] = new_mtime
-                pending.add(ao_rel)
-                last_change = now
+            # watch_overrides.ps1 handles pushing art_overrides.json when it changes
 
 if __name__ == "__main__":
     while True:
