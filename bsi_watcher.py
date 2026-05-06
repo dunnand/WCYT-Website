@@ -31,7 +31,6 @@ IMAGE_EXTS      = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 
 # Local files already written to this PC by Simian
 LOCAL_FILES = [
-    os.path.join("images", "art_overrides.json"),
 ]
 
 # Network files: (network_source_path, local_dest_filename)
