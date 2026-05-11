@@ -398,7 +398,7 @@ def scan_and_fetch_new_wav_art():
         progress = {}
 
     try:
-        ov_data   = json.loads(open(ART_OVERRIDES_FILE, encoding='utf-8').read())
+        ov_data   = json.loads(open(ART_OVERRIDES_FILE, encoding='utf-8-sig').read())
     except Exception:
         ov_data   = {'overrides': {}, 'newBlockedArt': []}
     overrides = ov_data.get('overrides', {})
