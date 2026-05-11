@@ -267,6 +267,11 @@ _ITUNES_REJECT = [
     "now that's what i call",'hits of','music of','sounds of','songs of',
     'lounge','chillout','chill out',
 ]
+_ITUNES_SECONDARY = [
+    'deluxe','super deluxe','expanded','remaster','remastered',
+    'anniversary','bonus','special edition','greatest hits','best of',
+    'collection','anthology','compilation','soundtrack',
+]
 
 def _strip_diacritics(s):
     import unicodedata
@@ -310,16 +315,21 @@ def fetch_wav_art_url(artist, title):
         log(f'[WAV-art] iTunes error: {e}')
         return None
 
-    nt   = _norm(title)
-    hits = []
+    nt       = _norm(title)
+    primary  = []
+    secondary = []
     for r in results:
         if na not in _norm_artist(r.get('artistName', '')):
             continue
         col = (r.get('collectionName') or '').lower()
         if any(t in col for t in _ITUNES_REJECT):
             continue
-        hits.append(r)
+        if any(t in col for t in _ITUNES_SECONDARY):
+            secondary.append(r)
+        else:
+            primary.append(r)
 
+    hits  = primary or secondary
     match = next((r for r in hits if _norm(r.get('trackName', '')) == nt), None) \
             or (hits[0] if hits else None)
     if match:
