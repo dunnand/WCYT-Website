@@ -694,12 +694,11 @@
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
       if (songKey !== state[key].currentKey && state[key].currentKey) {
         // Song changed — push the outgoing song into live history
-        const [prevArtist, prevTitle] = state[key].currentKey.split('|');
         liveHistory[key].unshift({
-          time:   state[key].lastTime || '',
-          artist: prevArtist || '',
-          title:  prevTitle  || '',
-          art:    state[key].lastArt  || null,
+          time:   state[key].lastTime   || '',
+          artist: state[key].lastArtist || '',
+          title:  state[key].lastTitle  || '',
+          art:    state[key].lastArt    || null,
         });
         if (liveHistory[key].length > RECENT_LIMIT) liveHistory[key].length = RECENT_LIMIT;
       }
@@ -719,11 +718,13 @@
         state[key].djActive = !!showActive;
         return;
       }
-      state[key].currentKey = songKey;
-      state[key].djActive   = !!showActive;
-      state[key].lastTime   = new Date().toLocaleTimeString('en-US',
+      state[key].currentKey  = songKey;
+      state[key].djActive    = !!showActive;
+      state[key].lastArtist  = parsed.artist;
+      state[key].lastTitle   = parsed.title;
+      state[key].lastTime    = new Date().toLocaleTimeString('en-US',
         { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-      state[key].lastArt    = null;
+      state[key].lastArt     = null;
 
       const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
       const maxLines = STATION ? 3 : 2;
