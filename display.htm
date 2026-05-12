@@ -523,10 +523,6 @@
             v ? v.replace('500x500bb', '600x600bb') : v
           ])
         );
-        // Merge albums blocked via the review tool into the runtime block list
-        for (const entry of (data.newBlockedArt || [])) {
-          BLOCKED_ART.push(entry);
-        }
         // If a song is currently showing fallback (no art found), clear its key so
         // the next poll re-checks — handles both startup race and new overrides added
         for (const key of ['point', 'wcyt']) {
@@ -541,65 +537,16 @@
       return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
         .toLowerCase().replace(/\s*&\s*/g,'and').replace(/[^a-z0-9]/g,'');
     }
-    const normArtist = normStr;
 
-    // album text from BSI looks like "Weezer • 1994" — extract name and year separately
-    function parseAlbum(s) {
-      const m = (s ?? '').match(/^(.+?)\s*[•·]\s*(\d{4})\s*$/);
-      if (m) return { name: m[1].trim(), year: m[2] };
-      return { name: (s ?? '').trim(), year: '' };
-    }
-
-    // Albums whose iTunes art should not be shown on air
-    const BLOCKED_ART = [
-      ['pixies',            'surfer rosa'],
-      ['janes addiction',   'nothings shocking'],
-      ['janes addiction',   'ritual de lo habitual'],
-      ['nirvana',           'nevermind'],
-      ['nirvana',           'in utero'],
-      ['red hot chili peppers', 'mothers milk'],
-      ['blind faith',       'blind faith'],
-      ['the slits',         'cut'],
-      ['pulp',              'this is hardcore'],
-      ['pulp',              'this'],
-      ['sky ferreira',      'night time my time'],
-      ['lorde',             'solar power'],
-      ['the strokes',       'is this it'],
-      ['the black crowes',  'amorica'],
-      ['guns n roses',      'appetite for destruction'],
-      ['lucius',            'wildewoman'],
-      ['methyl ethel',      'everything is forgotten'],
-      ['of montreal',       'skeletal lamping'],
-      ['of montreal',       'innocence reaches'],
-      ['sigur ros',         'med sud i eyrum vid spilum endalaust'],
-      ['sufjan stevens',    'a beginners mind'],
-      ['the damned',        ''],
-      ['the drums',         'jonny'],
-      ['tv girl',           'death of a party girl'],
-      ['avalon emerson',    'perpetual emotion machine'],
-      ['arctic monkeys',    'help'],
-      ['ween',              'chocolate and cheese'],
-    ];
     function artKey(artist, title) {
-      // Normalize & ↔ and so WAV metadata and stream titles always match
       return (artist + '|' + title).toLowerCase().replace(/\s*&\s*/g, ' and ');
     }
 
+    // Art is approval-gated: only items explicitly approved in the review tool
+    // appear in art_overrides.json, so this is a simple key lookup.
     async function fetchArt(artist, title, album) {
-      // Check blocked list first — overrides never win against a block
-      const na  = normArtist(artist);
-      const alb = normStr(parseAlbum(album).name);
-      if (BLOCKED_ART.some(([ba, bb]) => normStr(ba) === na && (bb === '' || normStr(bb) === alb))) {
-        return null;
-      }
-      // BSI album data can lag behind Icecast by ~10s. If album is unknown but this
-      // artist has album-specific blocks, withhold art until BSI confirms the album is safe.
-      if (!alb && BLOCKED_ART.some(([ba, bb]) => normStr(ba) === na && bb !== '')) {
-        return null;
-      }
       const key = artKey(artist, title);
-      if (key in artOverrides) return artOverrides[key];
-      return null;
+      return artOverrides[key] || null;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
