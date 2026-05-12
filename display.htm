@@ -516,9 +516,12 @@
         const res  = await fetch('/images/art_overrides.json?t=' + Date.now(), { cache: 'no-store' });
         const data = await res.json();
         const raw  = data.overrides || {};
-        // Upsize from 500×500 to 600×600 for the display
+        // Normalize & → and in keys, and upsize art from 500×500 to 600×600
         artOverrides = Object.fromEntries(
-          Object.entries(raw).map(([k, v]) => [k, v ? v.replace('500x500bb', '600x600bb') : v])
+          Object.entries(raw).map(([k, v]) => [
+            k.replace(/\s*&\s*/g, ' and '),
+            v ? v.replace('500x500bb', '600x600bb') : v
+          ])
         );
         // Merge albums blocked via the review tool into the runtime block list
         for (const entry of (data.newBlockedArt || [])) {
@@ -570,6 +573,11 @@
       ['arctic monkeys',    'help'],
       ['ween',              'chocolate and cheese'],
     ];
+    function artKey(artist, title) {
+      // Normalize & ↔ and so WAV metadata and stream titles always match
+      return (artist + '|' + title).toLowerCase().replace(/\s*&\s*/g, ' and ');
+    }
+
     async function fetchArt(artist, title, album) {
       // Check blocked list first — overrides never win against a block
       const na  = normArtist(artist);
@@ -577,7 +585,7 @@
       if (BLOCKED_ART.some(([ba, bb]) => normStr(ba) === na && (bb === '' || normStr(bb) === alb))) {
         return null;
       }
-      const key = (artist + '|' + title).toLowerCase();
+      const key = artKey(artist, title);
       if (key in artOverrides) return artOverrides[key];
       return null;
     }
