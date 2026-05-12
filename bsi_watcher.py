@@ -113,16 +113,21 @@ def parse_backup_ini(path):
     try:    auto_step = int(auto_step_raw)
     except: auto_step = 0
 
+    log_base     = os.path.basename(log_name).lower() if log_name else ""
+    today_bsi    = time.strftime("%m%d%y") + ".bsi"
+    log_date_ok  = (log_base == today_bsi) if log_name else False
+
     mode_map = {0: "off", 1: "assist", 2: "auto"}
     return {
-        "logLoaded": bool(log_name),
-        "logFile":   os.path.basename(log_name) if log_name else "",
-        "playing":   playing,
-        "mode":      mode_map.get(auto_step, "off"),
-        "autoStep":  auto_step,
-        "row":       row,
-        "logTime":   log_time,
-        "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "logLoaded":  bool(log_name),
+        "logFile":    log_base,
+        "logDateOk":  log_date_ok,
+        "playing":    playing,
+        "mode":       mode_map.get(auto_step, "off"),
+        "autoStep":   auto_step,
+        "row":        row,
+        "logTime":    log_time,
+        "updatedAt":  time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
 # ── Logging ───────────────────────────────────────────────────────────────────
@@ -493,6 +498,7 @@ def main():
     last_status   = {}  # station_key -> last successfully pushed sig
     last_failed   = {}  # station_key -> time.time() of last failed push
     RETRY_DELAY   = 30  # seconds to wait before retrying a failed push
+    last_date     = time.strftime("%m%d%y")  # track day boundary for logDateOk re-push
 
     known_images = set(scan_show_images())
 
@@ -539,6 +545,12 @@ def main():
             pending.add(os.path.join("images", "shows", "manifest.json"))
             last_change = now
 
+        # At midnight, logDateOk flips — force a re-push even if Backup.ini didn't change
+        current_date = time.strftime("%m%d%y")
+        if current_date != last_date:
+            last_date = current_date
+            last_status.clear()
+
         # Check Backup.ini files — push to JSONBin only when values actually change
         for src, dest, station_key in STATUS_SOURCES:
             new_mtime = get_mtime(src)
@@ -546,7 +558,7 @@ def main():
                 status_mtimes[src] = new_mtime
                 status = parse_backup_ini(src)
                 if status:
-                    sig = (status['mode'], status['logLoaded'], status['playing'])
+                    sig = (status['mode'], status['logLoaded'], status.get('logDateOk', True), status['playing'])
                     if last_status.get(station_key) != sig:
                         failed_at = last_failed.get(station_key, 0)
                         if now - failed_at < RETRY_DELAY:

@@ -295,8 +295,9 @@
     .badge-auto   { background: #27ae60; }
     .badge-assist { background: #e67e22; }
     .badge-off    { background: #c0392b; }
-    .badge-log-yes { background: #1a6e3c; }
-    .badge-log-no  { background: #c0392b; }
+    .badge-log-yes  { background: #1a6e3c; }
+    .badge-log-warn { background: #d97706; }
+    .badge-log-no   { background: #c0392b; }
 
     /* ── Clock / player bar ── */
     .clock-bar {
@@ -886,8 +887,9 @@
       else                          { modeEl.classList.add('badge-off');    modeEl.textContent = 'OFF'; }
 
       logEl.className = 'simian-badge visible';
-      if (s.logLoaded) { logEl.classList.add('badge-log-yes'); logEl.textContent = 'LOG'; }
-      else             { logEl.classList.add('badge-log-no');  logEl.textContent = 'NO LOG'; }
+      if (!s.logLoaded)                          { logEl.classList.add('badge-log-no');   logEl.textContent = 'NO LOG'; }
+      else if (s.logDateOk === false)            { logEl.classList.add('badge-log-warn'); logEl.textContent = 'OLD LOG'; }
+      else                                       { logEl.classList.add('badge-log-yes');  logEl.textContent = 'LOG'; }
     }
 
     const JSONBIN_KEY = '$2a$10$3JxMllL6YGZtbEqwOQTbFeww2P.sNZ.b.aPWPreit5UwyM1pFHxie';
