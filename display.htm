@@ -527,6 +527,13 @@
         for (const entry of (data.newBlockedArt || [])) {
           BLOCKED_ART.push(entry);
         }
+        // If a song is currently showing fallback (no art found), clear its key so
+        // the next poll re-checks — handles both startup race and new overrides added
+        for (const key of ['point', 'wcyt']) {
+          if (state[key]?.currentKey && !state[key].lastArt) {
+            state[key].currentKey = null;
+          }
+        }
       } catch {}
     }
 
@@ -935,11 +942,10 @@
       bottom.querySelector('.panel-label').style.color = isPoint ? '#aaa' : '#666';
     }
 
-    loadArtOverrides();
+    loadArtOverrides().then(() => poll()); // wait for overrides before first poll — avoids blank art on startup
     setInterval(loadArtOverrides, 10 * 60_000); // refresh overrides every 10 min
     fetchDJPanel();
     setInterval(fetchDJPanel, 30_000);
-    poll();
     setInterval(poll, 10_000);
     // Refresh BSI album/year independently every 10 seconds
     setInterval(() => {
