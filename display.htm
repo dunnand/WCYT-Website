@@ -571,9 +571,13 @@
       ['ween',              'chocolate and cheese'],
     ];
     async function fetchArt(artist, title, album) {
+      // Check blocked list first — overrides never win against a block
+      const na  = normArtist(artist);
+      const alb = normStr(parseAlbum(album).name);
+      if (BLOCKED_ART.some(([ba, bb]) => normStr(ba) === na && (bb === '' || normStr(bb) === alb))) {
+        return null;
+      }
       const key = (artist + '|' + title).toLowerCase();
-      // Only use art that has been approved in the review tool.
-      // Anything without an explicit entry shows the station logo.
       if (key in artOverrides) return artOverrides[key];
       return null;
     }

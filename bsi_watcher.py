@@ -272,6 +272,41 @@ _ITUNES_REJECT = [
     "now that's what i call",'hits of','music of','sounds of','songs of',
     'lounge','chillout','chill out',
 ]
+_BLOCKED_ART = [
+    ('sigur ros',                'med sud i eyrum vid spilum endalaust'),
+    ('pixies',                   'surfer rosa'),
+    ('janes addiction',          'nothings shocking'),
+    ('janes addiction',          'ritual de lo habitual'),
+    ('nirvana',                  'nevermind'),
+    ('nirvana',                  'in utero'),
+    ('red hot chili peppers',    'mothers milk'),
+    ('blind faith',              'blind faith'),
+    ('the slits',                'cut'),
+    ('pulp',                     'this is hardcore'),
+    ('pulp',                     'this'),
+    ('sky ferreira',             'night time my time'),
+    ('lorde',                    'solar power'),
+    ('the strokes',              'is this it'),
+    ('the black crowes',         'amorica'),
+    ('guns n roses',             'appetite for destruction'),
+    ('lucius',                   'wildewoman'),
+    ('methyl ethel',             'everything is forgotten'),
+    ('of montreal',              'skeletal lamping'),
+    ('of montreal',              'innocence reaches'),
+    ('sufjan stevens',           'a beginners mind'),
+    ('the damned',               ''),
+    ('the drums',                'jonny'),
+    ('tv girl',                  'death of a party girl'),
+    ('avalon emerson',           'perpetual emotion machine'),
+    ('arctic monkeys',           'help'),
+    ('ween',                     'chocolate and cheese'),
+    ('afghan whigs',             'congregation'),
+]
+
+def _is_art_blocked(artist, album):
+    na, alb = _norm_artist(artist), _norm(album)
+    return any(na == ba and (bb == '' or alb == bb) for ba, bb in _BLOCKED_ART)
+
 _ITUNES_SECONDARY = [
     'deluxe','super deluxe','expanded','remaster','remastered',
     'anniversary','bonus','special edition','greatest hits','best of',
@@ -339,8 +374,9 @@ def fetch_wav_art_url(artist, title):
             or (hits[0] if hits else None)
     if match:
         url = match.get('artworkUrl100', '')
-        return url.replace('100x100bb', '500x500bb') if url else None
-    return None
+        album_name = match.get('collectionName', '')
+        return (url.replace('100x100bb', '500x500bb') if url else None), album_name
+    return None, ''
 
 ART_REVIEW_FILE = r'C:\Users\Andy\Desktop\New Art Review.html'
 
@@ -457,7 +493,10 @@ def scan_and_fetch_new_wav_art():
             else:
                 log(f'[WAV-art] {artist} – {title}')
                 time.sleep(WAV_FETCH_DELAY)
-                url = fetch_wav_art_url(artist, title)
+                url, matched_album = fetch_wav_art_url(artist, title)
+                if url and _is_art_blocked(artist, matched_album):
+                    log(f'[WAV-art]   blocked ({matched_album}) — skipping')
+                    url = None
                 progress[src] = url
                 if url:
                     overrides[key] = url
