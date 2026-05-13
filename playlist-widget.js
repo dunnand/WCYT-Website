@@ -747,9 +747,10 @@
       const bsiTitle  = doc.querySelector('.title')?.textContent.trim()  || '';
       const blocks = doc.querySelectorAll('.sidebar-content');
       const lines  = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
+      const decodeHTML = s => { const el = document.createElement('textarea'); el.innerHTML = s; return el.value; };
       const all = [];
       for (const line of lines) {
-        const text = line.trim();
+        const text = decodeHTML(line.trim());
         if (!text) continue;
         if (BLOCKED_TERMS.some(b => text.toLowerCase().includes(b))) continue;
         const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
