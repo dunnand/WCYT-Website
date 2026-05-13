@@ -432,28 +432,12 @@
   // Key: "artist|songtitle" (lowercased). Value: image URL.
   // Loaded once from /images/art_overrides.json on startup.
   let SONG_ART_OVERRIDES = {};
-  let songOverridesLoaded = false;
-
   async function loadSongOverrides() {
-    if (songOverridesLoaded) return;
-    songOverridesLoaded = true;
     try {
       const res = await fetch('/images/art_overrides.json?_t=' + Date.now(), { cache: 'no-store' });
       if (!res.ok) return;
       const data = await res.json();
       SONG_ART_OVERRIDES = data.overrides || {};
-      // Inject overrides directly into artCache so they win over any stale cached value
-      Object.entries(SONG_ART_OVERRIDES).forEach(([key, url]) => {
-        artCache[key] = url;
-      });
-      saveArtCache();
-      if (Array.isArray(data.newBlockedArt)) {
-        data.newBlockedArt.forEach(entry => {
-          if (!BLOCKED_ART.some(b => b[0] === entry[0] && b[1] === entry[1])) {
-            BLOCKED_ART.push(entry);
-          }
-        });
-      }
     } catch { /* file not present yet — fine */ }
   }
 
@@ -645,18 +629,7 @@
   }
 
   async function fetchArt(artist, title, albumLine = '') {
-    const key = artCacheKey(artist, title);
-    if (key in artCache) return artCache[key];
-    const override = artOverride(artist, title);
-    if (override) { artCache[key] = override; saveArtCache(); return override; }
-    artCache[key] = null; // in-memory null so we don't double-fetch this session
-    try {
-      artCache[key] = await fetchArtFromiTunes(artist, title, albumLine);
-    } catch {
-      // iTunes down — show logo fallback, don't try MusicBrainz
-    }
-    if (artCache[key]) saveArtCache(); // only persist successes
-    return artCache[key];
+    return artOverride(artist, title) || null;
   }
 
   // ── Current show (Google Sheet) ───────────────────────────────────────────
@@ -1344,6 +1317,7 @@
       fetchDJPanel();
       pollTimer = setInterval(() => { fetchNowPlaying(); fetchCurrentShow(); }, POLL_MS);
       setInterval(fetchDJPanel, 30_000); // DJ panel — poll every 30s for timely on-air updates
+      setInterval(loadSongOverrides, 10 * 60_000); // refresh art overrides every 10 min
       tickTimer = setInterval(tickAges, 30_000);
     },
     togglePlay()       { togglePlay(); },
