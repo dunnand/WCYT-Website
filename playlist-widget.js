@@ -513,7 +513,7 @@
     ['pantera',                   'far beyond driven'],
     ['slayer',                    'christ illusion'],
     ['ween',                      'chocolate cheese'],
-    ['bauhaus',                   ''],
+    ['bauhaus',                   'in the flat field'],
 	['the strokes',				  'is this it'],
 	['suki waterhour',			  'good looking'],
   ];
