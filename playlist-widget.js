@@ -917,10 +917,10 @@
     const manualSetAt     = djP?.manualSetAt ? new Date(djP.manualSetAt) : null;
     const manualStale     = manualSetAt && songObj?.startedAt > manualSetAt;
     const overridesActive = !manualStale;
-    const showDJImage     = djP && !manualStale;
+    const showDJImage     = djP && !djP.onBreak && !manualStale;
 
-    const dispArt    = (showDJImage && showArt)
-                     ? showArt
+    const dispArt    = (showDJImage && djP?.imageUrl)
+                     ? djP.imageUrl
                      : (songObj?.artUrl || null);
     const dispArtist = (djP?.manualArtist && overridesActive) ? djP.manualArtist
                      : (songObj?.artist || null);
@@ -1040,7 +1040,7 @@
     compactEl.innerHTML = `
       <div class="wcyt-compact">
         <div class="wcyt-compact-now">
-          ${song ? backdropDiv(compactShowArt || song.artUrl) : ''}
+          ${song ? backdropDiv(song.artUrl) : ''}
           <div class="wcyt-compact-header">
             <span class="wcyt-label">NOW PLAYING</span>
             <span class="wcyt-bars" aria-hidden="true">
@@ -1049,7 +1049,7 @@
           </div>
           ${song ? `
             <div class="wcyt-compact-song">
-              ${artImg(compactShowArt || song.artUrl, 140, 'wcyt-compact-art')}
+              ${artImg(song.artUrl, 140, 'wcyt-compact-art')}
               <div class="wcyt-compact-song-text">
                 <div class="wcyt-artist">${esc(song.artist || 'WCYT')}</div>
                 <div class="wcyt-title">${esc(song.title)}</div>
@@ -1101,7 +1101,7 @@
     fullEl.innerHTML = `
       <div class="wcyt-full">
         <div class="wcyt-full-now-card">
-          ${song ? backdropDiv(fullShowArt || song.artUrl) : ''}
+          ${song ? backdropDiv(song.artUrl) : ''}
           <div class="wcyt-full-card-header">
             <span class="wcyt-label">NOW PLAYING</span>
             <span class="wcyt-bars wcyt-bars--lg" aria-hidden="true">
@@ -1110,7 +1110,7 @@
           </div>
           ${song ? `
             <div class="wcyt-full-song">
-              ${artImg(fullShowArt || song.artUrl, 340, 'wcyt-full-art')}
+              ${artImg(song.artUrl, 340, 'wcyt-full-art')}
               <div class="wcyt-full-song-text">
                 <div class="wcyt-full-artist">${esc(song.artist || 'WCYT')}</div>
                 <div class="wcyt-full-title">${esc(song.title)}</div>
