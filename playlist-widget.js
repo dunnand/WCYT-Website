@@ -21,7 +21,7 @@
 
   // ── BSI output files (album/year data from Simian) ────────────────────────
   // Raw GitHub URL bypasses the GitHub Pages CDN — updates within seconds of a push
-  const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main';
+  const RAW_BASE = '';
   const BSI_FILES = [
     '/Point_Display_OUT.htm', // station 0 — The Point
     '/2_Display_OUT.htm',     // station 1 — 2.0
@@ -629,7 +629,12 @@
   }
 
   async function fetchArt(artist, title, albumLine = '') {
-    return artOverride(artist, title) || null;
+    const url = artOverride(artist, title) || null;
+    if (url) {
+      const key = artCacheKey(artist, title);
+      if (!artCache[key]) { artCache[key] = url; saveArtCache(); }
+    }
+    return url;
   }
 
   // ── Current show (Google Sheet) ───────────────────────────────────────────

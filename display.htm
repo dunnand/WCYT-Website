@@ -489,8 +489,7 @@
     const FALLBACK_POINT = '/images/91fm.png';
     const FALLBACK_2     = '/images/shows/2.0%20Logo.png';
     const BLOCKED_TERMS  = ['liner','legal id','btyb','sponsor'];
-    // Fetch BSI files from raw GitHub (bypasses GitHub Pages CDN — updates in seconds)
-    const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main';
+    const RAW_BASE = '';
 
     // ── DJ Panel ───────────────────────────────────────────────────────────────
     const DJ_EXPIRE_MS = 30 * 60 * 1000;
@@ -897,7 +896,7 @@
     loadArtOverrides().then(() => poll()); // wait for overrides before first poll — avoids blank art on startup
     setInterval(loadArtOverrides, 10 * 60_000); // refresh overrides every 10 min
     fetchDJPanel();
-    setInterval(fetchDJPanel, 30_000);
+    setInterval(fetchDJPanel, 5 * 60_000);
     setInterval(poll, 10_000);
     // Refresh BSI album/year independently every 10 seconds
     setInterval(() => {
