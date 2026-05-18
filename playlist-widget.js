@@ -921,7 +921,7 @@
 
     const dispArt    = (showDJImage && showArt)
                      ? showArt
-                     : (songObj?.artUrl || showArt || null);
+                     : (songObj?.artUrl || null);
     const dispArtist = (djP?.manualArtist && overridesActive) ? djP.manualArtist
                      : (songObj?.artist || null);
     const dispTitle  = (djP?.manualTitle  && overridesActive) ? djP.manualTitle
