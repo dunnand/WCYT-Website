@@ -77,7 +77,7 @@
   let songHistory2   = [];     // recent plays for station 2
   let bsiRecent1     = [];     // recently played from BSI file, station 0
   let bsiRecent2     = [];     // recently played from BSI file, station 1
-  const ART_CACHE_KEY = 'wcyt-art-cache';
+  const ART_CACHE_KEY = 'wcyt-art-cache-v2';
   const ART_CACHE_MAX = 500;
   let artCache = (() => {
     try { return JSON.parse(localStorage.getItem(ART_CACHE_KEY) || '{}'); } catch { return {}; }
