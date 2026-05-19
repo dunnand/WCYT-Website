@@ -440,19 +440,30 @@
       SONG_ART_OVERRIDES = data.overrides || {};
       // If the current song loaded before overrides were ready, re-fetch its art now
       if (currentSong && !currentSong.artUrl) {
-        const url = artOverride(currentSong.artist, currentSong.title);
+        const url = artOverride(currentSong.artist, currentSong.title, currentSong.albumLine || '');
         if (url) { currentSong = { ...currentSong, artUrl: url }; render(); }
       }
       if (currentSong2 && !currentSong2.artUrl) {
-        const url = artOverride(currentSong2.artist, currentSong2.title);
+        const url = artOverride(currentSong2.artist, currentSong2.title, currentSong2.albumLine || '');
         if (url) { currentSong2 = { ...currentSong2, artUrl: url }; render(); }
       }
     } catch { /* file not present yet — fine */ }
   }
 
-  function artOverride(artist, title) {
+  function artOverride(artist, title, albumLine = '') {
     const songKey = (artist + '|' + (title || '')).toLowerCase();
     if (SONG_ART_OVERRIDES[songKey]) return SONG_ART_OVERRIDES[songKey];
+    // WAV files at the station are sometimes tagged with the album name as the
+    // song title, so art_overrides.json ends up keyed by album, not song title.
+    // Fall back to an album-name lookup using the BSI albumLine (e.g. "Green • 1988").
+    if (albumLine) {
+      const m = albumLine.match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
+      const album = m ? m[1].trim() : albumLine.trim();
+      if (album) {
+        const albumKey = (artist + '|' + album).toLowerCase();
+        if (SONG_ART_OVERRIDES[albumKey]) return SONG_ART_OVERRIDES[albumKey];
+      }
+    }
     const key = normArtist(artist);
     return ART_OVERRIDES[key] ?? null;
   }
@@ -638,7 +649,7 @@
   }
 
   async function fetchArt(artist, title, albumLine = '') {
-    const url = artOverride(artist, title) || null;
+    const url = artOverride(artist, title, albumLine) || null;
     if (url) {
       const key = artCacheKey(artist, title);
       if (!artCache[key]) { artCache[key] = url; saveArtCache(); }
