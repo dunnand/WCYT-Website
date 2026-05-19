@@ -158,14 +158,19 @@ _si.wShowWindow = 0  # SW_HIDE
 _GIT_EXE = r"C:\Program Files\Git\mingw64\bin\git.exe"
 
 def git(*args):
-    result = subprocess.run(
-        [_GIT_EXE] + list(args),
-        cwd=REPO_DIR,
-        capture_output=True,
-        text=True,
-        startupinfo=_si
-    )
-    return result.returncode, result.stdout.strip(), result.stderr.strip()
+    try:
+        result = subprocess.run(
+            [_GIT_EXE] + list(args),
+            cwd=REPO_DIR,
+            capture_output=True,
+            text=True,
+            startupinfo=_si,
+            timeout=30
+        )
+        return result.returncode, result.stdout.strip(), result.stderr.strip()
+    except subprocess.TimeoutExpired:
+        log(f"git {' '.join(args)} timed out after 30s")
+        return 1, "", "timeout"
 
 _GIT_LOCK = os.path.join(REPO_DIR, ".git", "index.lock")
 _GIT_HEAD = os.path.join(REPO_DIR, ".git", "HEAD")
