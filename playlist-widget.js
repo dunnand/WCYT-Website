@@ -438,6 +438,15 @@
       if (!res.ok) return;
       const data = await res.json();
       SONG_ART_OVERRIDES = data.overrides || {};
+      // If the current song loaded before overrides were ready, re-fetch its art now
+      if (currentSong && !currentSong.artUrl) {
+        const url = artOverride(currentSong.artist, currentSong.title);
+        if (url) { currentSong = { ...currentSong, artUrl: url }; render(); }
+      }
+      if (currentSong2 && !currentSong2.artUrl) {
+        const url = artOverride(currentSong2.artist, currentSong2.title);
+        if (url) { currentSong2 = { ...currentSong2, artUrl: url }; render(); }
+      }
     } catch { /* file not present yet — fine */ }
   }
 
@@ -1308,8 +1317,7 @@
       lfmLoad();
       lfmHandleCallback();
       initStickyPlayer();
-      loadSongOverrides();
-      fetchNowPlaying().then(() => {
+      loadSongOverrides().then(() => fetchNowPlaying()).then(() => {
         if (pendingAutoResume) {
           pendingAutoResume = false;
           const a = getAudio();
