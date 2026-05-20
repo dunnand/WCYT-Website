@@ -155,11 +155,16 @@ body { background: #0d0d0d; }
 .wcyt-hero-recent-art.wcyt-art-fallback { object-fit: contain; padding: 4px; background: #222; }
 .wcyt-hero-recent-track {
   flex: 1; min-width: 0; font-size: 15px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.wcyt-hero-recent-artist { font-weight: 600; color: #ddd; }
-.wcyt-hero-recent-sep { color: #555; margin: 0 4px; }
-.wcyt-hero-recent-title { color: #888; }
+.wcyt-hero-recent-artist {
+  font-weight: 600; color: #ddd;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
+.wcyt-hero-recent-sep { display: none; }
+.wcyt-hero-recent-title {
+  color: #888;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
 .wcyt-hero-recent-time { flex-shrink: 0; font-size: 13px; color: #555; font-variant-numeric: tabular-nums; }
 /* Scroll chevron */
 .wcyt-hero-scroll {

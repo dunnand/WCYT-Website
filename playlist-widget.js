@@ -801,22 +801,27 @@
         fetchBSIData(BSI_FILES[0]),
         fetchBSIData(BSI_FILES[1]),
       ]);
-      bsiRecent1 = bsi1.recent;
-      bsiRecent2 = bsi2.recent;
-      // Prefetch art for recent items into cache so next render has them
-      [...bsiRecent1, ...bsiRecent2].forEach(s => fetchArt(s.artist, s.title));
-
       // Station 1 — WCYT (drives history + full playlist page)
       const rawTitle1 = findSource(STATIONS[0].mount)?.title ?? null;
       console.log('[WCYTPlaylist] raw title WCYT:', rawTitle1);
       const parsed1tmp  = parseTitle(rawTitle1);
       const bsiMatch1   = bsi1.bsiTitle && bsi1.bsiTitle.trim().toLowerCase() === parsed1tmp.title.trim().toLowerCase();
       const album1      = bsiMatch1 ? bsi1.albumLine : '';
-      handleNewTitle(rawTitle1, album1);
 
       // Station 2 — track current song + history
       const raw2    = findSource(STATIONS[1].mount)?.title ?? null;
       const parsed2 = parseTitle(raw2);
+
+      // Filter out the currently-playing song from BSI recent (BSI sometimes writes
+      // the current song into recently-played before it's actually finished)
+      const nowKey1 = artCacheKey(parsed1tmp.artist, parsed1tmp.title);
+      const nowKey2 = artCacheKey(parsed2.artist, parsed2.title);
+      bsiRecent1 = bsi1.recent.filter(s => artCacheKey(s.artist, s.title) !== nowKey1);
+      bsiRecent2 = bsi2.recent.filter(s => artCacheKey(s.artist, s.title) !== nowKey2);
+      // Prefetch art for recent items into cache so next render has them
+      [...bsiRecent1, ...bsiRecent2].forEach(s => fetchArt(s.artist, s.title));
+
+      handleNewTitle(rawTitle1, album1);
       const bsiMatch2 = bsi2.bsiTitle && bsi2.bsiTitle.trim().toLowerCase() === parsed2.title.trim().toLowerCase();
       const album2    = bsiMatch2 ? bsi2.albumLine : '';
       if (!isBlocked(raw2, parsed2) && (parsed2.artist || parsed2.title !== 'On Air')) {
