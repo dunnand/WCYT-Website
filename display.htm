@@ -587,13 +587,18 @@
           .map(l => l.trim())
           .filter(l => l && !isBlocked(l));
 
-        // Recently played (block[1]) — reversed so newest first
+        // Recently played (block[1]) — reversed so newest first, deduplicated
         const recentLines = parseLines(blocks[1]?.innerHTML).reverse();
         const recent = [];
-        for (const line of recentLines.slice(0, RECENT_LIMIT)) {
+        const recentSeen = new Set();
+        for (const line of recentLines) {
+          if (recent.length >= RECENT_LIMIT) break;
           const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
           if (!m) continue;
           const [, time, a, t] = m;
+          const dedupeKey = (a.trim() + '|' + t.trim()).toLowerCase();
+          if (recentSeen.has(dedupeKey)) continue;
+          recentSeen.add(dedupeKey);
           const art = await fetchArt(a.trim(), t.trim(), album);
           recent.push({ time, artist: a.trim(), title: t.trim(), art });
         }
@@ -675,14 +680,17 @@
 
       const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
       if (songKey !== state[key].currentKey && state[key].currentKey) {
-        // Song changed — push the outgoing song into live history
-        liveHistory[key].unshift({
-          time:   state[key].lastTime   || '',
-          artist: state[key].lastArtist || '',
-          title:  state[key].lastTitle  || '',
-          art:    state[key].lastArt    || null,
-        });
-        if (liveHistory[key].length > RECENT_LIMIT) liveHistory[key].length = RECENT_LIMIT;
+        // Song changed — push the outgoing song into live history (skip if already present)
+        const prevKey = state[key].currentKey;
+        if (!liveHistory[key].some(h => (h.artist + '|' + h.title).toLowerCase() === prevKey)) {
+          liveHistory[key].unshift({
+            time:   state[key].lastTime   || '',
+            artist: state[key].lastArtist || '',
+            title:  state[key].lastTitle  || '',
+            art:    state[key].lastArt    || null,
+          });
+          if (liveHistory[key].length > RECENT_LIMIT) liveHistory[key].length = RECENT_LIMIT;
+        }
       }
       if (songKey === state[key].currentKey) {
         const el = document.getElementById(key + '-album');

@@ -758,8 +758,17 @@
         if (!m) continue;
         all.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
       }
-      // BSI lists oldest first — reverse so most recent is at top
-      const recent = all.reverse().slice(0, 3);
+      // BSI lists oldest first — reverse so most recent is at top, then deduplicate
+      all.reverse();
+      const bsiSeen = new Set();
+      const recent = [];
+      for (const item of all) {
+        if (recent.length >= 3) break;
+        const k = (item.artist + '|' + item.title).toLowerCase();
+        if (bsiSeen.has(k)) continue;
+        bsiSeen.add(k);
+        recent.push(item);
+      }
       return { albumLine, bsiTitle, recent };
     } catch { return { albumLine: '', bsiTitle: '', recent: [] }; }
   }
@@ -816,8 +825,11 @@
         if (key2 !== cur2) {
           if (currentSong2) {
             if (activeStation === 1) lfmOnSongEnd();
-            songHistory2.unshift({ ...currentSong2, endedAt: new Date() });
-            if (songHistory2.length > MAX_HISTORY) songHistory2.pop();
+            const outKey2 = artCacheKey(currentSong2.artist, currentSong2.title);
+            if (!songHistory2.some(h => artCacheKey(h.artist, h.title) === outKey2)) {
+              songHistory2.unshift({ ...currentSong2, endedAt: new Date() });
+              if (songHistory2.length > MAX_HISTORY) songHistory2.pop();
+            }
           }
           const artUrl = parsed2.artist ? await fetchArt(parsed2.artist, parsed2.title, album2) : null;
           currentSong2 = { ...parsed2, startedAt: new Date(), artUrl, albumLine: album2 };
@@ -877,8 +889,11 @@
     }
 
     if (activeStation === 0) lfmOnSongEnd();
-    songHistory.unshift({ ...currentSong, endedAt: new Date() });
-    if (songHistory.length > MAX_HISTORY) songHistory.pop();
+    const outKey = artCacheKey(currentSong.artist, currentSong.title);
+    if (!songHistory.some(h => artCacheKey(h.artist, h.title) === outKey)) {
+      songHistory.unshift({ ...currentSong, endedAt: new Date() });
+      if (songHistory.length > MAX_HISTORY) songHistory.pop();
+    }
 
     // Clear immediately, render blank while art loads
     currentSong = { ...parsed, startedAt: new Date(), artUrl: null, albumLine: '' };
