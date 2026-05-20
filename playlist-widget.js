@@ -78,7 +78,7 @@
   let bsiRecent1     = [];     // recently played from BSI file, station 0
   let bsiRecent2     = [];     // recently played from BSI file, station 1
   const ART_CACHE_KEY = 'wcyt-art-cache-v2';
-  const ART_CACHE_MAX = 500;
+  const ART_CACHE_MAX = 5000;
   let artCache = (() => {
     try { return JSON.parse(localStorage.getItem(ART_CACHE_KEY) || '{}'); } catch { return {}; }
   })();
@@ -461,7 +461,10 @@
       const album = m ? m[1].trim() : albumLine.trim();
       if (album) {
         const albumKey = (artist + '|' + album).toLowerCase();
-        if (SONG_ART_OVERRIDES[albumKey]) return SONG_ART_OVERRIDES[albumKey];
+        if (SONG_ART_OVERRIDES[albumKey]) {
+          SONG_ART_OVERRIDES[songKey] = SONG_ART_OVERRIDES[albumKey]; // learn song-title key
+          return SONG_ART_OVERRIDES[albumKey];
+        }
       }
     }
     const key = normArtist(artist);
