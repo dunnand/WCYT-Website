@@ -519,7 +519,7 @@
     ['ween',                      'chocolate cheese'],
     ['bauhaus',                   'in the flat field'],
 	['the strokes',				  'is this it'],
-	['suki waterhour',			  'good looking'],
+	['suki waterhouse',			  'good looking'],
   ];
 
   function artIsBlocked(artist, album) {
@@ -823,7 +823,11 @@
           if (activeStation === 1) render();
         } else if (currentSong2 && album2 && currentSong2.albumLine !== album2) {
           currentSong2.albumLine = album2;
-          if (activeStation === 1) render();
+          if (!currentSong2.artUrl) {
+            fetchArt(currentSong2.artist, currentSong2.title, album2).then(url => {
+              if (url) { currentSong2 = { ...currentSong2, artUrl: url }; if (activeStation === 1) render(); }
+            });
+          } else if (activeStation === 1) render();
         }
       } else {
         currentSong2 = null;
@@ -861,7 +865,11 @@
       // Same song — update album line if BSI just refreshed
       if (albumLine && currentSong.albumLine !== albumLine) {
         currentSong.albumLine = albumLine;
-        if (activeStation === 0) render();
+        if (!currentSong.artUrl) {
+          fetchArt(currentSong.artist, currentSong.title, albumLine).then(url => {
+            if (url) { currentSong = { ...currentSong, artUrl: url }; if (activeStation === 0) render(); }
+          });
+        } else if (activeStation === 0) render();
       }
       return;
     }

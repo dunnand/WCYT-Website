@@ -686,7 +686,8 @@
       }
       if (songKey === state[key].currentKey) {
         const el = document.getElementById(key + '-album');
-        if (el && bsi.album && normStr(bsi.title) === normStr(parsed.title)) el.textContent = bsi.album;
+        const bsiMatch = bsi.album && normStr(bsi.title) === normStr(parsed.title);
+        if (el && bsiMatch) el.textContent = bsi.album;
         if (showActive && dj.imageUrl) {
           artEl.src = dj.imageUrl;
         } else if (!showActive && state[key].djActive) {
@@ -695,6 +696,16 @@
             artEl.style.objectFit = '';
             artEl.style.padding   = '';
             artEl.src = url || fallback;
+          });
+        } else if (!state[key].lastArt && !showActive && bsiMatch) {
+          // Art lookup failed earlier because BSI hadn't caught up — retry now
+          fetchArt(parsed.artist, parsed.title, bsi.album).then(url => {
+            if (url) {
+              state[key].lastArt = url;
+              artEl.style.objectFit = '';
+              artEl.style.padding   = '';
+              artEl.src = url;
+            }
           });
         }
         state[key].djActive = !!showActive;
