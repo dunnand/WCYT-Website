@@ -649,11 +649,10 @@
   }
 
   async function fetchArt(artist, title, albumLine = '') {
+    const key = artCacheKey(artist, title);
+    if (artCache[key]) return artCache[key];
     const url = artOverride(artist, title, albumLine) || null;
-    if (url) {
-      const key = artCacheKey(artist, title);
-      if (!artCache[key]) { artCache[key] = url; saveArtCache(); }
-    }
+    if (url) { artCache[key] = url; saveArtCache(); }
     return url;
   }
 
@@ -888,6 +887,19 @@
     render();
   }
 
+  // Resolve art URL for any song object — checks live artUrl, then localStorage
+  // cache, then overrides (using albumLine if available). Used at render time so
+  // history items self-heal once overrides are loaded, without a re-fetch.
+  function resolvedArt(song) {
+    if (!song) return null;
+    if (song.artUrl) return song.artUrl;
+    const key = artCacheKey(song.artist, song.title);
+    if (artCache[key]) return artCache[key];
+    const url = artOverride(song.artist, song.title, song.albumLine || '');
+    if (url) { artCache[key] = url; saveArtCache(); }
+    return url || null;
+  }
+
   // ── Shared elements ───────────────────────────────────────────────────────
 
   function backdropDiv(artUrl) {
@@ -993,7 +1005,7 @@
                 <ul class="wcyt-hero-recent-list">
                   ${bsiRecent1.map(s => `
                     <li>
-                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 96, 'wcyt-hero-recent-art')}
+                      ${artImg(resolvedArt(s), 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
                         <span class="wcyt-hero-recent-artist">${esc(s.artist)}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
@@ -1028,7 +1040,7 @@
                 <ul class="wcyt-hero-recent-list">
                   ${bsiRecent2.map(s => `
                     <li>
-                      ${artImg(artCache[artCacheKey(s.artist, s.title)] || null, 96, 'wcyt-hero-recent-art')}
+                      ${artImg(resolvedArt(s), 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
                         <span class="wcyt-hero-recent-artist">${esc(s.artist)}</span>
                         <span class="wcyt-hero-recent-sep">&middot;</span>
@@ -1095,7 +1107,7 @@
             <ul class="wcyt-history-list">
               ${history.map(s => `
                 <li>
-                  ${artImg(s.artUrl, 36, 'wcyt-history-art')}
+                  ${artImg(resolvedArt(s), 36, 'wcyt-history-art')}
                   <span class="wcyt-history-time">${formatTime(s.startedAt)}</span>
                   <span class="wcyt-history-track">
                     <span class="wcyt-history-artist">${esc(s.artist || 'WCYT')}</span>
