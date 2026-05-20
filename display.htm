@@ -545,7 +545,18 @@
     // appear in art_overrides.json, so this is a simple key lookup.
     async function fetchArt(artist, title, album) {
       const key = artKey(artist, title);
-      return artOverrides[key] || null;
+      if (artOverrides[key]) return artOverrides[key];
+      // WAV files tagged with album name as INAM produce album-name keys.
+      // Fall back to album-name lookup using the BSI album field.
+      if (album) {
+        const m = album.match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
+        const albumName = m ? m[1].trim() : album.trim();
+        if (albumName) {
+          const albumKey = artKey(artist, albumName);
+          if (artOverrides[albumKey]) return artOverrides[albumKey];
+        }
+      }
+      return null;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
