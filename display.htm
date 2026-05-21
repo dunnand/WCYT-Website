@@ -512,7 +512,7 @@
     let artOverrides = {};
     async function loadArtOverrides() {
       try {
-        const res  = await fetch('/images/art_overrides.json?t=' + Date.now(), { cache: 'no-store' });
+        const res  = await fetch('/images/art_overrides.json', { cache: 'no-cache' });
         const data = await res.json();
         const raw  = data.overrides || {};
         // Normalize & → and in keys, and upsize art from 500×500 to 600×600

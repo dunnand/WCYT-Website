@@ -434,7 +434,7 @@
   let SONG_ART_OVERRIDES = {};
   async function loadSongOverrides() {
     try {
-      const res = await fetch('/images/art_overrides.json?_t=' + Date.now(), { cache: 'no-store' });
+      const res = await fetch('/images/art_overrides.json', { cache: 'no-cache' });
       if (!res.ok) return;
       const data = await res.json();
       SONG_ART_OVERRIDES = data.overrides || {};
