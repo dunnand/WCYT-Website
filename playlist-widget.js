@@ -967,6 +967,7 @@
 
     const song       = currentSong;
     const history    = songHistory.slice(0, 3);
+    const history2   = songHistory2.slice(0, 3);
     const station    = STATIONS[activeStation];
     const isWCYT     = activeStation === 0;
     const currentShow = isWCYT ? currentShowWCYT : currentShow2;
@@ -1025,11 +1026,11 @@
               </div>
             ` : `<div class="wcyt-hero-loading">Loading&hellip;</div>`}
 
-            ${bsiRecent1.length ? `
+            ${(history.length || bsiRecent1.length) ? `
               <div class="wcyt-hero-recent">
                 <div class="wcyt-hero-recent-label">RECENTLY PLAYED</div>
                 <ul class="wcyt-hero-recent-list">
-                  ${bsiRecent1.map(s => `
+                  ${(history.length ? history : bsiRecent1).map(s => `
                     <li>
                       ${artImg(resolvedArt(s), 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
@@ -1037,7 +1038,7 @@
                         <span class="wcyt-hero-recent-sep">&middot;</span>
                         <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
                       </span>
-                      <span class="wcyt-hero-recent-time">${esc(s.time)}</span>
+                      <span class="wcyt-hero-recent-time">${esc(s.startedAt ? formatTime(s.startedAt) : s.time)}</span>
                     </li>
                   `).join('')}
                 </ul>
@@ -1060,11 +1061,11 @@
               </div>
             </div>
 
-            ${bsiRecent2.length ? `
+            ${(history2.length || bsiRecent2.length) ? `
               <div class="wcyt-hero-recent">
                 <div class="wcyt-hero-recent-label">RECENTLY PLAYED</div>
                 <ul class="wcyt-hero-recent-list">
-                  ${bsiRecent2.map(s => `
+                  ${(history2.length ? history2 : bsiRecent2).map(s => `
                     <li>
                       ${artImg(resolvedArt(s), 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
@@ -1072,7 +1073,7 @@
                         <span class="wcyt-hero-recent-sep">&middot;</span>
                         <span class="wcyt-hero-recent-title">${esc(s.title)}</span>
                       </span>
-                      <span class="wcyt-hero-recent-time">${esc(s.time)}</span>
+                      <span class="wcyt-hero-recent-time">${esc(s.startedAt ? formatTime(s.startedAt) : s.time)}</span>
                     </li>
                   `).join('')}
                 </ul>
