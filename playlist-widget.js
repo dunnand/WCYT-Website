@@ -21,7 +21,7 @@
 
   // ── BSI output files (album/year data from Simian) ────────────────────────
   // Raw GitHub URL bypasses the GitHub Pages CDN — updates within seconds of a push
-  const RAW_BASE = '';
+  const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main';
   const BSI_FILES = [
     '/Point_Display_OUT.htm', // station 0 — The Point
     '/2_Display_OUT.htm',     // station 1 — 2.0
@@ -756,7 +756,7 @@
         if (BLOCKED_TERMS.some(b => text.toLowerCase().includes(b))) continue;
         const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
         if (!m) continue;
-        all.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
+        all.push({ time: m[1], artist: m[2].trim(), title: m[3].trim().replace(/\s*\(\d{4}\)\s*$/, '') });
       }
       // BSI lists oldest first — reverse so most recent is at top, then deduplicate
       all.reverse();
@@ -1030,7 +1030,7 @@
               <div class="wcyt-hero-recent">
                 <div class="wcyt-hero-recent-label">RECENTLY PLAYED</div>
                 <ul class="wcyt-hero-recent-list">
-                  ${(history.length ? history : bsiRecent1).map(s => `
+                  ${(() => { const seen = new Set(history.map(s => artCacheKey(s.artist, s.title))); const merged = [...history, ...bsiRecent1.filter(s => !seen.has(artCacheKey(s.artist, s.title)))].slice(0, 3); return merged; })().map(s => `
                     <li>
                       ${artImg(resolvedArt(s), 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
@@ -1065,7 +1065,7 @@
               <div class="wcyt-hero-recent">
                 <div class="wcyt-hero-recent-label">RECENTLY PLAYED</div>
                 <ul class="wcyt-hero-recent-list">
-                  ${(history2.length ? history2 : bsiRecent2).map(s => `
+                  ${(() => { const seen = new Set(history2.map(s => artCacheKey(s.artist, s.title))); const merged = [...history2, ...bsiRecent2.filter(s => !seen.has(artCacheKey(s.artist, s.title)))].slice(0, 3); return merged; })().map(s => `
                     <li>
                       ${artImg(resolvedArt(s), 96, 'wcyt-hero-recent-art')}
                       <span class="wcyt-hero-recent-track">
