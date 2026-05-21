@@ -820,6 +820,9 @@
       bsiRecent2 = bsi2.recent.filter(s => artCacheKey(s.artist, s.title) !== nowKey2);
       // Prefetch art for recent items into cache so next render has them
       [...bsiRecent1, ...bsiRecent2].forEach(s => fetchArt(s.artist, s.title));
+      // Always re-render so recently played reflects the latest BSI data even
+      // when the current song hasn't changed (render() is not called otherwise)
+      render();
 
       handleNewTitle(rawTitle1, album1);
       const bsiMatch2 = bsi2.bsiTitle && bsi2.bsiTitle.trim().toLowerCase() === parsed2.title.trim().toLowerCase();
