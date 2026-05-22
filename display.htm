@@ -791,6 +791,30 @@
       };
       const fitArtist = fitText;
 
+      // In station mode, if artist + title combined are still too tall for the
+      // container, scale both fonts down proportionally until they fit.
+      const fitInfoBlock = () => {
+        if (!STATION) return;
+        const topEl    = document.getElementById(key + '-info')?.closest('.top');
+        const infoEl   = document.getElementById(key + '-info');
+        const artistEl = document.getElementById(key + '-artist');
+        const titleEl  = document.getElementById(key + '-title');
+        if (!topEl || !infoEl || !artistEl || !titleEl) return;
+        if (infoEl.scrollHeight <= topEl.clientHeight) return;
+        const a0 = parseFloat(getComputedStyle(artistEl).fontSize);
+        const t0 = parseFloat(getComputedStyle(titleEl).fontSize);
+        const ratio = t0 / (a0 || 1);
+        let lo = 8, hi = a0;
+        for (let i = 0; i < 16; i++) {
+          const mid = (lo + hi) / 2;
+          artistEl.style.fontSize = mid + 'px';
+          titleEl.style.fontSize  = (mid * ratio) + 'px';
+          if (infoEl.scrollHeight <= topEl.clientHeight) lo = mid; else hi = mid;
+        }
+        artistEl.style.fontSize = lo + 'px';
+        titleEl.style.fontSize  = (lo * ratio) + 'px';
+      };
+
       // Clear text and blank art using a transparent pixel (avoids triggering onerror)
       set(key + '-artist', '');
       set(key + '-title',  '');
@@ -814,6 +838,7 @@
       fitText(key + '-title');
       // Only write album if BSI title matches — leave blank otherwise until BSI catches up
       if (bsiTitleMatch) set(key + '-album', bsi.album);
+      fitInfoBlock();
       // Reset any inline styles onerror may have set, then swap art
       artEl.style.objectFit = '';
       artEl.style.padding = '';
