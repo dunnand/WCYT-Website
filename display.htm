@@ -587,8 +587,11 @@
       if (album) {
         const m = album.match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
         const albumName = m ? m[1].trim() : album.trim();
+        if (albumName && artIsBlocked(artist, albumName)) return null;
+        // Try full "Album • Year" key first — disambiguates same-name albums (e.g. Weezer)
+        const fullKey = artKey(artist, album);
+        if (artOverrides[fullKey]) return artOverrides[fullKey];
         if (albumName) {
-          if (artIsBlocked(artist, albumName)) return null;
           const albumKey = artKey(artist, albumName);
           if (artOverrides[albumKey]) return artOverrides[albumKey];
         }

@@ -457,6 +457,12 @@
     // song title, so art_overrides.json ends up keyed by album, not song title.
     // Fall back to an album-name lookup using the BSI albumLine (e.g. "Green • 1988").
     if (albumLine) {
+      // Try full "Album • Year" key first — disambiguates same-name albums (e.g. Weezer)
+      const fullKey = (artist + '|' + albumLine).toLowerCase();
+      if (SONG_ART_OVERRIDES[fullKey]) {
+        SONG_ART_OVERRIDES[songKey] = SONG_ART_OVERRIDES[fullKey];
+        return SONG_ART_OVERRIDES[fullKey];
+      }
       const m = albumLine.match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
       const album = m ? m[1].trim() : albumLine.trim();
       if (album) {
