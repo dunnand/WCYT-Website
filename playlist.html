@@ -456,60 +456,37 @@
   </style>
 
   <script>
-    // ── Recently Played (BSI output file) ────────────────────────────────────
+    // ── Recently Played (live from widget) ────────────────────────────────────
     const FALLBACK_IMG = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
-    const BSI_RAW_URL  = 'https://raw.githubusercontent.com/dunnand/WCYT-Website/main/Point_Display_OUT.htm';
-    const BLOCKED      = ['liner', 'legal id', 'btyb', 'sponsor'];
 
-    async function loadRecentFromBSI() {
-      const el = document.getElementById('recent-shows-list');
-      try {
-        const res  = await fetch(BSI_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
-        const html = await res.text();
-        const doc  = new DOMParser().parseFromString(html, 'text/html');
-        const blocks = doc.querySelectorAll('.sidebar-content');
-        const lines  = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
-        const spins  = [];
-        for (const line of lines) {
-          const text = line.trim();
-          if (!text) continue;
-          if (BLOCKED.some(b => text.toLowerCase().includes(b))) continue;
-          const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
-          if (!m) continue;
-          spins.push({ time: m[1], artist: m[2].trim(), title: m[3].trim() });
-        }
-        spins.reverse(); // BSI lists oldest first
-
-        if (!spins.length) {
-          el.innerHTML = '<div class="wcyt-loading" style="color:#555">No recent plays logged yet.</div>';
-          return;
-        }
-
-        el.innerHTML = spins.map((s, i) => `
-          <div class="recent-show-item">
-            <img id="bsi-art-${i}" class="recent-show-img" src="${FALLBACK_IMG}" alt="${s.artist}">
-            <div class="recent-show-info">
-              <div class="recent-show-name">${s.artist}</div>
-              <div class="recent-show-meta">${s.title}<span class="recent-show-station">${s.time}</span></div>
-            </div>
-          </div>`).join('');
-
-        // Backfill album art via iTunes
-        spins.forEach((s, i) => {
-          WCYTPlaylist.fetchArt(s.artist, s.title).then(url => {
-            const img = document.getElementById(`bsi-art-${i}`);
-            if (img && url) img.src = url;
-          });
-        });
-      } catch {
-        el.innerHTML = '<div class="wcyt-loading" style="color:#555">Could not load recently played.</div>';
-      }
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    // Load on page ready and refresh every 30 seconds
+    function renderRecentPlays() {
+      const el = document.getElementById('recent-shows-list');
+      if (!el) return;
+      const plays = WCYTPlaylist.getRecentPlays(_stationIdx);
+      if (!plays.length) {
+        el.innerHTML = '<div class="wcyt-loading" style="color:#555">No recent plays yet — check back soon.</div>';
+        return;
+      }
+      el.innerHTML = plays.map(s => `
+        <div class="recent-show-item">
+          <img class="recent-show-img${s.artUrl ? '' : ' fallback'}"
+            src="${escHtml(s.artUrl || FALLBACK_IMG)}" alt="${escHtml(s.artist)}"
+            onerror="this.src='${FALLBACK_IMG}';this.classList.add('fallback')">
+          <div class="recent-show-info">
+            <div class="recent-show-name">${escHtml(s.artist)}</div>
+            <div class="recent-show-meta">${escHtml(s.title)}<span class="recent-show-station">${escHtml(s.time)}</span></div>
+          </div>
+        </div>`).join('');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      loadRecentFromBSI();
-      setInterval(loadRecentFromBSI, 30_000);
+      // First render after widget has had a chance to load (one poll = 10s)
+      setTimeout(renderRecentPlays, 1000);
+      setInterval(renderRecentPlays, 10_000);
     });
   </script>
 

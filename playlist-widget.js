@@ -1403,7 +1403,22 @@
       savePlayerState();
     },
     fetchArt(artist, title) { return fetchArt(artist, title); },
-    _getState()        { return { currentSong, songHistory, artCache, audioState, activeStation, currentShowWCYT, currentShow2 }; },
+    getRecentPlays(stationIdx) {
+      const history   = stationIdx === 1 ? songHistory2 : songHistory;
+      const bsiRecent = stationIdx === 1 ? bsiRecent2   : bsiRecent1;
+      const seen = new Set(history.map(s => artCacheKey(s.artist, s.title)));
+      const merged = [
+        ...history,
+        ...bsiRecent.filter(s => !seen.has(artCacheKey(s.artist, s.title))),
+      ];
+      return merged.map(s => ({
+        artist: s.artist,
+        title:  s.title,
+        time:   s.startedAt ? formatTime(s.startedAt) : (s.time || ''),
+        artUrl: resolvedArt(s),
+      }));
+    },
+    _getState()        { return { currentSong, songHistory, songHistory2, bsiRecent1, bsiRecent2, artCache, audioState, activeStation, currentShowWCYT, currentShow2 }; },
     _mockSong(artist, title) { handleNewTitle(`${artist} - ${title}`); },
   };
 })();
