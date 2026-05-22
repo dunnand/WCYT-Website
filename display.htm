@@ -949,7 +949,7 @@
 
     const BADGES_ON    = new URLSearchParams(window.location.search).has('badges');
     const STATION      = new URLSearchParams(window.location.search).get('station'); // 'point', 'wcyt', or null
-    const RECENT_LIMIT = STATION ? 8 : 1;
+    const RECENT_LIMIT = STATION ? 8 : 5;
 
     if (STATION) {
       document.body.classList.add('station-mode');
