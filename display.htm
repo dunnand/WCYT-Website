@@ -541,17 +541,54 @@
       return (artist + '|' + title).toLowerCase().replace(/\s*&\s*/g, ' and ');
     }
 
+    // Albums whose cover art must never be shown (nudity / explicit imagery).
+    const BLOCKED_ART = [
+      ['pixies','surfer rosa'],['janes addiction','nothings shocking'],
+      ['janes addiction','ritual de lo habitual'],['nirvana','nevermind'],
+      ['nirvana','in utero'],['red hot chili peppers','mothers milk'],
+      ['red hot chili peppers','by the way'],['blind faith','blind faith'],
+      ['the slits','cut'],['pulp','this is hardcore'],
+      ['sky ferreira','night time my time'],['lorde','solar power'],
+      ['biffy clyro','the vertigo of bliss'],['marilyn manson','mechanical animals'],
+      ['the strokes','is this it'],['the black crowes','amorica'],
+      ['bow wow wow','see jungle see jungle go join your gang yeah city all over go ape crazy'],
+      ['roxy music','country life'],['roger waters','the pros and cons of hitch hiking'],
+      ['lucius','wildewoman'],['methyl ethel','everything is forgotten'],
+      ['of montreal','skeletal lamping'],['of montreal','innocence reaches'],
+      ['pulp','this'],['sigur ros','med sud i eyrum vid spilum endalaust'],
+      ['sufjan stevens','a beginners mind'],['the damned',''],
+      ['the drums','jonny'],['tv girl','death of a party girl'],
+      ['avalon emerson','perpetual emotion machine'],['arctic monkeys','help'],
+      ['death grips','no love deep web'],['guns n roses','appetite for destruction'],
+      ['tool','undertow'],['dead kennedys','frankenchrist'],
+      ['nofx','heavy petting zoo'],['chumbawamba','anarchy'],
+      ['pantera','far beyond driven'],['slayer','christ illusion'],
+      ['ween','chocolate cheese'],['bauhaus','in the flat field'],
+      ['suki waterhouse','good looking'],
+    ];
+    function artIsBlocked(artist, album) {
+      const a = normStr(artist), b = normStr(album);
+      return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
+    }
+
     // Art is approval-gated: only items explicitly approved in the review tool
     // appear in art_overrides.json, so this is a simple key lookup.
     async function fetchArt(artist, title, album) {
       const key = artKey(artist, title);
-      if (artOverrides[key]) return artOverrides[key];
+      if (artOverrides[key]) {
+        // Resolve the album name for the blocked-art check
+        const m = (album ?? '').match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
+        const albumName = m ? m[1].trim() : (album ?? '').trim();
+        if (artIsBlocked(artist, albumName || title)) return null;
+        return artOverrides[key];
+      }
       // WAV files tagged with album name as INAM produce album-name keys.
       // Fall back to album-name lookup using the BSI album field.
       if (album) {
         const m = album.match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
         const albumName = m ? m[1].trim() : album.trim();
         if (albumName) {
+          if (artIsBlocked(artist, albumName)) return null;
           const albumKey = artKey(artist, albumName);
           if (artOverrides[albumKey]) return artOverrides[albumKey];
         }
