@@ -1211,7 +1211,7 @@
     const msg = `
       <div class="wcyt-error">
         <span>&#9888;</span> Metadata unavailable &mdash;
-        <a href="${STREAM_URL}" target="_blank" rel="noopener">listen live</a>
+        <a href="${STATIONS[activeStation].stream}" target="_blank" rel="noopener">listen live</a>
       </div>
     `;
     if (heroEl    && !currentSong) heroEl.innerHTML    = msg;
