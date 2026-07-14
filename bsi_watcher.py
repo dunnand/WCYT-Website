@@ -25,6 +25,12 @@ SHOW_IMAGES_DIR = os.path.join(SITE_DIR, "images", "shows")
 MANIFEST_FILE   = os.path.join(SHOW_IMAGES_DIR, "manifest.json")
 IMAGE_EXTS      = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 
+# Website-repo files to auto-commit+push when they change on disk
+# (e.g. art review tool exports). Replaces watch_overrides.ps1.
+SITE_FILES = [
+    "images/art_overrides.json",
+]
+
 # Local files already written to this PC by Simian
 LOCAL_FILES = [
 ]
@@ -275,6 +281,7 @@ def main():
     local_mtimes  = {f: get_mtime(os.path.join(REPO_DIR, f)) for f in LOCAL_FILES}
     net_mtimes    = {src: get_mtime(src) for src, _ in NETWORK_FILES}
     status_mtimes = {src: get_mtime(src) for src, _, _k in STATUS_SOURCES}
+    site_mtimes   = {f: get_mtime(os.path.join(SITE_DIR, f)) for f in SITE_FILES}
     last_status   = {}  # station_key -> last written sig
     last_date     = time.strftime("%m%d%y")  # track day boundary for logDateOk re-push
 
@@ -321,6 +328,14 @@ def main():
                 except Exception as e:
                     log(f"Copy failed ({src}): {e}")
 
+        # Check website-repo files (art overrides etc.) — auto-publish on change
+        for f in SITE_FILES:
+            new_mtime = get_mtime(os.path.join(SITE_DIR, f))
+            if new_mtime != site_mtimes[f]:
+                site_mtimes[f] = new_mtime
+                pending_site.add(f)
+                last_change_site = now
+
         # Check for new show images — rebuild manifest and stage both if changed
         current_images = set(scan_show_images())
         if current_images != known_images:
@@ -359,7 +374,7 @@ def main():
                 pending.clear()
 
         if pending_site and (now - last_change_site) >= DEBOUNCE:
-            if push_changes(list(pending_site), repo=SITE_DIR, message="Add show images"):
+            if push_changes(list(pending_site), repo=SITE_DIR, message="Update site data"):
                 pending_site.clear()
 
 
