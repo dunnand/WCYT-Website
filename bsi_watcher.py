@@ -100,11 +100,18 @@ def parse_backup_ini(path):
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
+LOG_MAX_BYTES = 5 * 1024 * 1024  # rotate at 5 MB; one .old generation kept
+
 def log(msg):
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{ts}] {msg}"
     print(line, flush=True)
     try:
+        if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > LOG_MAX_BYTES:
+            old = LOG_FILE + ".old"
+            if os.path.exists(old):
+                os.remove(old)
+            os.replace(LOG_FILE, old)
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(line + "\n")
     except Exception:

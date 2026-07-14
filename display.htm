@@ -614,6 +614,9 @@
     function isBlocked(raw) {
       return BLOCKED_TERMS.some(t => (raw ?? '').toLowerCase().includes(t));
     }
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
     // ── Fetch BSI output file → album/year + recently played ───────────────────
     async function fetchBSI(file) {
@@ -665,13 +668,13 @@
       const el = document.getElementById(id);
       el.innerHTML = items.map(s => `
         <div class="recent-item">
-          <img class="ri-art" src="${s.art || fallback}"
+          <img class="ri-art" src="${esc(s.art || fallback)}"
                onerror="this.src='${fallback}';this.style.objectFit='contain';this.style.padding='6px';">
           <div class="ri-info">
-            <div class="ri-artist">${s.artist}</div>
-            <div class="ri-title">${s.title}</div>
+            <div class="ri-artist">${esc(s.artist)}</div>
+            <div class="ri-title">${esc(s.title)}</div>
           </div>
-          <div class="ri-time">${s.time}</div>
+          <div class="ri-time">${esc(s.time)}</div>
         </div>`).join('');
     }
 
@@ -683,22 +686,6 @@
     // Live recently-played history built from Icecast polls — always real-time.
     // BSI files are only used as a seed on first load, then this takes over.
     const liveHistory = { point: [], wcyt: [] };
-
-    // ── BSI refresh — album name only (recently played now comes from liveHistory) ──
-    async function refreshBSI(key, bsiFile) {
-      const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
-      const bsi = await fetchBSI(bsiFile);
-      // Use live history if we have any entries; fall back to BSI on first load
-      renderRecent(key + '-recent',
-        liveHistory[key].length > 0 ? liveHistory[key] : bsi.recent,
-        fallback);
-      const currentTitle = normStr((state[key].currentKey || '').split('|')[1] || '');
-      const el = document.getElementById(key + '-album');
-      // Update album if BSI title matches, or if album is blank and BSI has data (catches lag)
-      if (el && bsi.album && currentTitle && (normStr(bsi.title) === currentTitle || !el.textContent.trim())) {
-        el.textContent = bsi.album;
-      }
-    }
 
     // ── Update station — driven by Icecast title ───────────────────────────────
     async function updateStation(key, rawTitle, bsiFile) {
@@ -743,7 +730,8 @@
       if (songKey === state[key].currentKey) {
         const el = document.getElementById(key + '-album');
         const bsiMatch = bsi.album && normStr(bsi.title) === normStr(parsed.title);
-        if (el && bsiMatch) el.textContent = bsi.album;
+        // Update album on title match, or fill a blank album line (catches BSI lag)
+        if (el && bsi.album && (bsiMatch || !el.textContent.trim())) el.textContent = bsi.album;
         if (showActive && dj.imageUrl) {
           artEl.src = dj.imageUrl;
         } else if (!showActive && state[key].djActive) {
@@ -1002,11 +990,6 @@
     fetchDJPanel();
     setInterval(fetchDJPanel, 5 * 60_000);
     setInterval(poll, 10_000);
-    // Refresh BSI album/year independently every 10 seconds
-    setInterval(() => {
-      refreshBSI('point', '/Point_Display_OUT.htm');
-      refreshBSI('wcyt',  '/2_Display_OUT.htm');
-    }, 10_000);
     if (BADGES_ON) {
       pollStatus();
       setInterval(pollStatus, 60_000);

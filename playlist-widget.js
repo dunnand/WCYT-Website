@@ -14,7 +14,7 @@
   const METADATA_URL  = 'https://securestreams2.autopo.st:1069/status-json.xsl';
   const POLL_MS       = 10_000;
   const MAX_HISTORY   = 50;
-  const FALLBACK_ART  = 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png';
+  const FALLBACK_ART  = '/images/squarespace/WCYT-removebg-preview.png';
   const FALLBACK_ART_2 = '/images/shows/2.0 Logo.png';
   const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
   const SHOW_TTL_MS   = 45 * 60 * 1000; // auto-clear after 45 minutes
@@ -175,8 +175,8 @@
       sessionStorage.setItem('wcyt-player', JSON.stringify({
         station: activeStation,
         playing: audioState === 'playing' || audioState === 'buffering',
-        showWCYT: currentShowWCYT ? { name: currentShowWCYT.name, expiresAt: currentShowWCYT.expiresAt.toISOString() } : null,
-        show2:    currentShow2    ? { name: currentShow2.name,    expiresAt: currentShow2.expiresAt.toISOString()    } : null,
+        showWCYT: currentShowWCYT ? { name: currentShowWCYT.name, expiresAt: currentShowWCYT.expiresAt.toISOString(), imageUrl: currentShowWCYT.imageUrl || null } : null,
+        show2:    currentShow2    ? { name: currentShow2.name,    expiresAt: currentShow2.expiresAt.toISOString(),    imageUrl: currentShow2.imageUrl    || null } : null,
       }));
     } catch {}
   }
@@ -220,7 +220,6 @@
   }
 
   function updateBarsAnimation() {
-    const playing = audioState === 'playing';
     document.querySelectorAll('.wcyt-bars span').forEach(bar => {
       bar.style.animationPlayState = 'running';
     });
@@ -478,84 +477,11 @@
     return ART_OVERRIDES[key] ?? null;
   }
 
-  // ── Album art (iTunes Search API only) ───────────────────────────────────
-  // iTunes serves the actual cover art regardless of content, so we maintain
-  // a manual blocklist of albums with known explicit/NSFW artwork.
-  // When a song matches a blocked album, art returns null (shows logo fallback).
-  // Format: ['artist normalized', 'album normalized'] — both lowercased, no punctuation.
-  const BLOCKED_ART = [
-    // Nudity
-    ['pixies',                    'surfer rosa'],
-    ['janes addiction',           'nothings shocking'],
-    ['janes addiction',           'ritual de lo habitual'],
-    ['nirvana',                   'nevermind'],
-    ['nirvana',                   'in utero'],
-    ['red hot chili peppers',     'mothers milk'],
-    ['red hot chili peppers',     'by the way'],
-    ['blind faith',               'blind faith'],
-    ['the slits',                 'cut'],
-    ['pulp',                      'this is hardcore'],
-    ['sky ferreira',              'night time my time'],
-    ['lorde',                     'solar power'],
-    ['biffy clyro',               'the vertigo of bliss'],
-    ['marilyn manson',            'mechanical animals'],
-    ['the strokes',               'is this it'],
-    ['the black crowes',          'amorica'],
-    ['bow wow wow',               'see jungle see jungle go join your gang yeah city all over go ape crazy'],
-    ['roxy music',                'country life'],
-    ['roger waters',              'the pros and cons of hitch hiking'],
-    // Additional blocked covers
-    ['lucius',                    'wildewoman'],
-    ['methyl ethel',              'everything is forgotten'],
-    ['of montreal',               'skeletal lamping'],
-    ['of montreal',               'innocence reaches'],
-    ['pulp',                      'this'],
-    ['sigur ros',                 'med sud i eyrum vid spilum endalaust'],
-    ['sufjan stevens',            'a beginners mind'],
-    ['the damned',                ''],
-    ['the drums',                 'jonny'],
-    ['tv girl',                   'death of a party girl'],
-    ['avalon emerson',            'perpetual emotion machine'],
-    ['arctic monkeys',            'help'],
-    // Graphic / violent / sexual
-    ['death grips',               'no love deep web'],
-    ['guns n roses',              'appetite for destruction'],
-    ['tool',                      'undertow'],
-    ['dead kennedys',             'frankenchrist'],
-    ['nofx',                      'heavy petting zoo'],
-    ['chumbawamba',               'anarchy'],
-    ['pantera',                   'far beyond driven'],
-    ['slayer',                    'christ illusion'],
-    ['ween',                      'chocolate cheese'],
-    ['bauhaus',                   'in the flat field'],
-	['the strokes',				  'is this it'],
-	['suki waterhouse',			  'good looking'],
-  ];
-
-  function artIsBlocked(artist, album) {
-    const norm = s => stripDiacritics(s).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
-    const a = norm(artist);
-    const b = norm(album);
-    return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
-  }
-
-  // Album types that are never the original release — hard reject
-  const ITUNES_REJECT = [
-    'lullaby', 'karaoke', 'tribute', 'cover version', 'covers',
-    'instrumental version', 'made famous', 'originally performed',
-    // Workout / fitness compilations
-    'running', 'workout', 'fitness', 'gym', 'cardio', 'yoga', 'meditation',
-    // Generic filler compilations
-    "now that's what i call", 'hits of', 'music of', 'sounds of', 'songs of',
-    'lounge', 'chillout', 'chill out',
-  ];
-  // Secondary releases — prefer originals over these, but fall back if nothing else
-  const ITUNES_SECONDARY = [
-    'soundtrack', 'motion picture', 'original score', 'compilation',
-    'greatest hits', 'best of', 'collection', 'anthology',
-    'the very best', 'essential', 'platinum', 'gold', 'singles',
-    'retrospective', 'kompilation',
-  ];
+  // ── Album art ─────────────────────────────────────────────────────────────
+  // Art comes ONLY from the curated overrides file (approved via the art
+  // review tool) — there is no live iTunes/MusicBrainz lookup on the site,
+  // so nothing unreviewed can ever appear. The explicit-cover blocklist
+  // lives in display.htm (the only page that needs a second gate).
 
   // Strip accents/diacritics so "Björk" → "Bjork" for search/matching
   function stripDiacritics(s) {
@@ -566,96 +492,6 @@
     return stripDiacritics(s ?? '').toLowerCase()
       .replace(/\s*&\s*/g, 'and')
       .replace(/[^a-z0-9]/g, '');
-  }
-
-  async function fetchArtFromiTunes(artist, title, albumLine) {
-    const na = normArtist(artist);
-    const nt = stripDiacritics(title).toLowerCase();
-
-    // Parse album name and year from BSI album line (e.g. "Weezer • 1994")
-    const albumMatch = (albumLine ?? '').match(/^(.+?)\s*[•·]\s*(\d{4})\s*$/);
-    const albumName  = albumMatch ? albumMatch[1].trim() : (albumLine ?? '').trim();
-    const albumYear  = albumMatch ? albumMatch[2] : '';
-
-    const isSecondary = r => { const col = (r.collectionName ?? '').toLowerCase(); return ITUNES_SECONDARY.some(t => col.includes(t)); };
-
-    const filterCandidates = results => (results ?? []).filter(r => {
-      if (!normArtist(r.artistName).includes(na)) return false;
-      const col = (r.collectionName ?? '').toLowerCase();
-      if (ITUNES_REJECT.some(t => col.includes(t))) return false;
-      if (artIsBlocked(r.artistName, r.collectionName ?? '')) {
-        console.log('[WCYTPlaylist] art blocked:', r.artistName, '/', r.collectionName);
-        return false;
-      }
-      console.log('[WCYTPlaylist] art candidate:', r.artistName, '/', r.collectionName, r.artworkUrl100);
-      return true;
-    });
-
-    const pickMatch = candidates => {
-      // 1. Album name + year match (disambiguates self-titled albums e.g. Weezer)
-      if (albumName && albumYear) {
-        const na_album = normArtist(albumName);
-        const byBoth = candidates.find(r => {
-          const rc = normArtist(r.collectionName ?? '');
-          const ry = (r.releaseDate ?? '').slice(0, 4);
-          return (rc.includes(na_album) || na_album.includes(rc)) && ry === albumYear;
-        });
-        if (byBoth) return byBoth;
-      }
-      // 2. Album name match only
-      if (albumName) {
-        const na_album = normArtist(albumName);
-        const byAlbum = candidates.find(r => {
-          const rc = normArtist(r.collectionName ?? '');
-          return rc.includes(na_album) || na_album.includes(rc);
-        });
-        if (byAlbum) return byAlbum;
-      }
-      // 3. Non-secondary first, then secondary
-      return candidates.find(r => !isSecondary(r)) ?? candidates.find(r => isSecondary(r));
-    };
-
-    const toArtUrl = match => match?.artworkUrl100
-      ? match.artworkUrl100.replace('100x100bb', '500x500bb')
-      : null;
-
-    // First try: combined artist + title search
-    const term1 = encodeURIComponent(`${stripDiacritics(artist)} ${stripDiacritics(title)}`);
-    const res1  = await fetch(`https://itunes.apple.com/search?term=${term1}&entity=song&limit=10&country=US`);
-    const data1 = await res1.json();
-    const match1 = pickMatch(filterCandidates(data1.results));
-    if (match1) return toArtUrl(match1);
-
-    // Fallback: artist-only search, then match title
-    const term2 = encodeURIComponent(stripDiacritics(artist));
-    const res2  = await fetch(`https://itunes.apple.com/search?term=${term2}&entity=song&limit=50&country=US`);
-    const data2 = await res2.json();
-    const byTitle = filterCandidates(data2.results).filter(r =>
-      stripDiacritics(r.trackName ?? '').toLowerCase() === nt
-    );
-    return toArtUrl(pickMatch(byTitle));
-  }
-
-  async function fetchArtMusicBrainz(artist, title) {
-    try {
-      const q   = encodeURIComponent(`recording:"${title}" AND artist:"${artist}"`);
-      const res = await fetch(`https://musicbrainz.org/ws/2/recording/?query=${q}&limit=5&fmt=json&inc=release-groups`, {
-        headers: { 'User-Agent': 'WCYTDisplay/1.0 (dunnand@gmail.com)' }
-      });
-      const data = await res.json();
-      const rgidsSeen = new Set();
-      for (const rec of (data.recordings ?? [])) {
-        for (const rel of (rec.releases ?? [])) {
-          const rgid = rel['release-group']?.id;
-          if (!rgid || rgidsSeen.has(rgid)) continue;
-          rgidsSeen.add(rgid);
-          const url  = `https://coverartarchive.org/release-group/${rgid}/front-500.jpg`;
-          const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
-          if (head.ok) return url;
-        }
-      }
-    } catch {}
-    return null;
   }
 
   async function fetchArt(artist, title, albumLine = '') {
@@ -1291,11 +1127,11 @@
         pendingAutoResume = !!saved.playing;
         if (saved.showWCYT) {
           const exp = new Date(saved.showWCYT.expiresAt);
-          if (Date.now() < exp.getTime()) currentShowWCYT = { name: saved.showWCYT.name, expiresAt: exp };
+          if (Date.now() < exp.getTime()) currentShowWCYT = { name: saved.showWCYT.name, expiresAt: exp, imageUrl: saved.showWCYT.imageUrl || null };
         }
         if (saved.show2) {
           const exp = new Date(saved.show2.expiresAt);
-          if (Date.now() < exp.getTime()) currentShow2 = { name: saved.show2.name, expiresAt: exp };
+          if (Date.now() < exp.getTime()) currentShow2 = { name: saved.show2.name, expiresAt: exp, imageUrl: saved.show2.imageUrl || null };
         }
       }
     } catch {}
