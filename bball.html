@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Girls Basketball vs Opponent</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body   { font-family:sans-serif; max-width:900px; margin:auto; padding:20px; }
+    h1     { margin-bottom:.6em; }
+    label  { display:block; margin-top:1em; margin-bottom:.4em; }
+    select { font-size:1em; padding:6px; max-width:300px; width:100%; }
+    table  { border-collapse:collapse; width:100%; margin-top:1em; }
+    th,td  { border:1px solid #ccc; padding:6px 8px; text-align:left; }
+  </style>
+</head>
+<body>
+  <h1>Girls Basketball – Game History by Opponent</h1>
+
+  <label for="opp">Select Opponent</label>
+  <select id="opp"><option value="">– All –</option></select>
+
+  <div id="table_div"></div>
+
+  <script>
+    // ------------- CONFIGURATION -------------
+    // File‑ID of your public sheet  (no /d/e/, just /d/)
+    const BASE_URL = 'https://docs.google.com/spreadsheets/d/12Y-LEmnveO1VwAYFcnmoJxJK_jrkTjFzOMxpzgCVG3E';
+    // gid of “Girls W/L Data Sheet” tab
+    const DATA_GID = '1666580712';
+    // ------------- END CONFIG ---------------
+
+    google.charts.load('current', {packages:['table']});
+    google.charts.setOnLoadCallback(init);
+
+    function init() {
+      buildDropdown();
+      document.getElementById('opp').addEventListener('change', drawTable);
+    }
+
+    // Build dropdown – query only column C, then de‑duplicate in JS
+    function buildDropdown() {
+      const q   = 'select C where C is not null order by C';
+      const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
+
+      new google.visualization.Query(url).send(res => {
+        if (res.isError()) { console.error(res.getMessage()); return; }
+
+        const dt   = res.getDataTable();
+        const sel  = document.getElementById('opp');
+        const seen = new Set();
+
+        for (let i = 0; i < dt.getNumberOfRows(); i++) {
+          const opp = dt.getValue(i, 0);
+          if (opp && !seen.has(opp)) {
+            seen.add(opp);
+            const opt = document.createElement('option');
+            opt.value = opt.text = opp;
+            sel.appendChild(opt);
+          }
+        }
+        // paint initial (unfiltered) table
+        drawTable();
+      });
+    }
+
+    // Draw / redraw table filtered on column C
+    function drawTable() {
+      const selVal = document.getElementById('opp').value;
+      let   q      = 'select A,B,C,D,E,F,G,H';
+      if (selVal) {
+        const safe = selVal.replace(/'/g, "\\'");
+        q += ` where C contains '${safe}'`;
+      }
+      const url = `${BASE_URL}/gviz/tq?gid=${DATA_GID}&tq=${encodeURIComponent(q)}`;
+
+      new google.visualization.Query(url).send(res => {
+        if (res.isError()) { console.error(res.getMessage()); return; }
+        const table = new google.visualization.Table(
+                        document.getElementById('table_div'));
+        table.draw(res.getDataTable(), {showRowNumber:false, width:'100%', height:'auto'});
+      });
+    }
+  </script>
+<script src="/playlist-widget.js"></script>
+<script>WCYTPlaylist.init(null, null, null);</script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About Us &mdash; The Point 91 FM · WCYT</title>
+  <meta name="description" content="The Point 91 FM — WCYT is your independent music source and alternative to commercial radio, broadcasting from Homestead High School in Fort Wayne, Indiana since 1994.">
+  <link rel="icon" type="image/x-icon" href="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453742941-Z0LFTEREVU8L8RIFHHUL/favicon.ico?format=100w">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:  #0d0d0d;
+      --dark:   #111111;
+      --mid:    #222222;
+      --border: #333333;
+      --muted:  #888888;
+      --accent: #c8102e;
+      --white:  #ffffff;
+      --font:   'Space Grotesk', sans-serif;
+    }
+
+    html { font-family: var(--font); background: var(--black); color: var(--white); }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    a    { color: inherit; text-decoration: none; }
+
+    /* ── Hero ── */
+    .about-hero {
+      background: var(--dark);
+      border-bottom: 3px solid var(--accent);
+      padding: 72px 32px 64px;
+      text-align: center;
+    }
+    .about-hero-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .about-hero h1 {
+      font-size: clamp(32px, 6vw, 64px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .about-hero h1 strong { color: var(--accent); }
+    .about-hero-tagline {
+      font-size: clamp(16px, 2.5vw, 22px);
+      color: #aaa;
+      font-weight: 400;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── Main ── */
+    .about-main {
+      flex: 1;
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 64px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 64px;
+    }
+
+    /* ── Stat strip ── */
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 600px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card {
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); }
+
+    /* ── Section ── */
+    .about-section { display: flex; flex-direction: column; gap: 16px; }
+    .about-section-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .about-section h2 {
+      font-size: clamp(22px, 3.5vw, 32px);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .about-section h2 strong { color: var(--accent); }
+    .about-section p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #bbb;
+    }
+
+    /* ── Two-col ── */
+    .about-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+    @media (max-width: 640px) { .about-two { grid-template-columns: 1fr; } }
+
+    /* ── Feature cards ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 20px;
+      border-top: 3px solid var(--accent);
+    }
+    .feature-card-icon { font-size: 28px; margin-bottom: 12px; display: block; }
+    .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ── Divider ── */
+    .section-rule { border: none; border-top: 1px solid #1a1a1a; }
+
+    /* ── CTA ── */
+    .about-cta {
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .about-cta-text h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .about-cta-text h2 strong { color: var(--accent); }
+    .about-cta-text p { font-size: 14px; color: var(--muted); }
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: var(--white);
+      font-weight: 700;
+      font-size: 14px;
+      padding: 13px 24px;
+      border-radius: 8px;
+      white-space: nowrap;
+      transition: background .2s, transform .15s;
+    }
+    .cta-btn:hover { background: #a50d26; transform: translateY(-1px); }
+    .cta-btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--white);
+    }
+    .cta-btn-outline:hover { background: #1a1a1a; transform: translateY(-1px); }
+    .cta-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--black);
+      color: #444;
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .site-footer a { color: #666; }
+    .site-footer a:hover { color: #aaa; }
+    .site-footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-bottom: 10px; }
+
+    @media (max-width: 480px) {
+      .about-hero { padding: 48px 20px 40px; }
+      .about-main { padding: 40px 20px 60px; gap: 48px; }
+      .about-cta { padding: 28px 20px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Hero -->
+  <header class="about-hero">
+    <p class="about-hero-eyebrow">The Point 91 FM &middot; WCYT</p>
+    <h1>Your <strong>Independent</strong> Music Source</h1>
+    <p class="about-hero-tagline">Your alternative to commercial radio. Where music is the point.</p>
+  </header>
+
+  <main class="about-main">
+
+    <!-- Stats -->
+    <div class="stat-strip">
+      <div class="stat-card">
+        <div class="stat-number">91.1</div>
+        <div class="stat-label">FM Frequency</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">1994</div>
+        <div class="stat-label">Est. Year</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">24/7</div>
+        <div class="stat-label">Online Stream</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">100%</div>
+        <div class="stat-label">Student-run</div>
+      </div>
+    </div>
+
+    <hr class="section-rule">
+
+    <!-- Who we are / Mission -->
+    <div class="about-two">
+      <div class="about-section">
+        <p class="about-section-eyebrow">Who We Are</p>
+        <h2>Fort Wayne's <strong>student-run</strong> radio station</h2>
+        <p>The Point 91 FM is based in Fort Wayne, Indiana, dedicated to serving the community with fresh tracks and a genuine alternative to commercial radio. Founded in 1994 and located inside Homestead High School, we are entirely student run and operated.</p>
+        <p>We cover all things radio and TV related at Homestead, from live sports broadcasts to interviews with local artists. Everything you hear is made by students.</p>
+      </div>
+      <div class="about-section">
+        <p class="about-section-eyebrow">Our Mission</p>
+        <h2>Music is <strong>the point</strong></h2>
+        <p>We exist to give students a real platform to develop skills in broadcasting, production, and on-air performance while delivering something genuinely different to listeners in Fort Wayne.</p>
+        <p>No playlists curated by an algorithm. No corporate formatting. Just students who care about music, bringing you something worth listening to.</p>
+      </div>
+    </div>
+
+    <hr class="section-rule">
+
+    <!-- What we do -->
+    <div class="about-section">
+      <p class="about-section-eyebrow">What We Do</p>
+      <h2>More than just <strong>music</strong></h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-card-icon">🎙️</span>
+        <h3>On-Air Broadcasting</h3>
+        <p>Student DJs host live shows and keep 91.1 FM running 24/7.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-card-icon">🏈</span>
+        <h3>Sports Play-by-Play</h3>
+        <p>Live coverage of Homestead Spartan athletics throughout the school year.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-card-icon">🎧</span>
+        <h3>Podcasts</h3>
+        <p>Student-produced shows available on all major podcast platforms.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-card-icon">🎬</span>
+        <h3>Production</h3>
+        <p>Students handle everything behind the scenes, from audio to video.</p>
+      </div>
+    </div>
+
+    <hr class="section-rule">
+
+    <!-- CTA -->
+    <div class="about-cta">
+      <div class="about-cta-text">
+        <h2>Ready to <strong>listen?</strong></h2>
+        <p>Tune in on 91.1 FM or stream live online, anytime.</p>
+      </div>
+      <div class="cta-buttons">
+        <a class="cta-btn" href="/listen">Listen Live</a>
+        <a class="cta-btn cta-btn-outline" href="/contact">Get in Touch</a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="site-footer-links">
+      <a href="/playlist">Playlist</a>
+      <a href="/podcasts">Podcasts</a>
+      <a href="/sports">Sports</a>
+      <a href="/team">Team</a>
+      <a href="/awards">Awards</a>
+      <a href="/contact">Contact</a>
+      <a href="https://publicfiles.fcc.gov/fm-profile/wcyt" target="_blank" rel="noopener">FCC Filing</a>
+    </div>
+    <p>&copy; WCYT &middot; The Point 91 FM &middot; Homestead High School, Fort Wayne, IN</p>
+  </footer>
+
+  <script src="/nav.js"></script>
+  <script src="/playlist-widget.js"></script>
+  <script>WCYTPlaylist.init(null, null, null);</script>
+</body>
+</html>

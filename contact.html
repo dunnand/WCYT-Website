@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact &mdash; The Point 91 FM · WCYT</title>
+  <meta name="description" content="Get in touch with The Point 91 FM — WCYT. Text us, call us, or send a message.">
+  <link rel="icon" type="image/x-icon" href="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453742941-Z0LFTEREVU8L8RIFHHUL/favicon.ico?format=100w">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:  #0d0d0d;
+      --dark:   #111111;
+      --mid:    #222222;
+      --border: #333333;
+      --muted:  #888888;
+      --accent: #c8102e;
+      --white:  #ffffff;
+      --font:   'Space Grotesk', sans-serif;
+    }
+
+    html { font-family: var(--font); background: var(--black); color: var(--white); }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    a    { color: inherit; text-decoration: none; }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--dark);
+      color: var(--white);
+      padding: 56px 32px 48px;
+      border-bottom: 3px solid var(--accent);
+    }
+    .page-header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .page-header h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .page-header h1 strong { color: var(--accent); }
+    .page-header p {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* ── Main layout ── */
+    .contact-main {
+      flex: 1;
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: start;
+    }
+    @media (max-width: 680px) {
+      .contact-main { grid-template-columns: 1fr; padding: 36px 20px 60px; }
+    }
+
+    /* ── Info cards ── */
+    .contact-info { display: flex; flex-direction: column; gap: 16px; }
+
+    .info-card {
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .info-card-icon {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(200,16,46,.15);
+      border: 1px solid rgba(200,16,46,.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+    }
+    .info-card-icon svg { width: 20px; height: 20px; }
+    .info-card-body { min-width: 0; }
+    .info-card-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .info-card-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .info-card-value a { transition: color .2s; }
+    .info-card-value a:hover { color: var(--accent); }
+    .info-card-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Form ── */
+    .contact-form-wrap {}
+    .form-heading {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .form-heading span { color: var(--accent); }
+
+    .contact-form { display: flex; flex-direction: column; gap: 14px; }
+
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      font-family: var(--font);
+      font-size: 15px;
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--white);
+      padding: 12px 14px;
+      transition: border-color .2s;
+      width: 100%;
+      resize: vertical;
+    }
+    .form-field input::placeholder,
+    .form-field textarea::placeholder { color: #555; }
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-field select option { background: #222; }
+
+    .form-submit {
+      background: var(--accent);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 28px;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      align-self: flex-start;
+    }
+    .form-submit:hover { background: #a50d26; transform: translateY(-1px); }
+
+    .form-success {
+      display: none;
+      background: rgba(200,16,46,.1);
+      border: 1px solid rgba(200,16,46,.3);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-size: 14px;
+      color: #eee;
+      margin-top: 8px;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--black);
+      color: #444;
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .site-footer a { color: #666; }
+    .site-footer a:hover { color: #aaa; }
+
+    @media (max-width: 480px) {
+      .page-header { padding: 36px 20px 32px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Page header -->
+  <header class="page-header">
+    <div class="page-header-eyebrow">The Point 91 FM &middot; WCYT</div>
+    <h1>Get in <strong>Touch</strong></h1>
+    <p>Song requests, shoutouts, or general inquiries — we'd love to hear from you.</p>
+  </header>
+
+  <main class="contact-main">
+
+    <!-- Contact info -->
+    <div class="contact-info">
+
+      <!-- Phone / Text -->
+      <div class="info-card">
+        <div class="info-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.08 6.08l.9-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </div>
+        <div class="info-card-body">
+          <div class="info-card-label">Call or Text</div>
+          <div class="info-card-value"><a href="tel:+12607029118">260-702-9118</a></div>
+          <div class="info-card-note">Song requests &amp; shoutouts welcome</div>
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div class="info-card">
+        <div class="info-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        <div class="info-card-body">
+          <div class="info-card-label">Location</div>
+          <div class="info-card-value" style="font-size:16px">Homestead High School</div>
+          <div class="info-card-note">4310 Homestead Rd, Fort Wayne, IN 46804</div>
+        </div>
+      </div>
+
+      <!-- Listen live -->
+      <div class="info-card">
+        <div class="info-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="2"/>
+            <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+          </svg>
+        </div>
+        <div class="info-card-body">
+          <div class="info-card-label">On Air</div>
+          <div class="info-card-value">91.1 FM</div>
+          <div class="info-card-note">Fort Wayne, Indiana &middot; <a href="/listen" style="color:var(--accent);font-weight:600">Stream online &rarr;</a></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Contact form -->
+    <div class="contact-form-wrap">
+      <p class="form-heading">Send us a <span>message</span></p>
+
+      <form
+        class="contact-form"
+        action="https://formspree.io/f/mdawadbv"
+        method="POST"
+        id="contact-form">
+
+        <div class="form-field">
+          <label for="cf-name">Your Name</label>
+          <input type="text" id="cf-name" name="name" placeholder="Jane Smith" required>
+        </div>
+
+        <div class="form-field">
+          <label for="cf-email">Your Email</label>
+          <input type="email" id="cf-email" name="email" placeholder="you@example.com" required>
+        </div>
+
+        <div class="form-field">
+          <label for="cf-subject">Subject</label>
+          <select id="cf-subject" name="subject">
+            <option value="General Inquiry">General Inquiry</option>
+            <option value="Song Request">Song Request</option>
+            <option value="Advertising">Advertising</option>
+            <option value="Event Coverage">Event Coverage</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="cf-message">Message</label>
+          <textarea id="cf-message" name="message" rows="5" placeholder="What's on your mind?" required></textarea>
+        </div>
+
+        <button type="submit" class="form-submit">Send Message</button>
+
+        <div class="form-success" id="form-success">
+          Thanks! Your message has been sent. We'll get back to you soon.
+        </div>
+
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>
+      &copy; WCYT &middot; The Point 91 FM &middot; Homestead High School, Fort Wayne, IN
+      &nbsp;&middot;&nbsp;
+      <a href="/">Home</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://publicfiles.fcc.gov/fm-profile/wcyt" target="_blank" rel="noopener">FCC Filing</a>
+    </p>
+  </footer>
+
+  <script src="/nav.js"></script>
+  <script>
+    const form = document.getElementById('contact-form');
+    const success = document.getElementById('form-success');
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = form.querySelector('.form-submit');
+      btn.textContent = 'Sending…';
+      btn.disabled = true;
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          form.reset();
+          success.style.display = 'block';
+          btn.textContent = 'Sent!';
+        } else {
+          btn.textContent = 'Send Message';
+          btn.disabled = false;
+          alert('Something went wrong. Please try again.');
+        }
+      } catch {
+        btn.textContent = 'Send Message';
+        btn.disabled = false;
+        alert('Something went wrong. Please try again.');
+      }
+    });
+  </script>
+
+  <script src="/playlist-widget.js"></script>
+  <script>WCYTPlaylist.init(null, null, null);</script>
+
+</body>
+</html>

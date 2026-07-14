@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page Not Found &mdash; The Point 91 FM &middot; WCYT</title>
+  <link rel="icon" type="image/x-icon" href="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453742941-Z0LFTEREVU8L8RIFHHUL/favicon.ico?format=100w">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:  #0d0d0d;
+      --accent: #c8102e;
+      --white:  #ffffff;
+      --font:   'Space Grotesk', sans-serif;
+    }
+
+    html { font-family: var(--font); background: var(--black); color: var(--white); }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .site-nav {
+      background: var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 64px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .site-nav-logo img { height: 36px; display: block; }
+
+    .error-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+    }
+
+    .error-code {
+      font-size: clamp(80px, 20vw, 160px);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--accent);
+      letter-spacing: -0.04em;
+    }
+
+    .error-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #555;
+      margin-top: 8px;
+      margin-bottom: 24px;
+    }
+
+    .error-msg {
+      font-size: clamp(18px, 3vw, 26px);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .error-sub {
+      font-size: 15px;
+      color: #888;
+      max-width: 400px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .error-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .error-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .2s, transform .2s;
+    }
+    .error-btn--primary { background: var(--accent); color: var(--white); }
+    .error-btn--primary:hover { background: #a50d26; transform: translateY(-1px); }
+    .error-btn--secondary { background: #1a1a1a; color: #ccc; }
+    .error-btn--secondary:hover { background: #222; color: var(--white); transform: translateY(-1px); }
+
+    .site-footer {
+      background: var(--black);
+      color: #444;
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .site-footer a { color: #666; text-decoration: none; }
+    .site-footer a:hover { color: #aaa; }
+  </style>
+</head>
+
+<body>
+
+  <nav class="site-nav">
+    <a class="site-nav-logo" href="/" aria-label="The Point 91 FM – Home">
+      <img
+        src="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453740425-M44AKIWYWNTFZHGQWZDY/WCYT-removebg-preview.png"
+        alt="WCYT The Point 91 FM">
+    </a>
+  </nav>
+
+  <main class="error-main">
+    <div class="error-code">404</div>
+    <div class="error-label">Page Not Found</div>
+    <div class="error-msg">We lost the signal on that one.</div>
+    <p class="error-sub">
+      The page you're looking for doesn't exist or may have moved.
+      Try heading back home or tuning in live.
+    </p>
+    <div class="error-links">
+      <a href="/" class="error-btn error-btn--primary">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12L6 8l4-4"/></svg>
+        Back to Home
+      </a>
+      <a href="/playlist" class="error-btn error-btn--secondary">Live Playlist</a>
+      <a href="/awards" class="error-btn error-btn--secondary">Awards</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; WCYT &middot; The Point 91 FM &middot; Homestead High School, Fort Wayne, IN</p>
+  </footer>
+
+  <script src="/playlist-widget.js"></script>
+  <script>WCYTPlaylist.init(null, null, null);</script>
+
+</body>
+</html>

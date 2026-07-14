@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Our Team &mdash; The Point 91 FM &middot; WCYT</title>
+  <meta name="description" content="Meet the student DJs, hosts, and staff behind The Point 91 FM — WCYT at Homestead High School.">
+  <link rel="icon" type="image/x-icon" href="https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453742941-Z0LFTEREVU8L8RIFHHUL/favicon.ico?format=100w">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:  #0d0d0d;
+      --dark:   #111111;
+      --mid:    #1a1a1a;
+      --border: #222222;
+      --accent: #c8102e;
+      --muted:  #888888;
+      --white:  #ffffff;
+      --font:   'Space Grotesk', sans-serif;
+    }
+
+    html { font-family: var(--font); background: var(--black); color: var(--white); }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    a    { color: inherit; text-decoration: none; }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--black);
+      color: var(--white);
+      padding: 48px 32px 40px;
+      border-bottom: 3px solid var(--accent);
+    }
+    .page-header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    .page-header h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .page-header h1 strong { color: var(--accent); }
+    .page-header-note {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    /* ── Main ── */
+    .team-main {
+      flex: 1;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── Section heading ── */
+    .team-section-heading {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 32px;
+    }
+
+    /* ── Grid ── */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 28px;
+      margin-bottom: 60px;
+    }
+
+    .team-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      padding: 20px 12px;
+      background: var(--mid);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .team-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+
+    .team-photo {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center top;
+      border: 2px solid var(--border);
+      transition: border-color .2s;
+      background: #333;
+    }
+    .team-card:hover .team-photo { border-color: var(--accent); }
+
+    .team-name {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .team-role {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .team-show {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .team-time {
+      display: block;
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Managers grid (fewer, larger) ── */
+    .team-grid--mgmt {
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      max-width: 520px;
+    }
+    .team-grid--mgmt .team-photo {
+      width: 180px;
+      height: 180px;
+    }
+    .team-grid--mgmt .team-name { font-size: 17px; }
+    .team-grid--mgmt .team-role {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--black);
+      color: #444;
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .site-footer a { color: #666; }
+    .site-footer a:hover { color: #aaa; }
+
+    @media (max-width: 600px) {
+      .page-header { padding: 32px 20px 28px; }
+      .team-main { padding: 32px 16px 60px; }
+      .team-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="page-header">
+    <div class="page-header-eyebrow">The Point 91 FM &middot; WCYT</div>
+    <h1>Our <strong>Team</strong></h1>
+    <p class="page-header-note">The student DJs, hosts, and staff behind the station.</p>
+  </header>
+
+  <main class="team-main">
+    <div class="team-section-heading">Radio Personalities</div>
+    <div class="team-grid" id="team-personalities"></div>
+    <div class="team-section-heading" id="team-mgmt-heading" style="display:none">Management</div>
+    <div class="team-grid team-grid--mgmt" id="team-management"></div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; WCYT &middot; The Point 91 FM &middot; Homestead High School, Fort Wayne, IN</p>
+  </footer>
+
+  <script src="/nav.js"></script>
+  <script src="/playlist-widget.js"></script>
+  <script>WCYTPlaylist.init(null, null, null);</script>
+
+  <script>
+    // ─────────────────────────────────────────────────────────────────────────
+    // TEAM PAGE — Google Sheet config
+    //
+    // Sheet columns: Name | Show | Time | Photo | Section
+    //   - Section must be "Personalities" or "Management"
+    //   - Time is optional (e.g. "Mon/Wed 7–8am")
+    //   - For a student with multiple shows, add one row per show
+    //     with the same Name and Photo — they will be grouped on one card
+    //
+    // To publish: File → Share → Publish to web → Sheet1 → CSV → Publish
+    // Paste the URL below.
+    // ─────────────────────────────────────────────────────────────────────────
+    const TEAM_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkht4RErJ_OYuqhoSw54AUUwNjfl-D-pNX-n_eH4PoKGtYOLW6FEy_aKG_cyyvTAPDZKBs0vgo1LTD/pub?gid=0&single=true&output=csv';
+
+    // Built-in fallback data — used when TEAM_SHEET_URL is empty
+    // For multiple shows, add extra rows with the same Name/Photo/Section
+    const FALLBACK_MEMBERS = [
+      { name: 'Alayna Baker',     show: 'Co-Host, RU For Real?',      time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720395-2J64LUCQZK54HDVUM3LE/P1083983.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jackson Blanton',  show: 'Co-Host, Theory Killers',    time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720399-070B3RUZD1G7EJI9SJSY/P1083832.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Josh Bobay',       show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720402-7IN2YUD3CRQ04N38KXML/P1083898.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Graysen Branam',   show: 'Co-Host, Question the Truth',time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720405-8SONK0GBOYOU0IHYTHPF/P1083967.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Caroline Burns',   show: 'Co-Host, RU For Real?',      time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720408-9JFJARL0B6WHVJEKW6DW/P1084000.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Will Chiaruttini', show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720411-GAIE38LVKNLIC74F3HL0/P1083913.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Grace Dickmeyer',  show: 'Co-Host, RU For Real?',      time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720413-Y8H6RZ2VPSZ7NIKM18P4/P1083985.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Christian Dollens',show: 'Co-Host, Boomer Vs. Zoomer', time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720416-BVKM90J9K9XS8GIRO1PE/P1083823.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Abegail Donaldson',show: 'Co-Host, Theory Killers',    time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720420-NX1ESSYJQ44S5HQG63BS/P1083761.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jacob Erb',        show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720423-8JEACQYF470Q2RZA5XBX/P1083952.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Justin Estrada',   show: 'Co-Host, The Big Q',         time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720426-YL1U9F4WZP5TGYKV78QJ/P1083855.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Justin Estrada',   show: 'Co-Host, The R.P.G.s',       time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720426-YL1U9F4WZP5TGYKV78QJ/P1083855.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Josiah Exford',    show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720429-R0TG2JCDLNFGQJRWQUJC/P1083904.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Graham DeWitte',   show: 'Co-Host, The Big Q',         time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720432-UKK9BRTTO846TG4NSBD7/P1083764.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Graham DeWitte',   show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720432-UKK9BRTTO846TG4NSBD7/P1083764.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Ian Fraser',       show: 'Co-Host, 8-bit Boys',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720436-FI5SHZB9OKYKF3RMYN6Q/P1083788.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Braxton Hall',     show: 'Basketball Commentator',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720440-6NUZIB239H252IQ2AWDW/P1083908.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Braxton Hall',     show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720440-6NUZIB239H252IQ2AWDW/P1083908.jpg?format=500w',        section: 'Personalities' },
+      { name: 'DaVon Hawkins',    show: 'Co-Host, The Really Phantastic Gamers', time: '', photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720443-341NE8NEITWTAH264N2L/P1083862.jpg?format=500w', section: 'Personalities' },
+      { name: 'Noah Lancz',       show: 'Basketball Commentator',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720447-A0RGHTI8WHM1B5S7ZNMF/P1083890.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Noah Lancz',       show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720447-A0RGHTI8WHM1B5S7ZNMF/P1083890.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jacob Lanier',     show: 'Co-Host, Boomer Vs. Zoomer', time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720450-YK9FTTP5VS8BDHY1MOO7/P1083776.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Noah Lanier',      show: 'Co-Host, 8-bit Boys',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720453-L7QO7S1KEN5R5KGHZIPI/P1083811.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Keegan McClure',   show: 'Co-Host, 9th Inning',        time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720456-MWV9WP35W83QCZTSXH13/P1083919.jpg?format=500w',        section: 'Personalities' },
+      { name: 'C.J. Majewski',    show: 'Co-Host, My For You Page',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720461-3UHZL6YHZJETRWQPGBY0/P1083844.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Kyle Malone',      show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720464-G2MF20FS31EJHW9VWV3H/P1083934.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Cole Obioma',      show: 'Co-Host, SpelChek',          time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720467-7L21G95TEDFM03HHJN9J/P1084111.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Zenaido Ochoa',    show: 'Co-Host, Theory Killers',    time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720470-200GHQUCMLISD808LNOP/P1083836.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Matthew Otten',    show: 'Co-Host, The Final Drive',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720474-EA10RHKH582YN02OGOL6/P1083929.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Logan Poswinski',  show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720478-HZDHYBIRPILKCIPP4IEE/P1083925.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Carter Schwartz',  show: 'Co-Host, Question the Truth',time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720481-YQ3Q680F494K6FSO6M80/P1083877-Edit.png?format=500w',   section: 'Personalities' },
+      { name: 'Andrea Valcarcel', show: 'Co-Host, SpelChek',          time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720484-D5JJSVMRAVA2NNM2OOO4/P1084088.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Michael White',    show: 'Co-Host, Sports Corner',     time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720487-16ZOCYNSY7XZQDNUXE09/P1083943.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Jake Zishka',      show: 'Co-Host, My For You Page',   time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720490-U529JUWRDZ7J9W3TAG9M/P1083874.jpg?format=500w',        section: 'Personalities' },
+      { name: 'Anelia Rybka',     show: 'Co-Host, Entertainment Island', time: '', photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/8008f1cb-1a22-4894-8fd2-d178fb844bda/P1084161.jpg?format=500w',  section: 'Personalities' },
+      { name: 'Dax Thakker',      show: 'Co-Host, The R.P.G.s',       time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/ac350815-d985-4e92-84b8-30a06044fb95/P1084155.jpg?format=500w',      section: 'Personalities' },
+      { name: 'Andy Dunn',        show: 'General Manager',            time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720493-JHBWXBFE3ID16UN4I53E/P1083956.jpg?format=500w',        section: 'Management' },
+      { name: 'Adam Schenkel',    show: 'Radio/TV Director',          time: '',  photo: 'https://images.squarespace-cdn.com/content/v1/66213a95afc386140701f167/1713453720496-83CYQ05V0S8RON2QKROC/P1083964.jpg?format=500w',        section: 'Management' },
+    ];
+
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      const lines = text.trim().split(/\r?\n/);
+      const headers = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const vals = splitCSVLine(lines[i]);
+        const obj = {};
+        headers.forEach((h, j) => { obj[h] = (vals[j] ?? '').trim(); });
+        rows.push(obj);
+      }
+      return rows;
+    }
+
+    function splitCSVLine(line) {
+      const result = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+          if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+          else inQ = !inQ;
+        } else if (c === ',' && !inQ) {
+          result.push(cur); cur = '';
+        } else {
+          cur += c;
+        }
+      }
+      result.push(cur);
+      return result;
+    }
+
+    function photoUrl(url) {
+      const m = (url || '').match(/\/d\/([^/?]+)/);
+      return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w500` : url;
+    }
+
+    // Group rows by name so multi-show students appear on one card
+    function groupByName(members) {
+      const map = new Map();
+      for (const m of members) {
+        // Normalize: collapse all whitespace types, strip invisible chars, lowercase
+        const key = (m.name || '').replace(/[\s\u00a0\u200b]+/g, ' ').trim().toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { name: m.name, photo: m.photo, section: m.section, shows: [] });
+        }
+        if (m.show) map.get(key).shows.push({ show: m.show, time: m.time || '' });
+      }
+      return [...map.values()];
+    }
+
+    function renderGrid(el, members) {
+      const grouped = groupByName(members);
+      el.innerHTML = grouped.map(m => {
+        const showsHtml = m.shows.map(s =>
+          `<div class="team-show">${esc(s.show)}${s.time ? `<span class="team-time">${esc(s.time)}</span>` : ''}</div>`
+        ).join('');
+        return `
+        <div class="team-card">
+          <img class="team-photo" src="${esc(photoUrl(m.photo))}" alt="${esc(m.name)}" loading="lazy"
+               onerror="this.style.opacity='0'">
+          <div class="team-name">${esc(m.name)}</div>
+          <div class="team-role">${showsHtml}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderTeam(members) {
+      const personalities = members.filter(m => m.section !== 'Management');
+      const management    = members.filter(m => m.section === 'Management');
+      renderGrid(document.getElementById('team-personalities'), personalities);
+      if (management.length) {
+        document.getElementById('team-mgmt-heading').style.display = '';
+        renderGrid(document.getElementById('team-management'), management);
+      }
+    }
+
+    if (TEAM_SHEET_URL) {
+      fetch(TEAM_SHEET_URL)
+        .then(r => r.text())
+        .then(csv => renderTeam(parseCSV(csv)))
+        .catch(() => renderTeam(FALLBACK_MEMBERS));
+    } else {
+      renderTeam(FALLBACK_MEMBERS);
+    }
+  </script>
+
+</body>
+</html>

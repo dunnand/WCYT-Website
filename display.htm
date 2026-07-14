@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Now Playing — WCYT</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Split ── */
+    .split {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+    .station {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .point { background: radial-gradient(ellipse at top left, #111 0%, #000 60%); }
+    .wcyt  { background: #f0f0f0; color: #000; }
+
+    .divider {
+      width: 4px;
+      background: linear-gradient(to bottom, transparent, #555 20%, #555 80%, transparent);
+      flex-shrink: 0;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .point .header { background: rgba(0,0,0,0.6);  border-bottom: 4px solid #fff; }
+    .wcyt  .header { background: #f0f0f0; border-bottom: 4px solid #111; color: #000; }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .station-name {
+      font-size: 1.6em;
+      font-weight: bold;
+      letter-spacing: 4px;
+      line-height: 1;
+    }
+    .wcyt .station-name { letter-spacing: 2px; }
+    .tagline {
+      font-size: 1em;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+    .point .tagline { color: #aaa; }
+    .wcyt  .tagline { color: #888; }
+
+    /* ── Top section ── */
+    .top {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 16px 10px;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Album art */
+    .art-wrap { position: relative; flex-shrink: 0; }
+    .album-art {
+      width: min(44vw, 54vh);
+      height: min(44vw, 54vh);
+      object-fit: cover;
+      border-radius: 10px;
+      background: #111;
+      display: block;
+      transition: opacity 0.6s ease;
+    }
+    .album-art.fading { opacity: 0; }
+    .point .album-art { border: 3px solid #2a2a2a; }
+    .wcyt  .album-art { border: 3px solid #ccc; }
+
+    .point .art-wrap::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 14px;
+      box-shadow: 0 0 40px 8px rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+    .wcyt .art-wrap::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 14px;
+      box-shadow: 0 0 40px 8px rgba(0,0,0,0.15);
+      pointer-events: none;
+    }
+
+    .channel-bug {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      height: 32px;
+      width: auto;
+      opacity: 0.7;
+      filter: drop-shadow(0 1px 4px rgba(0,0,0,0.9));
+    }
+
+    /* Song info */
+    .info {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      min-width: 0;
+      transition: opacity 0.5s ease;
+    }
+    .info.fading { opacity: 0; }
+
+    .on-air {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.6em;
+      font-weight: bold;
+      letter-spacing: 4px;
+      padding: 5px 16px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .wcyt  .on-air { background: #111; color: #fff; border: 1px solid #444; }
+    .point .on-air { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.5); }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .wcyt  .live-dot { background: #fff; }
+    .point .live-dot { background: #fff; }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.3; transform:scale(.7); }
+    }
+
+    .artist {
+      font-size: 2.4em;
+      font-weight: bold;
+      line-height: 1.15;
+      margin-bottom: 6px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .wcyt .artist { color: #000; }
+
+    .song-title {
+      font-size: 1.7em;
+      color: #ccc;
+      font-weight: normal;
+      margin-bottom: 8px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .wcyt .song-title { color: #333; }
+
+    .album-line { font-size: 0.85em; color: #666; margin-bottom: 8px; }
+    .category   { display: none; }
+
+    /* ── Station-mode overrides (point.html / 2point0.html) ── */
+    .station-mode .station .top {
+      flex: 1;
+      align-items: center;
+    }
+    .station-mode .album-art {
+      width:  min(88vw, 56vh);
+      height: min(88vw, 56vh);
+    }
+    .station-mode .artist {
+      font-size: 2.8em;
+      -webkit-line-clamp: 3;
+    }
+    .station-mode .song-title {
+      font-size: 2em;
+      -webkit-line-clamp: 3;
+    }
+    .station-mode .album-line {
+      font-size: 1.1em;
+    }
+
+    /* ── Bottom: recently played ── */
+    .bottom {
+      flex: 1;
+      padding: 16px 24px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-top: 1px solid #141414;
+      min-height: 0;
+    }
+    .wcyt .bottom { border-top: 1px solid #ddd; }
+
+    .panel-label {
+      font-size: 0.58em;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+    .point .panel-label { color: #444; }
+    .wcyt  .panel-label { color: #999; }
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0;
+      border-bottom: 1px solid #111;
+      flex-shrink: 0;
+    }
+    .wcyt .recent-item { border-bottom: 1px solid #e0e0e0; }
+    .recent-item:last-child { border-bottom: none; }
+
+    .ri-art {
+      width: 48px; height: 48px;
+      border-radius: 5px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #222;
+    }
+    .wcyt .ri-art { background: #ddd; }
+
+    .ri-info { flex: 1; min-width: 0; }
+    .ri-artist {
+      font-size: 0.9em;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .point .ri-artist { color: #ccc; }
+    .wcyt  .ri-artist { color: #222; }
+
+    .ri-title {
+      font-size: 0.78em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .point .ri-title { color: #666; }
+    .wcyt  .ri-title  { color: #888; }
+
+    .ri-time {
+      font-size: 0.72em;
+      flex-shrink: 0;
+    }
+    .point .ri-time { color: #444; }
+    .wcyt  .ri-time  { color: #aaa; }
+
+    /* ── Simian status badges ── */
+    .simian-badges {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+    .simian-badge {
+      font-size: 0.52em;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: #fff;
+      display: none;
+    }
+    .simian-badge.visible { display: inline-block; }
+    .badge-auto   { background: #27ae60; }
+    .badge-assist { background: #e67e22; }
+    .badge-off    { background: #c0392b; }
+    .badge-log-yes  { background: #1a6e3c; }
+    .badge-log-warn { background: #d97706; }
+    .badge-log-no   { background: #c0392b; }
+
+    /* ── Clock / player bar ── */
+    .clock-bar {
+      background: #030303;
+      border-top: 1px solid #0f0f0f;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 20px;
+    }
+    #clock {
+      font-size: 1.4em;
+      letter-spacing: 8px;
+      color: #444;
+      text-transform: uppercase;
+    }
+
+    .loading { color: #2a2a2a; font-style: italic; }
+    .wcyt .loading { color: #ccc; }
+
+    /* ── Player controls ── */
+    .player-controls { display: flex; align-items: center; gap: 10px; }
+    .player-play-btn {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: none; background: #c8102e; color: #fff;
+      font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s; flex-shrink: 0;
+    }
+    .player-play-btn:hover { background: #a00; }
+    .player-stn-btn {
+      background: transparent; border: 1px solid #222; color: #333;
+      font-size: 0.7em; font-weight: 700; letter-spacing: 2px;
+      padding: 6px 14px; border-radius: 4px; cursor: pointer;
+      font-family: inherit; transition: all .2s; white-space: nowrap;
+    }
+    /* When playing: active station lights up white, inactive is dimmer */
+    .playing .player-stn-btn.active { background: #1a1a1a; border-color: #666; color: #fff; }
+    .playing .player-stn-btn:not(.active) { border-color: #333; color: #555; }
+    .playing .player-stn-btn:hover  { border-color: #888; color: #fff; }
+
+    /* ── Show badge ── */
+    .show-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .show-badge.visible { display: flex; }
+    .show-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .point .show-dot { background: #fff; }
+    .wcyt  .show-dot { background: #111; }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.3; transform:scale(.7); }
+    }
+    .show-label {
+      font-size: 0.58em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .point .show-label { color: #888; }
+    .wcyt  .show-label { color: #999; }
+    .show-name {
+      font-size: 1.1em;
+      font-weight: 600;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+    .point .show-name { color: #fff; }
+    .wcyt  .show-name { color: #111; }
+  </style>
+</head>
+<body>
+
+  <div class="split">
+
+    <!-- THE POINT (left) -->
+    <div class="station point">
+      <div class="header">
+        <div>
+          <div class="header-left">
+            <img src="/images/91fm.png" style="height:54px;width:auto;" onerror="this.style.display='none'">
+            <div class="station-name">THE POINT 91FM</div>
+          </div>
+          <div class="tagline">Where Music Is The Point</div>
+        </div>
+        <div class="simian-badges">
+          <span id="badge-mode"    class="simian-badge"></span>
+          <span id="badge-log"     class="simian-badge"></span>
+        </div>
+      </div>
+      <div class="top">
+        <div class="art-wrap">
+          <img id="point-art" class="album-art" alt=""
+               onerror="this.src='/images/91fm.png';this.style.objectFit='contain';this.style.padding='32px';this.onerror=null;">
+          <img class="channel-bug" src="/images/91fm.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="info" id="point-info">
+          <div class="on-air"><span class="live-dot"></span>On Air Now</div>
+          <div id="point-show-badge" class="show-badge">
+            <span class="show-dot"></span>
+            <span class="show-label">On Air Now</span>
+            <span id="point-show-name" class="show-name"></span>
+          </div>
+          <div id="point-artist" class="artist loading">Loading...</div>
+          <div id="point-title"  class="song-title"></div>
+          <div id="point-album"  class="album-line"></div>
+        </div>
+      </div>
+      <div class="bottom">
+        <div class="panel-label">Recently Played</div>
+        <div id="point-recent"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 2.0 (right) -->
+    <div class="station wcyt">
+      <div class="header">
+        <div>
+          <div class="header-left">
+            <img src="/images/shows/2.0%20Logo.png" style="height:54px;width:auto;" onerror="this.style.display='none'">
+            <div class="station-name">2.0</div>
+          </div>
+          <div class="tagline">The Next Level of Radio</div>
+        </div>
+        <div class="simian-badges">
+          <span id="badge2-mode" class="simian-badge"></span>
+          <span id="badge2-log"  class="simian-badge"></span>
+        </div>
+      </div>
+      <div class="top">
+        <div class="art-wrap">
+          <img id="wcyt-art" class="album-art" alt=""
+               onerror="this.src='/images/shows/2.0%20Logo.png';this.style.objectFit='contain';this.style.padding='32px';this.onerror=null;">
+          <img class="channel-bug" src="/images/shows/2.0%20Logo.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="info" id="wcyt-info">
+          <div class="on-air"><span class="live-dot"></span>On Air Now</div>
+          <div id="wcyt-show-badge" class="show-badge">
+            <span class="show-dot"></span>
+            <span class="show-label">On Air Now</span>
+            <span id="wcyt-show-name" class="show-name"></span>
+          </div>
+          <div id="wcyt-artist" class="artist loading">Loading...</div>
+          <div id="wcyt-title"  class="song-title"></div>
+          <div id="wcyt-album"  class="album-line"></div>
+        </div>
+      </div>
+      <div class="bottom">
+        <div class="panel-label">Recently Played</div>
+        <div id="wcyt-recent"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="clock-bar">
+    <div class="player-controls">
+      <button class="player-stn-btn active" id="btn-point" onclick="switchStream(0)">THE POINT 91FM</button>
+      <button class="player-play-btn" id="play-btn" onclick="togglePlay()">&#9654;</button>
+      <button class="player-stn-btn" id="btn-wcyt" onclick="switchStream(1)">2.0</button>
+    </div>
+    <span id="clock"></span>
+    <div style="width:200px"></div>
+  </div>
+
+  <script>
+    // ── Clock ──────────────────────────────────────────────────────────────────
+    function updateClock() {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ── Config ─────────────────────────────────────────────────────────────────
+    const ICECAST_URL    = 'https://securestreams2.autopo.st:1069/status-json.xsl';
+    // DJ panel disabled — JSONBin quota exhausted; leave '' until it gets a new backend
+    const DJPANEL_URL    = '';
+    const FALLBACK_POINT = '/images/91fm.png';
+    const FALLBACK_2     = '/images/shows/2.0%20Logo.png';
+    const BLOCKED_TERMS  = ['liner','legal id','btyb','sponsor'];
+    const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-NowPlaying/main';
+
+    // ── DJ Panel ───────────────────────────────────────────────────────────────
+    const DJ_EXPIRE_MS = 30 * 60 * 1000;
+    let djPanel = {};
+    function getActiveDJ(key) {
+      const p = djPanel[key === 'point' ? 'wcyt' : '2pt0'];
+      if (!p || !p.active) return null;
+      if (p.updatedAt && Date.now() - new Date(p.updatedAt).getTime() > DJ_EXPIRE_MS) return null;
+      return p;
+    }
+    async function fetchDJPanel() {
+      if (!DJPANEL_URL) return;
+      try {
+        const res  = await fetch(DJPANEL_URL, { cache: 'no-store' });
+        const data = await res.json();
+        djPanel = data.record || {};
+      } catch {}
+    }
+
+    // ── Art overrides (gallery-curated URLs) ──────────────────────────────────
+    let artOverrides = {};
+    async function loadArtOverrides() {
+      try {
+        const res  = await fetch('/images/art_overrides.json', { cache: 'no-cache' });
+        const data = await res.json();
+        const raw  = data.overrides || {};
+        // Normalize & → and in keys, and upsize art from 500×500 to 600×600
+        artOverrides = Object.fromEntries(
+          Object.entries(raw).map(([k, v]) => [
+            k.replace(/\s*&\s*/g, ' and '),
+            v ? v.replace('500x500bb', '600x600bb') : v
+          ])
+        );
+        // If a song is currently showing fallback (no art found), clear its key so
+        // the next poll re-checks — handles both startup race and new overrides added
+        for (const key of ['point', 'wcyt']) {
+          if (state[key]?.currentKey && !state[key].lastArt) {
+            state[key].currentKey = null;
+          }
+        }
+      } catch {}
+    }
+
+    function normStr(s) {
+      return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .toLowerCase().replace(/\s*&\s*/g,'and').replace(/[^a-z0-9]/g,'');
+    }
+
+    function artKey(artist, title) {
+      return (artist + '|' + title).toLowerCase().replace(/\s*&\s*/g, ' and ');
+    }
+
+    // Albums whose cover art must never be shown (nudity / explicit imagery).
+    const BLOCKED_ART = [
+      ['pixies','surfer rosa'],['janes addiction','nothings shocking'],
+      ['janes addiction','ritual de lo habitual'],['nirvana','nevermind'],
+      ['nirvana','in utero'],['red hot chili peppers','mothers milk'],
+      ['red hot chili peppers','by the way'],['blind faith','blind faith'],
+      ['the slits','cut'],['pulp','this is hardcore'],
+      ['sky ferreira','night time my time'],['lorde','solar power'],
+      ['biffy clyro','the vertigo of bliss'],['marilyn manson','mechanical animals'],
+      ['the strokes','is this it'],['the black crowes','amorica'],
+      ['bow wow wow','see jungle see jungle go join your gang yeah city all over go ape crazy'],
+      ['roxy music','country life'],['roger waters','the pros and cons of hitch hiking'],
+      ['lucius','wildewoman'],['methyl ethel','everything is forgotten'],
+      ['of montreal','skeletal lamping'],['of montreal','innocence reaches'],
+      ['pulp','this'],['sigur ros','med sud i eyrum vid spilum endalaust'],
+      ['sufjan stevens','a beginners mind'],['the damned',''],
+      ['the drums','jonny'],['tv girl','death of a party girl'],
+      ['avalon emerson','perpetual emotion machine'],['arctic monkeys','help'],
+      ['death grips','no love deep web'],['guns n roses','appetite for destruction'],
+      ['tool','undertow'],['dead kennedys','frankenchrist'],
+      ['nofx','heavy petting zoo'],['chumbawamba','anarchy'],
+      ['pantera','far beyond driven'],['slayer','christ illusion'],
+      ['ween','chocolate cheese'],['bauhaus','in the flat field'],
+      ['suki waterhouse','good looking'],
+    ];
+    function artIsBlocked(artist, album) {
+      const a = normStr(artist), b = normStr(album);
+      return BLOCKED_ART.some(([ba, bb]) => a.includes(ba) && b.includes(bb));
+    }
+
+    // Art is approval-gated: only items explicitly approved in the review tool
+    // appear in art_overrides.json, so this is a simple key lookup.
+    async function fetchArt(artist, title, album) {
+      const key = artKey(artist, title);
+      if (artOverrides[key]) {
+        // Resolve the album name for the blocked-art check
+        const m = (album ?? '').match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
+        const albumName = m ? m[1].trim() : (album ?? '').trim();
+        if (artIsBlocked(artist, albumName || title)) return null;
+        return artOverrides[key];
+      }
+      // WAV files tagged with album name as INAM produce album-name keys.
+      // Fall back to album-name lookup using the BSI album field.
+      if (album) {
+        const m = album.match(/^(.+?)\s*[•·]\s*\d{4}\s*$/);
+        const albumName = m ? m[1].trim() : album.trim();
+        if (albumName && artIsBlocked(artist, albumName)) return null;
+        // Try full "Album • Year" key first — disambiguates same-name albums (e.g. Weezer)
+        const fullKey = artKey(artist, album);
+        if (artOverrides[fullKey]) return artOverrides[fullKey];
+        if (albumName) {
+          const albumKey = artKey(artist, albumName);
+          if (artOverrides[albumKey]) return artOverrides[albumKey];
+        }
+      }
+      return null;
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function parseTitle(raw) {
+      if (!raw) return { artist: '', title: '' };
+      const idx = raw.indexOf(' - ');
+      if (idx < 0) return { artist: '', title: raw.trim() };
+      return { artist: raw.slice(0, idx).trim(), title: raw.slice(idx + 3).trim() };
+    }
+    function isBlocked(raw) {
+      return BLOCKED_TERMS.some(t => (raw ?? '').toLowerCase().includes(t));
+    }
+
+    // ── Fetch BSI output file → album/year + recently played ───────────────────
+    async function fetchBSI(file) {
+      try {
+        const res    = await fetch(RAW_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
+        const html   = await res.text();
+        const doc    = new DOMParser().parseFromString(html, 'text/html');
+        const blocks = doc.querySelectorAll('.sidebar-content');
+        const album  = doc.querySelector('.album')?.textContent.trim() || '';
+        const artist = doc.querySelector('.artist')?.textContent.trim() || '';
+        const title  = doc.querySelector('.title')?.textContent.trim()  || '';
+
+        // Parse lines from a sidebar block
+        const parseLines = (html) => (html || '')
+          .split(/<br\s*\/?>/i)
+          .map(l => l.trim())
+          .filter(l => l && !isBlocked(l));
+
+        // Recently played (block[1]) — reversed so newest first, deduplicated
+        const recentLines = parseLines(blocks[1]?.innerHTML).reverse();
+        const recent = [];
+        const recentSeen = new Set();
+        for (const line of recentLines) {
+          if (recent.length >= RECENT_LIMIT) break;
+          const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
+          if (!m) continue;
+          const [, time, a, t] = m;
+          const dedupeKey = (a.trim() + '|' + t.trim()).toLowerCase();
+          if (recentSeen.has(dedupeKey)) continue;
+          recentSeen.add(dedupeKey);
+          const art = await fetchArt(a.trim(), t.trim(), album);
+          recent.push({ time, artist: a.trim(), title: t.trim(), art });
+        }
+
+        // Coming up (block[0]) — pre-fetch art in background so it's cached
+        const upcomingLines = parseLines(blocks[0]?.innerHTML);
+        for (const line of upcomingLines.slice(0, 4)) {
+          const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
+          if (!m) continue;
+          fetchArt(m[2].trim(), m[3].trim(), album); // fire-and-forget to warm cache
+        }
+
+        return { album, artist, title, recent };
+      } catch { return { album: '', artist: '', title: '', recent: [] }; }
+    }
+
+    // ── Render recently played ─────────────────────────────────────────────────
+    function renderRecent(id, items, fallback) {
+      const el = document.getElementById(id);
+      el.innerHTML = items.map(s => `
+        <div class="recent-item">
+          <img class="ri-art" src="${s.art || fallback}"
+               onerror="this.src='${fallback}';this.style.objectFit='contain';this.style.padding='6px';">
+          <div class="ri-info">
+            <div class="ri-artist">${s.artist}</div>
+            <div class="ri-title">${s.title}</div>
+          </div>
+          <div class="ri-time">${s.time}</div>
+        </div>`).join('');
+    }
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    const state = {
+      point: { currentKey: null, djActive: false, lastArt: null, lastTime: null },
+      wcyt:  { currentKey: null, djActive: false, lastArt: null, lastTime: null }
+    };
+    // Live recently-played history built from Icecast polls — always real-time.
+    // BSI files are only used as a seed on first load, then this takes over.
+    const liveHistory = { point: [], wcyt: [] };
+
+    // ── BSI refresh — album name only (recently played now comes from liveHistory) ──
+    async function refreshBSI(key, bsiFile) {
+      const fallback = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+      const bsi = await fetchBSI(bsiFile);
+      // Use live history if we have any entries; fall back to BSI on first load
+      renderRecent(key + '-recent',
+        liveHistory[key].length > 0 ? liveHistory[key] : bsi.recent,
+        fallback);
+      const currentTitle = normStr((state[key].currentKey || '').split('|')[1] || '');
+      const el = document.getElementById(key + '-album');
+      // Update album if BSI title matches, or if album is blank and BSI has data (catches lag)
+      if (el && bsi.album && currentTitle && (normStr(bsi.title) === currentTitle || !el.textContent.trim())) {
+        el.textContent = bsi.album;
+      }
+    }
+
+    // ── Update station — driven by Icecast title ───────────────────────────────
+    async function updateStation(key, rawTitle, bsiFile) {
+      const fallback  = key === 'point' ? FALLBACK_POINT : FALLBACK_2;
+      const infoEl    = document.getElementById(key + '-info');
+      const artEl     = document.getElementById(key + '-art');
+      const badgeEl   = document.getElementById(key + '-show-badge');
+      const nameEl    = document.getElementById(key + '-show-name');
+
+      const bsi = await fetchBSI(bsiFile);
+      renderRecent(key + '-recent',
+        liveHistory[key].length > 0 ? liveHistory[key] : bsi.recent,
+        fallback);
+
+      const dj         = getActiveDJ(key);
+      const showActive = dj && !dj.onBreak && dj.showName;
+      if (badgeEl) badgeEl.classList.toggle('visible', !!showActive);
+      if (nameEl)  nameEl.textContent = showActive ? dj.showName : '';
+
+      if (isBlocked(rawTitle)) return;
+      const parsed = parseTitle(rawTitle);
+      // Fall back to BSI file data when Icecast has no stream title
+      if (!parsed.artist && !parsed.title) {
+        if (bsi.artist) { parsed.artist = bsi.artist; parsed.title = bsi.title; }
+        else return;
+      }
+
+      const songKey = (parsed.artist + '|' + parsed.title).toLowerCase();
+      if (songKey !== state[key].currentKey && state[key].currentKey) {
+        // Song changed — push the outgoing song into live history (skip if already present)
+        const prevKey = state[key].currentKey;
+        if (!liveHistory[key].some(h => (h.artist + '|' + h.title).toLowerCase() === prevKey)) {
+          liveHistory[key].unshift({
+            time:   state[key].lastTime   || '',
+            artist: state[key].lastArtist || '',
+            title:  state[key].lastTitle  || '',
+            art:    state[key].lastArt    || null,
+          });
+          if (liveHistory[key].length > RECENT_LIMIT) liveHistory[key].length = RECENT_LIMIT;
+        }
+      }
+      if (songKey === state[key].currentKey) {
+        const el = document.getElementById(key + '-album');
+        const bsiMatch = bsi.album && normStr(bsi.title) === normStr(parsed.title);
+        if (el && bsiMatch) el.textContent = bsi.album;
+        if (showActive && dj.imageUrl) {
+          artEl.src = dj.imageUrl;
+        } else if (!showActive && state[key].djActive) {
+          // DJ just went on break — restore album art
+          fetchArt(parsed.artist, parsed.title, bsi.album).then(url => {
+            artEl.style.objectFit = '';
+            artEl.style.padding   = '';
+            artEl.src = url || fallback;
+          });
+        } else if (!state[key].lastArt && !showActive && bsiMatch) {
+          // Art lookup failed earlier because BSI hadn't caught up — retry now
+          fetchArt(parsed.artist, parsed.title, bsi.album).then(url => {
+            if (url) {
+              state[key].lastArt = url;
+              artEl.style.objectFit = '';
+              artEl.style.padding   = '';
+              artEl.src = url;
+            }
+          });
+        }
+        state[key].djActive = !!showActive;
+        return;
+      }
+      state[key].currentKey  = songKey;
+      state[key].djActive    = !!showActive;
+      state[key].lastArtist  = parsed.artist;
+      state[key].lastTitle   = parsed.title;
+      state[key].lastTime    = new Date().toLocaleTimeString('en-US',
+        { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+      state[key].lastArt     = null;
+
+      const set = (id, txt) => { const e = document.getElementById(id); if (e) { e.textContent = txt; e.classList.remove('loading'); }};
+      const maxLines = STATION ? 3 : 2;
+      const fitText = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.fontSize = '';
+        el.style.webkitLineClamp = 'unset';
+        el.style.display = 'block';
+        const lh = parseFloat(getComputedStyle(el).lineHeight) || 36;
+        const maxH = lh * maxLines + 6;
+        if (el.scrollHeight > maxH) {
+          let lo = 12, hi = parseFloat(getComputedStyle(el).fontSize);
+          for (let i = 0; i < 12; i++) {
+            const mid = (lo + hi) / 2;
+            el.style.fontSize = mid + 'px';
+            if (el.scrollHeight <= maxH) lo = mid; else hi = mid;
+          }
+          el.style.fontSize = lo + 'px';
+        }
+        el.style.webkitLineClamp = '';
+        el.style.display = '';
+      };
+      const fitArtist = fitText;
+
+      // In station mode, if artist + title combined are still too tall for the
+      // container, scale both fonts down proportionally until they fit.
+      const fitInfoBlock = () => {
+        if (!STATION) return;
+        const topEl    = document.getElementById(key + '-info')?.closest('.top');
+        const infoEl   = document.getElementById(key + '-info');
+        const artistEl = document.getElementById(key + '-artist');
+        const titleEl  = document.getElementById(key + '-title');
+        if (!topEl || !infoEl || !artistEl || !titleEl) return;
+        if (infoEl.scrollHeight <= topEl.clientHeight) return;
+        const a0 = parseFloat(getComputedStyle(artistEl).fontSize);
+        const t0 = parseFloat(getComputedStyle(titleEl).fontSize);
+        const ratio = t0 / (a0 || 1);
+        let lo = 8, hi = a0;
+        for (let i = 0; i < 16; i++) {
+          const mid = (lo + hi) / 2;
+          artistEl.style.fontSize = mid + 'px';
+          titleEl.style.fontSize  = (mid * ratio) + 'px';
+          if (infoEl.scrollHeight <= topEl.clientHeight) lo = mid; else hi = mid;
+        }
+        artistEl.style.fontSize = lo + 'px';
+        titleEl.style.fontSize  = (lo * ratio) + 'px';
+      };
+
+      // Clear text and blank art using a transparent pixel (avoids triggering onerror)
+      set(key + '-artist', '');
+      set(key + '-title',  '');
+      set(key + '-album',  '');
+      artEl.style.objectFit = '';
+      artEl.style.padding   = '';
+      artEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      artEl.classList.add('fading');
+
+      const bsiTitleMatch = bsi.title && normStr(bsi.title) === normStr(parsed.title);
+
+      // Populate once art resolves, then reveal
+      const art = showActive && dj.imageUrl
+        ? dj.imageUrl
+        : (await fetchArt(parsed.artist, parsed.title, bsi.album) || fallback);
+      state[key].lastArt = (art !== fallback) ? art : null;
+
+      set(key + '-artist', parsed.artist);
+      fitArtist(key + '-artist');
+      set(key + '-title',  parsed.title);
+      fitText(key + '-title');
+      // Only write album if BSI title matches — leave blank otherwise until BSI catches up
+      if (bsiTitleMatch) set(key + '-album', bsi.album);
+      fitInfoBlock();
+      // Reset any inline styles onerror may have set, then swap art
+      artEl.style.objectFit = '';
+      artEl.style.padding = '';
+      artEl.src = art;
+      artEl.classList.remove('fading');
+    }
+
+    // ── Poll ───────────────────────────────────────────────────────────────────
+    async function poll() {
+      try {
+        const res = await fetch(ICECAST_URL, { cache: 'no-store' });
+        const buf = await res.arrayBuffer();
+        let text;
+        try   { text = new TextDecoder('utf-8', { fatal:true }).decode(buf); }
+        catch { text = new TextDecoder('latin1').decode(buf); }
+        const data    = JSON.parse(text);
+        let sources   = data?.icestats?.source ?? [];
+        if (!Array.isArray(sources)) sources = [sources];
+        const find    = mount => sources.find(s => (s.listenurl ?? '').toLowerCase().includes(mount));
+        const title1  = find('wcyt.mp3')?.title    ?? null;
+        const title2  = find('wcythd2.mp3')?.title ?? null;
+        await Promise.all([
+          updateStation('point', title1, '/Point_Display_OUT.htm'),
+          updateStation('wcyt',  title2, '/2_Display_OUT.htm')
+        ]);
+      } catch(e) { console.warn('Poll failed:', e.message); }
+    }
+
+    // ── Audio player ──────────────────────────────────────────────────────────
+    const STREAMS = [
+      'https://securestreams2.autopo.st:1069/WCYT.mp3',   // 0 — The Point
+      'https://securestreams2.autopo.st:1069/wcythd2.mp3' // 1 — 2.0
+    ];
+    let audio        = new Audio();
+    let playing      = false;
+    let activeStream = 0;
+
+    const PAUSE_ICON = '&#x23F8;';
+    const PLAY_ICON  = '&#9654;';
+    function updatePlayBtn() {
+      document.getElementById('play-btn').innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+      document.querySelector('.player-controls').classList.toggle('playing', playing);
+    }
+
+    function updateStreamBtns() {
+      document.getElementById('btn-point').classList.toggle('active', activeStream === 0);
+      document.getElementById('btn-wcyt').classList.toggle('active',  activeStream === 1);
+    }
+
+    function loadStream(idx) {
+      audio.pause();
+      audio = new Audio(STREAMS[idx]);
+      audio.volume = 1;
+      if (playing) audio.play().catch(() => {});
+    }
+
+    function switchStream(idx) {
+      if (idx === activeStream && playing) return; // already on and playing
+      activeStream = idx;
+      updateStreamBtns();
+      loadStream(idx);
+      if (!playing) { playing = true; updatePlayBtn(); }
+    }
+
+    function togglePlay() {
+      if (playing) {
+        audio.pause();
+        playing = false;
+      } else {
+        if (!audio.src) loadStream(activeStream);
+        audio.play().catch(() => {});
+        playing = true;
+      }
+      updatePlayBtn();
+    }
+
+    // Autoplay The Point on load
+    (function autoplay() {
+      audio.src = STREAMS[0];
+      audio.play().then(() => {
+        playing = true;
+        updatePlayBtn();
+      }).catch(() => {
+        // Autoplay blocked — user must press play
+        playing = false;
+        updatePlayBtn();
+      });
+    })();
+
+    // ── Wake Lock — keep screen on ────────────────────────────────────────────
+    async function keepAwake() {
+      if (!('wakeLock' in navigator)) return;
+      try {
+        await navigator.wakeLock.request('screen');
+      } catch {}
+    }
+    keepAwake();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') keepAwake();
+    });
+
+    // ── Simian status badges ───────────────────────────────────────────────────
+    function applyStatusBadges(s, modeId, logId) {
+      const modeEl = document.getElementById(modeId);
+      const logEl  = document.getElementById(logId);
+      if (!modeEl || !logEl) return;
+
+      modeEl.className = 'simian-badge visible';
+      if (s.mode === 'auto')        { modeEl.classList.add('badge-auto');   modeEl.textContent = 'AUTO'; }
+      else if (s.mode === 'assist') { modeEl.classList.add('badge-assist'); modeEl.textContent = 'ASSIST'; }
+      else                          { modeEl.classList.add('badge-off');    modeEl.textContent = 'OFF'; }
+
+      logEl.className = 'simian-badge visible';
+      if (!s.logLoaded)                          { logEl.classList.add('badge-log-no');   logEl.textContent = 'NO LOG'; }
+      else if (s.logDateOk === false)            { logEl.classList.add('badge-log-warn'); logEl.textContent = 'OLD LOG'; }
+      else                                       { logEl.classList.add('badge-log-yes');  logEl.textContent = 'LOG'; }
+    }
+
+    // Status JSONs are committed to the repo by bsi_watcher.py — read them from
+    // raw GitHub like the BSI files (replaces JSONBin, whose quota ran out).
+    async function fetchStatus() {
+      const load = async (file, modeId, logId) => {
+        try {
+          const res = await fetch(RAW_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
+          if (!res.ok) return;
+          applyStatusBadges(await res.json(), modeId, logId);
+        } catch {}
+      };
+      load('/point_status.json', 'badge-mode',  'badge-log');
+      load('/wcyt2_status.json', 'badge2-mode', 'badge2-log');
+    }
+
+    function pollStatus() { fetchStatus(); }
+
+    const BADGES_ON    = new URLSearchParams(window.location.search).has('badges');
+    const STATION      = new URLSearchParams(window.location.search).get('station'); // 'point', 'wcyt', or null
+    const RECENT_LIMIT = STATION ? 8 : 5;
+
+    if (STATION) {
+      document.body.classList.add('station-mode');
+      const isPoint  = STATION === 'point';
+      const activeEl = document.querySelector(isPoint ? '.station.point' : '.station.wcyt');
+      const sideEl   = document.querySelector(isPoint ? '.station.wcyt' : '.station.point');
+      const bottom   = activeEl.querySelector('.bottom');
+      sideEl.innerHTML = '';
+      sideEl.className = activeEl.className;
+      sideEl.appendChild(bottom);
+      bottom.querySelector('.panel-label').style.color = isPoint ? '#aaa' : '#666';
+    }
+
+    loadArtOverrides().then(() => poll()); // wait for overrides before first poll — avoids blank art on startup
+    setInterval(loadArtOverrides, 10 * 60_000); // refresh overrides every 10 min
+    fetchDJPanel();
+    setInterval(fetchDJPanel, 5 * 60_000);
+    setInterval(poll, 10_000);
+    // Refresh BSI album/year independently every 10 seconds
+    setInterval(() => {
+      refreshBSI('point', '/Point_Display_OUT.htm');
+      refreshBSI('wcyt',  '/2_Display_OUT.htm');
+    }, 10_000);
+    if (BADGES_ON) {
+      pollStatus();
+      setInterval(pollStatus, 60_000);
+    }
+  </script>
+
+</body>
+</html>

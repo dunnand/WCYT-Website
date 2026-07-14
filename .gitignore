@@ -1,0 +1,23 @@
+# Environment / secrets
+.env
+.env.*
+*.secret
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+
+# Machine-generated — never commit (the log alone is 100+ MB)
+*.log
+__pycache__/
+*.pyc
+
+# Local tool state (art review tool / watcher scratch files)
+new_pending.json
+images/new_pending.json
+images/wav_art_progress.json
+OutcueToAlbumMonth_state.json
