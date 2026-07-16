@@ -19,12 +19,15 @@
   const SHOW_URL      = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvbq5nlJGzIblU91RLbcNBwChU9jE28xlwM537tunzMWb3hWyHmnuojMZAjKqNdSP8mmoDXdzp4U0a/pub?output=csv';
   const SHOW_TTL_MS   = 45 * 60 * 1000; // auto-clear after 45 minutes
 
-  // ── BSI output files (album/year data from Simian) ────────────────────────
+  // ── Now-playing JSONs (written by bsi_watcher.py at the station) ──────────
+  // Each has { now, comingUp, recent } — the watcher maintains the rolling
+  // recently-played list itself because Simian's own sidebar truncates and
+  // runs ~30 min behind by midday.
   // Raw GitHub URL bypasses the GitHub Pages CDN — updates within seconds of a push
   const RAW_BASE = 'https://raw.githubusercontent.com/dunnand/WCYT-NowPlaying/main';
   const BSI_FILES = [
-    '/Point_Display_OUT.htm', // station 0 — The Point
-    '/2_Display_OUT.htm',     // station 1 — 2.0
+    '/point_recent.json', // station 0 — The Point
+    '/wcyt2_recent.json', // station 1 — 2.0
   ];
 
   // ── DJ Panel ──────────────────────────────────────────────────────
@@ -584,35 +587,14 @@
 
   async function fetchBSIData(url) {
     try {
-      const res    = await fetch(RAW_BASE + url + '?t=' + Date.now(), { cache: 'no-store' });
-      const html   = await res.text();
-      const doc    = new DOMParser().parseFromString(html, 'text/html');
-      const albumLine = doc.querySelector('.album')?.textContent.trim() || '';
-      const bsiTitle  = doc.querySelector('.title')?.textContent.trim()  || '';
-      const blocks = doc.querySelectorAll('.sidebar-content');
-      const lines  = (blocks[1]?.innerHTML || '').split(/<br\s*\/?>/i);
-      const decodeHTML = s => { const el = document.createElement('textarea'); el.innerHTML = s; return el.value; };
-      const all = [];
-      for (const line of lines) {
-        const text = decodeHTML(line.trim());
-        if (!text) continue;
-        if (BLOCKED_TERMS.some(b => text.toLowerCase().includes(b))) continue;
-        const m = text.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
-        if (!m) continue;
-        all.push({ time: m[1], artist: m[2].trim(), title: m[3].trim().replace(/\s*\(\d{4}\)\s*$/, '') });
-      }
-      // BSI lists oldest first — reverse so most recent is at top, then deduplicate
-      all.reverse();
-      const bsiSeen = new Set();
-      const recent = [];
-      for (const item of all) {
-        if (recent.length >= 20) break;
-        const k = (item.artist + '|' + item.title).toLowerCase();
-        if (bsiSeen.has(k)) continue;
-        bsiSeen.add(k);
-        recent.push(item);
-      }
-      return { albumLine, bsiTitle, recent };
+      const res  = await fetch(RAW_BASE + url + '?t=' + Date.now(), { cache: 'no-store' });
+      const data = await res.json();
+      const now  = data.now || {};
+      const recent = (data.recent || [])
+        .filter(s => !isBlocked(s.artist + ' - ' + s.title, { artist: s.artist, title: s.title }))
+        .slice(0, 20)
+        .map(s => ({ time: s.time, artist: s.artist, title: s.title, albumLine: s.album || '' }));
+      return { albumLine: now.album || '', bsiTitle: now.title || '', recent };
     } catch { return { albumLine: '', bsiTitle: '', recent: [] }; }
   }
 
@@ -662,7 +644,7 @@
       bsiRecent1 = bsi1.recent.filter(s => artCacheKey(s.artist, s.title) !== nowKey1);
       bsiRecent2 = bsi2.recent.filter(s => artCacheKey(s.artist, s.title) !== nowKey2);
       // Prefetch art for recent items into cache so next render has them
-      [...bsiRecent1, ...bsiRecent2].forEach(s => fetchArt(s.artist, s.title));
+      [...bsiRecent1, ...bsiRecent2].forEach(s => fetchArt(s.artist, s.title, s.albumLine || ''));
       // Always re-render so recently played reflects the latest BSI data even
       // when the current song hasn't changed (render() is not called otherwise)
       render();

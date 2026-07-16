@@ -9,6 +9,8 @@ Run this on the website PC:
 """
 
 import os
+import re
+import html
 import shutil
 import subprocess
 import time
@@ -48,6 +50,98 @@ STATUS_SOURCES = [
     (r"\\Wcyt\bsi32\Backup.ini",          "point_status.json", "point"),
     (r"\\2point0\bsi32\Backup.ini",  "wcyt2_status.json", "wcyt2"),
 ]
+
+# Companion JSON per station: now-playing, coming-up, and a rolling
+# recently-played list maintained HERE. Simian's own <!--BSIRECENT--> block
+# lists oldest-first from the start of the broadcast day and truncates at a
+# size cap, so by midday it runs 30+ minutes behind — we keep our own list.
+RECENT_FILES = {
+    "Point_Display_OUT.htm": "point_recent.json",
+    "2_Display_OUT.htm":     "wcyt2_recent.json",
+}
+RECENT_MAX    = 25
+BLOCKED_TERMS = ['liner', 'legal id', 'btyb', 'sponsor']
+
+def _blocked(text):
+    t = (text or '').lower()
+    return any(b in t for b in BLOCKED_TERMS)
+
+def _tag(content, cls):
+    m = re.search(r'class="%s">([^<]*)' % cls, content)
+    return html.unescape(m.group(1)).strip() if m else ''
+
+def _parse_sidebar(content, heading):
+    """Parse one sidebar block ('Coming Up' / 'Recently Played') into songs."""
+    m = re.search(heading + r'</h3>\s*<div class="sidebar-content">(.*?)</div>',
+                  content, re.S)
+    if not m:
+        return []
+    out = []
+    for line in re.split(r'<br\s*/?>', m.group(1)):
+        line = html.unescape(line).strip()
+        lm = re.match(r'^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$',
+                      line, re.I)
+        if not lm:
+            continue
+        if _blocked(lm.group(2) + ' ' + lm.group(3)):
+            continue
+        out.append({"time": lm.group(1).lower(), "artist": lm.group(2).strip(),
+                    "title": lm.group(3).strip()})
+    return out
+
+def update_recent_json(dest, dest_path):
+    """Regenerate the station's companion JSON from a freshly copied OUT file.
+    Returns the JSON filename when written (so it can be committed), else None."""
+    json_name = RECENT_FILES.get(dest)
+    if not json_name:
+        return None
+    try:
+        content = open(dest_path, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+
+    artist   = _tag(content, 'artist')
+    title    = _tag(content, 'title')
+    album    = _tag(content, 'album')
+    category = _tag(content, 'category')
+    if not album.strip(' •'):      # placeholder " • " when no album data
+        album = ''
+
+    json_path = os.path.join(REPO_DIR, json_name)
+    try:
+        recent = json.loads(open(json_path, encoding='utf-8').read()).get('recent', [])
+    except Exception:
+        # First run — seed from Simian's own (lagged) list so the site isn't empty
+        recent = list(reversed(_parse_sidebar(content, 'Recently Played')))[:RECENT_MAX]
+
+    if artist and title and not _blocked(f"{artist} {title} {category}"):
+        head = recent[0] if recent else {}
+        if (head.get('artist', '').lower(), head.get('title', '').lower()) \
+                != (artist.lower(), title.lower()):
+            recent.insert(0, {
+                "time":   time.strftime("%I:%M %p").lstrip('0').lower(),
+                "artist": artist,
+                "title":  title,
+                "album":  album,
+            })
+            del recent[RECENT_MAX:]
+        elif album and not head.get('album'):
+            head['album'] = album   # album field can lag one write behind
+
+    data = {
+        "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "now":       {"artist": artist, "title": title, "album": album,
+                      "category": category},
+        "comingUp":  _parse_sidebar(content, 'Coming Up')[:5],
+        "recent":    recent,
+    }
+    try:
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return json_name
+    except Exception as e:
+        log(f"[recent] write failed ({json_name}): {e}")
+        return None
 
 # Status JSON files are committed to the repo and read by display.htm via
 # raw.githubusercontent.com — same pattern as the BSI OUT files. (Replaced
@@ -301,6 +395,13 @@ def main():
             pending.add(dest)
             last_change = time.time()
 
+    # Refresh the recently-played JSONs once at startup
+    for _src, dest in NETWORK_FILES:
+        jn = update_recent_json(dest, os.path.join(REPO_DIR, dest))
+        if jn:
+            pending.add(jn)
+            last_change = time.time()
+
     while True:
         time.sleep(POLL_INTERVAL)
         now = time.time()
@@ -324,6 +425,9 @@ def main():
                     shutil.copy2(src, dest_path)
                     log(f"Copied {src} -> {dest}")
                     pending.add(dest)
+                    jn = update_recent_json(dest, dest_path)
+                    if jn:
+                        pending.add(jn)
                     last_change = now
                 except Exception as e:
                     log(f"Copy failed ({src}): {e}")

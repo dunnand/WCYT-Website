@@ -618,48 +618,27 @@
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    // ── Fetch BSI output file → album/year + recently played ───────────────────
+    // ── Fetch station JSON (written by bsi_watcher) → now / recently played ────
     async function fetchBSI(file) {
       try {
-        const res    = await fetch(RAW_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
-        const html   = await res.text();
-        const doc    = new DOMParser().parseFromString(html, 'text/html');
-        const blocks = doc.querySelectorAll('.sidebar-content');
-        const album  = doc.querySelector('.album')?.textContent.trim() || '';
-        const artist = doc.querySelector('.artist')?.textContent.trim() || '';
-        const title  = doc.querySelector('.title')?.textContent.trim()  || '';
+        const res  = await fetch(RAW_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
+        const data = await res.json();
+        const now  = data.now || {};
 
-        // Parse lines from a sidebar block
-        const parseLines = (html) => (html || '')
-          .split(/<br\s*\/?>/i)
-          .map(l => l.trim())
-          .filter(l => l && !isBlocked(l));
-
-        // Recently played (block[1]) — reversed so newest first, deduplicated
-        const recentLines = parseLines(blocks[1]?.innerHTML).reverse();
         const recent = [];
-        const recentSeen = new Set();
-        for (const line of recentLines) {
+        for (const s of (data.recent || [])) {
           if (recent.length >= RECENT_LIMIT) break;
-          const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
-          if (!m) continue;
-          const [, time, a, t] = m;
-          const dedupeKey = (a.trim() + '|' + t.trim()).toLowerCase();
-          if (recentSeen.has(dedupeKey)) continue;
-          recentSeen.add(dedupeKey);
-          const art = await fetchArt(a.trim(), t.trim(), album);
-          recent.push({ time, artist: a.trim(), title: t.trim(), art });
+          if (isBlocked(s.artist + ' - ' + s.title)) continue;
+          const art = await fetchArt(s.artist, s.title, s.album || '');
+          recent.push({ time: s.time, artist: s.artist, title: s.title, art });
         }
 
-        // Coming up (block[0]) — pre-fetch art in background so it's cached
-        const upcomingLines = parseLines(blocks[0]?.innerHTML);
-        for (const line of upcomingLines.slice(0, 4)) {
-          const m = line.match(/^(\d+:\d+\s*[ap]m)\s*-\s*(.+?)\s*-\s*(.+?)(?:\s*\(\d{4}\))?\s*$/i);
-          if (!m) continue;
-          fetchArt(m[2].trim(), m[3].trim(), album); // fire-and-forget to warm cache
+        // Pre-fetch art for upcoming songs so it's cached when they start
+        for (const u of (data.comingUp || []).slice(0, 4)) {
+          fetchArt(u.artist, u.title, ''); // fire-and-forget to warm cache
         }
 
-        return { album, artist, title, recent };
+        return { album: now.album || '', artist: now.artist || '', title: now.title || '', recent };
       } catch { return { album: '', artist: '', title: '', recent: [] }; }
     }
 
@@ -857,8 +836,8 @@
         const title1  = find('wcyt.mp3')?.title    ?? null;
         const title2  = find('wcythd2.mp3')?.title ?? null;
         await Promise.all([
-          updateStation('point', title1, '/Point_Display_OUT.htm'),
-          updateStation('wcyt',  title2, '/2_Display_OUT.htm')
+          updateStation('point', title1, '/point_recent.json'),
+          updateStation('wcyt',  title2, '/wcyt2_recent.json')
         ]);
       } catch(e) { console.warn('Poll failed:', e.message); }
     }
