@@ -31,13 +31,9 @@
   ];
 
   // ── DJ Panel ──────────────────────────────────────────────────────
-  // Disabled — the JSONBin backend ran out of request quota. Leave BIN_ID
-  // empty until the panel gets a new backend. Never put an API key here:
-  // this file is public.
-  const DJPANEL_BIN_ID  = '';
-  const DJPANEL_URL     = DJPANEL_BIN_ID
-    ? `https://api.jsonbin.io/v3/b/${DJPANEL_BIN_ID}/latest`
-    : '';
+  // Backed by a Google Apps Script web app (see dj-backend.gs in this repo).
+  // Paste the deployed /exec URL here. Read-only — no keys needed.
+  const DJPANEL_URL = 'https://script.google.com/macros/s/AKfycbwV99T1Owt69gFQYtdOmqGUJjtMME1y0bUBjJ9XHN1CjzPXMhfPeI8xNFZOUUI6hsB7/exec';
 
   // ── Last.fm config ────────────────────────────────────────────────────────
   // Register free API keys at https://www.last.fm/api/account/create
@@ -1212,7 +1208,7 @@
       fetchCurrentShow();
       fetchDJPanel();
       pollTimer = setInterval(() => { fetchNowPlaying(); fetchCurrentShow(); }, POLL_MS);
-      setInterval(fetchDJPanel, 30_000); // DJ panel — poll every 30s for timely on-air updates
+      setInterval(fetchDJPanel, 60_000); // DJ panel — 60s keeps well inside Apps Script's daily quota
       setInterval(loadSongOverrides, 10 * 60_000); // refresh art overrides every 10 min
       tickTimer = setInterval(tickAges, 30_000);
     },

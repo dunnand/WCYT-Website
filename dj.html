@@ -203,16 +203,13 @@
   <!-- Setup notice (only shown if not configured) -->
   <div id="setup-notice" style="display:none;">
     <h2>⚠ Setup Required</h2>
-    <p>To use the DJ Panel, complete the one-time JSONBin setup:</p>
+    <p>To use the DJ Panel, complete the one-time Google Apps Script setup:</p>
     <ol>
-      <li>Create a free account at <strong>jsonbin.io</strong></li>
-      <li>Create a new bin with this content:<br>
-        <code>{"wcyt":{"active":false},"2pt0":{"active":false}}</code>
-      </li>
-      <li>Set the bin to <strong>Public</strong> (so the website can read it)</li>
-      <li>Copy your <strong>Bin ID</strong> and <strong>API Key</strong></li>
-      <li>Edit <code>dj.html</code> and fill in <code>BIN_ID</code> and <code>WRITE_KEY</code> in the config section</li>
-      <li>Also update <code>playlist-widget.js</code> with the same <code>BIN_ID</code></li>
+      <li>Go to <strong>script.google.com</strong> → New project</li>
+      <li>Paste in the contents of <code>dj-backend.gs</code> (in this site's repo) and save</li>
+      <li>Deploy → New deployment → <strong>Web app</strong> → Execute as <strong>Me</strong>, access <strong>Anyone</strong></li>
+      <li>Copy the Web app URL (ends in <code>/exec</code>)</li>
+      <li>Paste it into <code>SCRIPT_URL</code> in <code>dj.html</code> and <code>DJPANEL_URL</code> in <code>playlist-widget.js</code></li>
     </ol>
   </div>
 
@@ -296,14 +293,12 @@
 
 <script>
   // ─────────────────────────────────────────────────────────────────
-  // CONFIG — fill these in after JSONBin setup
+  // CONFIG — Google Apps Script backend (see dj-backend.gs for setup)
   // ─────────────────────────────────────────────────────────────────
-  // Panel is currently DISABLED — the JSONBin backend ran out of request quota.
-  // Leave BIN_ID and WRITE_KEY empty until it gets a new backend.
-  // NEVER put a master key here: this file is public. If JSONBin is revived,
-  // use a scoped Access Key (update-only, this bin) — not the master key.
-  const BIN_ID   = '';
-  const WRITE_KEY = '';
+  // Paste the deployed Web app URL here (ends in /exec). There are no keys
+  // in this file: writes send the panel password, which the script verifies
+  // server-side against a hash.
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwV99T1Owt69gFQYtdOmqGUJjtMME1y0bUBjJ9XHN1CjzPXMhfPeI8xNFZOUUI6hsB7/exec';
   const MANIFEST_URL = '/images/shows/manifest.json';
 
   // Password hash — SHA-256 of the panel password. To change the password,
@@ -312,8 +307,8 @@
   const PASSWORD_HASH = 'd6242d92fd958617bd2530f19bc9c95ac147c87b77968b30553e4dc61e2b3117';
   // ─────────────────────────────────────────────────────────────────
 
-  const JSONBIN_URL = BIN_ID ? `https://api.jsonbin.io/v3/b/${BIN_ID}` : '';
   let activeStation = 'wcyt';
+  let panelPassword = '';   // held in memory after login; sent with each write
 
   // ── Password ───────────────────────────────────────────────────────
   async function sha256(str) {
@@ -326,7 +321,8 @@
     if (!pw) return;
     const hash = await sha256(pw);
     if (hash === PASSWORD_HASH) {
-      sessionStorage.setItem('wcyt-dj-auth', '1');
+      panelPassword = pw;
+      sessionStorage.setItem('wcyt-dj-pw', pw);
       showPanel();
     } else {
       document.getElementById('pw-error').textContent = 'Incorrect password.';
@@ -342,15 +338,21 @@
     document.getElementById('pw-gate').classList.add('hidden');
     const panel = document.getElementById('dj-panel');
     panel.style.display = 'flex';
-    if (!BIN_ID || !WRITE_KEY) {
+    if (!SCRIPT_URL) {
       document.getElementById('setup-notice').style.display = 'block';
     }
     loadManifest();
     loadCurrentState();
   }
 
-  // Auto-login if session active
-  if (sessionStorage.getItem('wcyt-dj-auth') === '1') showPanel();
+  // Auto-login if session active (re-verify the stored password's hash)
+  (async () => {
+    const saved = sessionStorage.getItem('wcyt-dj-pw');
+    if (saved && await sha256(saved) === PASSWORD_HASH) {
+      panelPassword = saved;
+      showPanel();
+    }
+  })();
 
   // ── Station tabs ───────────────────────────────────────────────────
   function setStation(id) {
@@ -385,13 +387,11 @@
     img.style.display = url ? 'block' : 'none';
   }
 
-  // ── Load current state from JSONBin ───────────────────────────────
+  // ── Load current state from Apps Script ───────────────────────────
   async function loadCurrentState() {
-    if (!JSONBIN_URL) return;
+    if (!SCRIPT_URL) return;
     try {
-      const res = await fetch(JSONBIN_URL + '/latest', {
-        headers: { 'X-Master-Key': WRITE_KEY }
-      });
+      const res = await fetch(SCRIPT_URL, { cache: 'no-store' });
       const data = await res.json();
       const rec = data.record || {};
       const s = rec[activeStation] || {};
@@ -417,40 +417,27 @@
     }
   }
 
-  // ── Write to JSONBin ───────────────────────────────────────────────
+  // ── Write via Apps Script ──────────────────────────────────────────
+  // The script merges the patch server-side and verifies the password.
+  // No Content-Type header on purpose: Apps Script can't answer CORS
+  // preflight, so the body must go as a "simple" text/plain request.
   async function saveState(patch, historyEntry = null) {
-    if (!JSONBIN_URL || !WRITE_KEY) {
+    if (!SCRIPT_URL) {
       showMsg('Setup not complete — see instructions above.', 'error');
       return false;
     }
     try {
-      // Read current full record first
-      const getRes = await fetch(JSONBIN_URL + '/latest', {
-        headers: { 'X-Master-Key': WRITE_KEY }
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          password: panelPassword,
+          station:  activeStation,
+          patch,
+          historyEntry,
+        })
       });
-      const getData = await getRes.json();
-      const current = getData.record || {};
-
-      // Merge patch into the active station
-      current[activeStation] = { ...(current[activeStation] || {}), ...patch, updatedAt: new Date().toISOString() };
-
-      // Append to show history if provided
-      if (historyEntry) {
-        const hist = Array.isArray(current.history) ? current.history : [];
-        hist.unshift(historyEntry);
-        current.history = hist.slice(0, 20);
-      }
-
-      // Write back
-      const putRes = await fetch(JSONBIN_URL, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': WRITE_KEY
-        },
-        body: JSON.stringify(current)
-      });
-      return putRes.ok;
+      const data = await res.json();
+      return !!data.ok;
     } catch(e) {
       console.error('Save failed:', e);
       return false;
