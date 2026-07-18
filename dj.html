@@ -155,6 +155,28 @@
     }
     .img-preview-label { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
+    /* ── Show library rows ── */
+    .show-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--mid); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px;
+    }
+    .show-row img {
+      width: 40px; height: 40px; border-radius: 6px; object-fit: cover;
+      background: var(--dark); flex-shrink: 0;
+    }
+    .show-row .show-row-name {
+      flex: 1; font-size: 14px; font-weight: 600; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .show-row button {
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); font-size: 14px; padding: 6px 9px; cursor: pointer;
+      flex-shrink: 0; transition: all .15s;
+    }
+    .show-row button:hover { color: var(--white); border-color: var(--muted); }
+    .show-row button.danger:hover { color: #ef4444; border-color: #ef4444; }
+
     /* ── Action buttons ── */
     .action-btns {
       display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
@@ -207,6 +229,7 @@
     <ol>
       <li>Go to <strong>script.google.com</strong> → New project</li>
       <li>Paste in the contents of <code>dj-backend.gs</code> (in this site's repo) and save</li>
+      <li>Run ▶ the <code>authorize</code> function once and approve the permissions popup</li>
       <li>Deploy → New deployment → <strong>Web app</strong> → Execute as <strong>Me</strong>, access <strong>Anyone</strong></li>
       <li>Copy the Web app URL (ends in <code>/exec</code>)</li>
       <li>Paste it into <code>SCRIPT_URL</code> in <code>dj.html</code> and <code>DJPANEL_URL</code> in <code>playlist-widget.js</code></li>
@@ -237,23 +260,42 @@
       <div class="card-title">Show Info</div>
 
       <div class="field">
-        <label for="show-name">Show / DJ Name</label>
-        <input type="text" id="show-name" placeholder="e.g. The Morning Drive with Alex">
-      </div>
-
-      <div class="field">
-        <label for="show-image">Show Image</label>
-        <select id="show-image" onchange="previewImage()">
-          <option value="">— Select show image —</option>
+        <label for="show-select">Your Show</label>
+        <select id="show-select" onchange="pickShow()">
+          <option value="">— Pick your show —</option>
         </select>
       </div>
 
+      <div class="field">
+        <label for="show-name">On-Air Name <span style="font-weight:400;color:var(--muted)">(auto-fills — tweak it if you want)</span></label>
+        <input type="text" id="show-name" placeholder="e.g. The Morning Drive with Alex">
+      </div>
+
       <div class="image-preview-wrap">
-        <img id="img-preview" src="" alt="Preview" onerror="this.src=''">
+        <img id="img-preview" src="" alt="Preview" onerror="this.style.display='none'">
         <div class="img-preview-label">
-          Select an image above to preview it.<br>
-          To add new show logos, ask your station manager.
+          Pick your show above and its logo appears here.<br>
+          Don't see your show? Add it below — it's live instantly.
         </div>
+      </div>
+
+      <button class="btn btn-secondary" id="btn-manage" onclick="toggleManage()" style="margin-top:14px; width:100%;">＋ Add or edit shows</button>
+
+      <div id="manage-shows" style="display:none; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+        <div class="card-title">Show Library</div>
+        <div id="show-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;"></div>
+
+        <div class="card-title">Add a New Show</div>
+        <div class="field">
+          <label for="new-show-name">Show name</label>
+          <input type="text" id="new-show-name" placeholder="e.g. The Lunch Rush">
+        </div>
+        <div class="field">
+          <label for="new-show-file">Logo image <span style="font-weight:400;color:var(--muted)">(optional — square works best)</span></label>
+          <input type="file" id="new-show-file" accept="image/*">
+        </div>
+        <button class="btn btn-primary" id="btn-add-show" onclick="addNewShow()">＋ Add Show</button>
+        <input type="file" id="logo-replace-file" accept="image/*" style="display:none;">
       </div>
     </div>
 
@@ -299,7 +341,6 @@
   // in this file: writes send the panel password, which the script verifies
   // server-side against a hash.
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwV99T1Owt69gFQYtdOmqGUJjtMME1y0bUBjJ9XHN1CjzPXMhfPeI8xNFZOUUI6hsB7/exec';
-  const MANIFEST_URL = '/images/shows/manifest.json';
 
   // Password hash — SHA-256 of the panel password. To change the password,
   // hash the new one (https://emn178.github.io/online-tools/sha256.html) and
@@ -341,7 +382,6 @@
     if (!SCRIPT_URL) {
       document.getElementById('setup-notice').style.display = 'block';
     }
-    loadManifest();
     loadCurrentState();
   }
 
@@ -362,29 +402,165 @@
     loadCurrentState();
   }
 
-  // ── Manifest (show images) ─────────────────────────────────────────
-  async function loadManifest() {
-    try {
-      const res = await fetch(MANIFEST_URL + '?_t=' + Date.now());
-      const data = await res.json();
-      const sel = document.getElementById('show-image');
-      sel.innerHTML = '<option value="">— Select show image —</option>';
-      (data.shows || []).forEach(show => {
-        const opt = document.createElement('option');
-        opt.value = show.url;
-        opt.textContent = show.name;
-        sel.appendChild(opt);
-      });
-    } catch(e) {
-      console.warn('Could not load manifest:', e);
-    }
+  // ── Show library (lives in the Apps Script backend) ────────────────
+  let SHOWS = [];
+  let currentImageUrl = '';
+
+  function renderShowSelect() {
+    const sel = document.getElementById('show-select');
+    sel.innerHTML = '<option value="">— Pick your show —</option>';
+    SHOWS.forEach(show => {
+      const opt = document.createElement('option');
+      opt.value = show.id;
+      opt.textContent = show.name;
+      sel.appendChild(opt);
+    });
+    const match = SHOWS.find(s => s.url === currentImageUrl);
+    sel.value = match ? match.id : '';
+    previewImage();
+  }
+
+  function pickShow() {
+    const show = SHOWS.find(s => s.id === document.getElementById('show-select').value);
+    currentImageUrl = show ? show.url : '';
+    if (show) document.getElementById('show-name').value = show.name;
+    previewImage();
   }
 
   function previewImage() {
-    const url = document.getElementById('show-image').value;
     const img = document.getElementById('img-preview');
-    img.src = url || '';
-    img.style.display = url ? 'block' : 'none';
+    img.style.display = currentImageUrl ? 'block' : 'none';
+    if (currentImageUrl) img.src = currentImageUrl;
+  }
+
+  // ── Show library management (add / rename / new logo / delete) ─────
+  function toggleManage() {
+    const box = document.getElementById('manage-shows');
+    const open = box.style.display !== 'none';
+    box.style.display = open ? 'none' : 'block';
+    document.getElementById('btn-manage').textContent = open ? '＋ Add or edit shows' : '－ Close show library';
+    if (!open) renderShowList();
+  }
+
+  function mkBtn(txt, title, fn, danger) {
+    const b = document.createElement('button');
+    b.textContent = txt; b.title = title; b.onclick = fn;
+    if (danger) b.className = 'danger';
+    return b;
+  }
+
+  function renderShowList() {
+    const list = document.getElementById('show-list');
+    list.innerHTML = '';
+    SHOWS.forEach(show => {
+      const row = document.createElement('div');
+      row.className = 'show-row';
+      const img = document.createElement('img');
+      img.src = show.url; img.alt = '';
+      const name = document.createElement('div');
+      name.className = 'show-row-name'; name.textContent = show.name;
+      row.append(img, name,
+        mkBtn('✏️', 'Rename', () => renameShow(show.id)),
+        mkBtn('🖼', 'Change logo', () => replaceLogo(show.id)),
+        mkBtn('🗑', 'Delete', () => removeShow(show.id), true));
+      list.appendChild(row);
+    });
+  }
+
+  // Shrink the chosen image in the browser before upload (max 512px on the
+  // long side) so uploads are fast and the backend stays inside its limits.
+  function readAndResize(file, maxDim = 512) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        const isPng = file.type === 'image/png';
+        if (!isPng) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('that file is not an image the browser can read')); };
+      img.src = url;
+    });
+  }
+
+  async function libraryCall(payload) {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(Object.assign({ password: panelPassword }, payload))
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'request failed');
+    SHOWS = data.shows || SHOWS;
+    renderShowSelect();
+    renderShowList();
+    return data;
+  }
+
+  async function addNewShow() {
+    const name = document.getElementById('new-show-name').value.trim();
+    const file = document.getElementById('new-show-file').files[0];
+    if (!name) { showMsg('Give the show a name first.', 'error'); return; }
+    const btn = document.getElementById('btn-add-show');
+    btn.disabled = true; btn.textContent = 'Uploading…';
+    try {
+      const imageData = file ? await readAndResize(file) : null;
+      await libraryCall({ action: 'addShow', name, imageData });
+      document.getElementById('new-show-name').value = '';
+      document.getElementById('new-show-file').value = '';
+      showMsg('"' + name + '" added to the library.', 'ok');
+    } catch (e) {
+      showMsg('Could not add show: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '＋ Add Show';
+    }
+  }
+
+  async function renameShow(id) {
+    const show = SHOWS.find(s => s.id === id);
+    if (!show) return;
+    const name = prompt('New name for this show:', show.name);
+    if (!name || !name.trim() || name.trim() === show.name) return;
+    try {
+      await libraryCall({ action: 'updateShow', id, name: name.trim() });
+      showMsg('Renamed.', 'ok');
+    } catch (e) { showMsg('Rename failed: ' + e.message, 'error'); }
+  }
+
+  function replaceLogo(id) {
+    const input = document.getElementById('logo-replace-file');
+    input.dataset.target = id;
+    input.value = '';
+    input.click();
+  }
+
+  document.getElementById('logo-replace-file').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    const id = e.target.dataset.target;
+    if (!file || !id) return;
+    showMsg('Uploading new logo…', 'ok');
+    try {
+      const imageData = await readAndResize(file);
+      await libraryCall({ action: 'updateShow', id, imageData });
+      showMsg('Logo updated.', 'ok');
+    } catch (err) { showMsg('Upload failed: ' + err.message, 'error'); }
+  });
+
+  async function removeShow(id) {
+    const show = SHOWS.find(s => s.id === id);
+    if (!show) return;
+    if (!confirm('Delete "' + show.name + '" from the library? This can\'t be undone.')) return;
+    try {
+      await libraryCall({ action: 'deleteShow', id });
+      showMsg('Deleted.', 'ok');
+    } catch (e) { showMsg('Delete failed: ' + e.message, 'error'); }
   }
 
   // ── Load current state from Apps Script ───────────────────────────
@@ -393,6 +569,7 @@
     try {
       const res = await fetch(SCRIPT_URL, { cache: 'no-store' });
       const data = await res.json();
+      SHOWS = data.shows || [];
       const rec = data.record || {};
       const s = rec[activeStation] || {};
 
@@ -408,9 +585,9 @@
       document.getElementById('show-name').value     = s.showName    || '';
       document.getElementById('manual-artist').value = s.manualArtist || '';
       document.getElementById('manual-title').value  = s.manualTitle  || '';
-      const sel = document.getElementById('show-image');
-      if (s.imageUrl) sel.value = s.imageUrl;
-      previewImage();
+      currentImageUrl = s.imageUrl || '';
+      renderShowSelect();
+      renderShowList();
       setStatusUI(s.active ? (s.onBreak ? 'on-break' : 'on-air') : 'idle');
     } catch(e) {
       console.warn('Could not load state:', e);
@@ -447,7 +624,7 @@
   // ── Actions ────────────────────────────────────────────────────────
   async function goOnAir() {
     const showName    = document.getElementById('show-name').value.trim();
-    const imageUrl    = document.getElementById('show-image').value;
+    const imageUrl    = currentImageUrl;
     const manualArtist = document.getElementById('manual-artist').value.trim();
     const manualTitle  = document.getElementById('manual-title').value.trim();
 
@@ -515,9 +692,10 @@
       setStatusUI('idle');
       showMsg('Show ended. Website cleared.', 'ok');
       document.getElementById('show-name').value = '';
-      document.getElementById('show-image').value = '';
+      document.getElementById('show-select').value = '';
       document.getElementById('manual-artist').value = '';
       document.getElementById('manual-title').value = '';
+      currentImageUrl = '';
       previewImage();
     } else {
       showMsg('Save failed.', 'error');
