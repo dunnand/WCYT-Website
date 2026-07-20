@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Music Library — WCYT</title>
+  <link rel="icon" type="image/x-icon" href="/images/squarespace/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black:#0d0d0d; --dark:#111111; --mid:#1a1a1a; --card:#161616;
+      --border:#2a2a2a; --muted:#888888; --accent:#c8102e; --white:#ffffff;
+      --font:'Space Grotesk', sans-serif;
+    }
+    html { font-family: var(--font); background: var(--black); color: var(--white); }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+
+    header {
+      background: var(--dark); border-bottom: 3px solid var(--accent);
+      padding: 18px 22px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    }
+    .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); }
+    h1 { font-size: 22px; font-weight: 700; }
+    .live-tag { font-size: 11px; color: var(--muted); margin-left: auto; }
+    .live-tag a { color: var(--muted); }
+
+    main { flex: 1; width: 100%; max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    #search {
+      width: 100%; padding: 15px 18px; font: inherit; font-size: 17px;
+      background: var(--card); color: var(--white);
+      border: 1px solid var(--border); border-radius: 12px; outline: none;
+      transition: border-color .2s;
+    }
+    #search:focus { border-color: var(--accent); }
+
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 6px; align-items: center; }
+    .chip {
+      padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted); font: inherit; font-size: 12.5px;
+      font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .chip .n { opacity: .6; font-weight: 400; }
+    select.chip { appearance: none; padding-right: 26px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; }
+    select.chip option { background: var(--mid); color: var(--white); }
+
+    .meta-row { display: flex; align-items: baseline; gap: 12px; margin: 10px 2px 12px; flex-wrap: wrap; }
+    #count { font-size: 13px; color: var(--muted); }
+    #status { font-size: 13px; color: var(--muted); }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em;
+      color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border);
+      cursor: pointer; user-select: none; white-space: nowrap;
+    }
+    th .arrow { color: var(--accent); }
+    td { padding: 9px 10px; border-bottom: 1px solid #1d1d1d; font-size: 14.5px; vertical-align: top; }
+    tr:hover td { background: #151515; }
+    .t-title { font-weight: 600; }
+    .t-artist { color: #d8d8d8; }
+    .t-album { color: var(--muted); font-size: 13px; }
+    .t-year { color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .cat-badge {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted);
+      white-space: nowrap;
+    }
+    .cat-1  { color:#4ade80; border-color:#4ade8055; }
+    .cat-2  { color:#a3e635; border-color:#a3e63555; }
+    .cat-3  { color:#38bdf8; border-color:#38bdf855; }
+    .cat-4  { color:#818cf8; border-color:#818cf855; }
+    .cat-6  { color:#f472b6; border-color:#f472b655; }
+    .cat-GH { color:#facc15; border-color:#facc1555; }
+    .cat-TB { color:#fb923c; border-color:#fb923c55; }
+
+    #more-wrap { text-align: center; padding: 18px; }
+    #more {
+      padding: 11px 26px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--mid); color: var(--white); font: inherit; font-size: 14px;
+      font-weight: 600; cursor: pointer;
+    }
+    #more:hover { background: #222; }
+    .empty { text-align: center; color: var(--muted); padding: 50px 10px; font-size: 15px; }
+
+    footer { text-align: center; padding: 18px; font-size: 12px; color: var(--muted); }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .hide-sm { display: none; }
+      td { font-size: 13.5px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="eyebrow">WCYT · The Point 91 FM</div>
+    <h1>🎵 Music Library</h1>
+  </div>
+  <div class="live-tag">Live from the station playlist · <a href="planner.html">Broadcast Planner →</a></div>
+</header>
+
+<main>
+  <input id="search" type="search" placeholder="Search songs, artists, or albums…" autocomplete="off" autofocus>
+
+  <div class="filters" id="cat-chips"></div>
+  <div class="filters">
+    <select class="chip" id="decade">
+      <option value="">All decades</option>
+    </select>
+    <select class="chip" id="sort">
+      <option value="artist">Sort: Artist A–Z</option>
+      <option value="title">Sort: Title A–Z</option>
+      <option value="newest">Sort: Year (newest)</option>
+      <option value="oldest">Sort: Year (oldest)</option>
+    </select>
+  </div>
+
+  <div class="meta-row">
+    <span id="count"></span>
+    <span id="status">Loading the playlist…</span>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th data-sort="title">Title</th>
+      <th data-sort="artist">Artist</th>
+      <th class="hide-sm">Album</th>
+      <th data-sort="newest">Year</th>
+      <th>Category</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="more-wrap" style="display:none"><button id="more">Load more</button></div>
+  <div class="empty" id="empty" style="display:none">No songs match — try fewer words.</div>
+</main>
+
+<footer>
+  Playlist updates automatically from the station's master sheet.
+</footer>
+
+<script>
+  const SHEET_ID = '1sUeWFHL2m0YepzHGDUWnLJUXRBWlFZfy78POqIDWfpQ';
+  const GID = '1627448095';
+  const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
+
+  const CAT_LABELS = {
+    '1':  'Cat 1 · Newest',
+    '2':  'Cat 2 · Fresh',
+    '3':  "Cat 3 · 2010's",
+    '4':  "Cat 4 · 2000's",
+    '6':  'Cat 6 · Long Songs',
+    'GH': 'Greatest Hits',
+    'TB': 'Throwback',
+  };
+  const CAT_SHORT = { '1':'NEW', '2':'FRESH', '3':"2010s", '4':"2000s", '6':'6MIN+', 'GH':'HITS', 'TB':'TB' };
+
+  let SONGS = [];
+  let filtered = [];
+  let shown = 0;
+  const PAGE = 200;
+  let activeCat = '';
+  let sortMode = 'artist';
+
+  // Minimal CSV parser that handles quoted fields with commas
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i+1] === '"') { field += '"'; i++; }
+          else inQ = false;
+        } else field += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i+1] === '\n') i++;
+        row.push(field); field = '';
+        rows.push(row); row = [];
+      } else field += ch;
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  async function load() {
+    try {
+      const res = await fetch(CSV_URL);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const rows = parseCSV(await res.text());
+      SONGS = rows.slice(1)
+        .filter(r => (r[1] || '').trim() && (r[2] || '').trim())
+        .map(r => ({
+          cat:    (r[0] || '').trim(),
+          artist: r[1].trim(),
+          title:  r[2].trim(),
+          album:  (r[3] || '').trim(),
+          year:   parseInt(r[4]) || null,
+        }));
+      document.getElementById('status').textContent = '';
+      buildChips();
+      buildDecades();
+      apply();
+    } catch (e) {
+      document.getElementById('status').textContent =
+        'Could not load the playlist right now — check your connection and refresh.';
+    }
+  }
+
+  function buildChips() {
+    const counts = {};
+    SONGS.forEach(s => { counts[s.cat] = (counts[s.cat] || 0) + 1; });
+    const order = ['', '1', '2', '3', '4', '6', 'GH', 'TB'];
+    const keys = [...new Set([...order.slice(1), ...Object.keys(counts)])]
+      .filter(k => k !== '' && counts[k]);
+    const wrap = document.getElementById('cat-chips');
+    wrap.innerHTML = `<button class="chip active" data-cat="">All <span class="n">${SONGS.length.toLocaleString()}</span></button>` +
+      keys.map(k => `<button class="chip" data-cat="${k}">${CAT_LABELS[k] || k} <span class="n">${counts[k].toLocaleString()}</span></button>`).join('') +
+      (counts[''] ? `<button class="chip" data-cat="__blank">Uncategorized <span class="n">${counts[''].toLocaleString()}</span></button>` : '');
+    wrap.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+      wrap.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      activeCat = b.dataset.cat;
+      apply();
+    }));
+  }
+
+  function buildDecades() {
+    const decades = [...new Set(SONGS.filter(s => s.year).map(s => Math.floor(s.year / 10) * 10))].sort((a, b) => b - a);
+    const sel = document.getElementById('decade');
+    decades.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d; o.textContent = d + 's';
+      sel.appendChild(o);
+    });
+  }
+
+  function apply() {
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    const words = q.split(/\s+/).filter(Boolean);
+    const dec = document.getElementById('decade').value;
+
+    filtered = SONGS.filter(s => {
+      if (activeCat === '__blank') { if (s.cat !== '') return false; }
+      else if (activeCat && s.cat !== activeCat) return false;
+      if (dec && (!s.year || Math.floor(s.year / 10) * 10 !== +dec)) return false;
+      if (words.length) {
+        const hay = (s.artist + ' ' + s.title + ' ' + s.album).toLowerCase();
+        if (!words.every(w => hay.includes(w))) return false;
+      }
+      return true;
+    });
+
+    const coll = new Intl.Collator('en', { sensitivity: 'base' });
+    if (sortMode === 'artist')  filtered.sort((a, b) => coll.compare(a.artist, b.artist) || coll.compare(a.title, b.title));
+    if (sortMode === 'title')   filtered.sort((a, b) => coll.compare(a.title, b.title));
+    if (sortMode === 'newest')  filtered.sort((a, b) => (b.year || 0) - (a.year || 0) || coll.compare(a.artist, b.artist));
+    if (sortMode === 'oldest')  filtered.sort((a, b) => (a.year || 9999) - (b.year || 9999) || coll.compare(a.artist, b.artist));
+
+    shown = 0;
+    document.getElementById('rows').innerHTML = '';
+    renderMore();
+    document.getElementById('count').textContent =
+      filtered.length.toLocaleString() + ' song' + (filtered.length !== 1 ? 's' : '');
+    document.getElementById('empty').style.display = filtered.length ? 'none' : 'block';
+  }
+
+  function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function renderMore() {
+    const chunk = filtered.slice(shown, shown + PAGE);
+    shown += chunk.length;
+    document.getElementById('rows').insertAdjacentHTML('beforeend', chunk.map(s => `
+      <tr>
+        <td class="t-title">${esc(s.title)}</td>
+        <td class="t-artist">${esc(s.artist)}</td>
+        <td class="t-album hide-sm">${esc(s.album)}</td>
+        <td class="t-year">${s.year || ''}</td>
+        <td>${s.cat ? `<span class="cat-badge cat-${esc(s.cat)}">${CAT_SHORT[s.cat] || esc(s.cat)}</span>` : ''}</td>
+      </tr>`).join(''));
+    document.getElementById('more-wrap').style.display = shown < filtered.length ? 'block' : 'none';
+  }
+
+  let timer;
+  document.getElementById('search').addEventListener('input', () => {
+    clearTimeout(timer); timer = setTimeout(apply, 150);
+  });
+  document.getElementById('decade').addEventListener('change', apply);
+  document.getElementById('sort').addEventListener('change', e => { sortMode = e.target.value; apply(); });
+  document.querySelectorAll('th[data-sort]').forEach(th =>
+    th.addEventListener('click', () => {
+      sortMode = th.dataset.sort;
+      document.getElementById('sort').value = sortMode === 'newest' ? 'newest' : sortMode;
+      apply();
+    }));
+  document.getElementById('more').addEventListener('click', renderMore);
+
+  load();
+</script>
+
+</body>
+</html>
