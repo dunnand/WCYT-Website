@@ -376,12 +376,24 @@ body { background: #0d0d0d; }
   .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
   .about-text p { font-size: 15px; color: #bbb; line-height: 1.75; margin-bottom: 16px; }
   .about-text p:last-child { margin-bottom: 0; }
-  .about-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .stat-card { background: #222; border: 1px solid #333; border-radius: 10px; padding: 20px; text-align: center; }
-  .stat-number { font-size: clamp(28px, 5vw, 40px); font-weight: 700; color: #c8102e; line-height: 1; margin-bottom: 4px; }
-  .stat-label { font-size: 12px; color: #888; }
+  .section-heading--plain { font-size: clamp(22px, 3.5vw, 30px); font-weight: 600; color: #fff; margin-bottom: 24px; }
+
+  /* On-air card (replaces the old stat grid) */
+  .onair-card {
+    background: #222; border: 1px solid #333; border-left: 3px solid #c8102e; border-radius: 10px;
+    padding: 24px; display: flex; flex-direction: column; gap: 14px; justify-content: center; min-height: 160px;
+  }
+  .onair-card-head { display: flex; align-items: center; gap: 10px; }
+  .onair-dot { width: 9px; height: 9px; border-radius: 50%; background: #c8102e; flex-shrink: 0; animation: wcyt-hero-pulse 1.8s ease-in-out infinite; }
+  .onair-label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #c8102e; }
+  .onair-card-head .wcyt-bars { margin-left: auto; }
+  .onair-track { font-size: 15px; line-height: 1.4; color: #eee; }
+  .onair-track strong { display: block; font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+  .onair-link { font-size: 12px; font-weight: 600; color: #888; text-decoration: none; align-self: flex-start; }
+  .onair-link:hover { color: #fff; }
 
   /* Social */
+  .social-lead { font-size: 16px; font-weight: 500; color: #bbb; margin-bottom: 28px; }
   .social-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
   .social-btn {
     display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
@@ -456,7 +468,6 @@ body { background: #0d0d0d; }
   <!-- Latest podcast -->
   <section class="home-section home-section--alt">
     <div class="home-inner--narrow">
-      <div class="section-eyebrow">Podcasts</div>
       <div class="section-heading">Latest <strong>Episode</strong></div>
       <div id="home-pod"><p class="pod-loading">Loading latest episode&hellip;</p></div>
       <p style="margin-top:16px;font-size:13px;color:#888"><a href="/podcasts" style="color:#aaa;font-weight:600">All episodes &rarr;</a></p>
@@ -468,8 +479,6 @@ body { background: #0d0d0d; }
   <!-- Latest broadcast -->
   <section class="home-section">
     <div class="home-inner--narrow">
-      <div class="section-eyebrow">Sports</div>
-      <div class="section-heading">Latest <strong>Broadcast</strong></div>
       <!-- Update video ID after each game -->
       <div class="broadcast-wrap">
         <iframe src="https://www.youtube.com/embed/O5gEje1oZeg" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" loading="lazy"></iframe>
@@ -491,16 +500,18 @@ body { background: #0d0d0d; }
     <div class="home-inner">
       <div class="about-grid">
         <div class="about-text">
-          <div class="section-eyebrow">About</div>
-          <div class="section-heading">Where music is <strong>the point</strong></div>
-          <p>The Point 91 FM is your independent music source and alternative to commercial radio, broadcasting from Homestead High School in Fort Wayne, Indiana. Where music is the point. Everything you hear is made by students.</p>
-          <p>We broadcast on 91.1 FM and stream online 24/7. Our students handle everything: on-air talent, production, sports broadcasting, and content creation.</p>
+          <div class="section-heading section-heading--plain">Where music is the point</div>
+          <p>The Point 91 FM is your independent music source and alternative to commercial radio, broadcasting from Homestead High School in Fort Wayne, Indiana. Everything you hear is made by students.</p>
+          <p>We've been on 91.1 FM since 1994, streaming online 24/7, and run entirely by students &mdash; on-air talent, production, sports broadcasting, and content creation, 100% top to bottom.</p>
         </div>
-        <div class="about-stats">
-          <div class="stat-card"><div class="stat-number">91.1</div><div class="stat-label">FM Frequency</div></div>
-          <div class="stat-card"><div class="stat-number">1994</div><div class="stat-label">Est. Year</div></div>
-          <div class="stat-card"><div class="stat-number">24/7</div><div class="stat-label">Online Stream</div></div>
-          <div class="stat-card"><div class="stat-number">100%</div><div class="stat-label">Student-run</div></div>
+        <div class="onair-card">
+          <div class="onair-card-head">
+            <span class="onair-dot" aria-hidden="true"></span>
+            <span class="onair-label">On Air Now</span>
+            <span class="wcyt-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+          </div>
+          <div class="onair-track" id="onair-track">Loading&hellip;</div>
+          <a href="/playlist" class="onair-link">See full playlist &rarr;</a>
         </div>
       </div>
     </div>
@@ -511,8 +522,7 @@ body { background: #0d0d0d; }
   <!-- Social -->
   <section class="home-section" style="text-align:center">
     <div class="home-inner">
-      <div class="section-eyebrow">Follow Us</div>
-      <div class="section-heading" style="margin-bottom:28px">Stay <strong>connected</strong></div>
+      <p class="social-lead">Find WCYT wherever you already hang out.</p>
       <div class="social-strip">
         <a class="social-btn" href="https://instagram.com/thepoint91" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
@@ -592,6 +602,17 @@ body { background: #0d0d0d; }
     .catch(()=>{
       document.getElementById('home-pod').innerHTML='<p class="pod-loading"><a href="/podcasts" style="color:#aaa">Browse all episodes &rarr;</a></p>';
     });
+
+  function updateOnAirStrip() {
+    const el = document.getElementById('onair-track');
+    if (!el || !window.WCYTPlaylist) return;
+    const song = WCYTPlaylist._getState().currentSong;
+    el.innerHTML = song
+      ? `<strong>${esc(song.artist || 'WCYT')}</strong>${esc(song.title || 'On air now')}`
+      : 'The Point 91 FM &middot; live now';
+  }
+  setInterval(updateOnAirStrip, 5000);
+  updateOnAirStrip();
 </script>
 <!-- ====== END WCYT HOMEPAGE SECTIONS ====== -->
 
